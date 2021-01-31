@@ -1,0 +1,39 @@
+_devrc:
+  shell: bash -c
+
+variables:
+  var_1: variable value_1
+  var_2: variable value_2
+
+environment:
+  var_1: env_variable_1
+  var_2: env_variable_2
+  var_3: env_variable_3
+
+command_1: "echo \"Hello world\";"
+
+command_2:
+  desc: "Command 2 description"
+  exec: echo "Hello {{ var_1 }}"
+
+
+command_3:
+  desc: "Command 3 description"
+  shell: "sh -cu"
+  exec:
+    - echo "Hello {{ var_1 }}"
+    - echo "Hello {{ var_3 }} $var_3"
+    # - echo "Hello status"; exit 113;
+
+  variables:
+    var_3: variable value_3
+
+  environment:
+    var_3: env_variable_overwrited_3
+
+
+command_4:
+  exec: |
+    #!/usr/bin/env python
+
+    print("Hello world 12345")
