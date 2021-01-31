@@ -1,0 +1,52 @@
+[package]
+name = "devrc"
+version = "0.0.1"
+authors = ["Alex <lispython@users.noreply.github.com>"]
+description = "Devrc is an easy tasks automation tool for developers"
+edition = "2018"
+keywords = ["tasks", "automation", "makefile", "command-line"]
+categories = ["command-line-utilities",  "development-tools", "config"]
+license-file = "LICENSE"
+readme = "README.md"
+homepage = "https://github.com/devrc-hub/devrc"
+repository = "https://github.com/devrc-hub/devrc"
+
+[dependencies]
+env_logger = "0.8.2"
+log = "0.4.11"
+serde = { version = "1.0.118", features = ["derive"] }
+serde_yaml = "0.8.14"
+structopt = "0.3.20"
+yaml-merge-keys = "0.4.1"
+casual = "0.2.0"
+shellexpand = "2.0.0"
+shellwords = "1.1.0"
+dirs = "3.0.1"
+reqwest = { version = "0.10.9", features = ["blocking", "json"] }
+indexmap = { version="1.6.0", features = ["serde-1"] }
+ansi_term = "0.12"
+serde_with = "1.5.1"
+void = "1.0.2"
+dotenv = "0.15.0"
+tera = "1.6.1"
+unicode-width = "0.1.8"
+atty = "0.2.14"
+run_script = "0.6.3"
+tempfile = "3.2.0"
+ctrlc = "3.1.7"
+
+
+# standard crate data is left out
+[dev-dependencies]
+void = "1.0.2"
+
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+opt-level = 3
+
+
+[[bin]]
+name = "devrc"
+path = "src/main.rs"
