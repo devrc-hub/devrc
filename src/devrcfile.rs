@@ -197,13 +197,35 @@ impl Devrcfile {
     pub fn run(&mut self, params: &[String]) -> DevrcResult<()>{
         let mut i = 0;
 
+        let scope = self.get_scope()?;
+
+        if let Some(before_script) = &self.before_script {
+            before_script.perform("before_script", &scope, &[], &self.config)?;
+        }
+        // TODO: add before_script call here
+
         while i < params.len(){
+            let name = &params[i];
+
             let task = self.find_task(&params[i])?;
 
-            let scope = self.get_scope()?;
-            task.perform(&params[i], &scope, &params, &self.config)?;
+            if let Some(before_task) = &self.before_task {
+                before_task.perform(&format!("before_task_{:}", &name), &scope, &[], &self.config)?;
+            }
+
+            task.perform(&name, &scope, &params, &self.config)?;
+
+            if let Some(before_task) = &self.before_task {
+                before_task.perform(&format!("after_task_{:}", &name), &scope, &[], &self.config)?;
+            }
+
             i += 1;
         }
+
+        if let Some(after_script) = &self.after_script {
+            after_script.perform("after_script", &scope, &[], &self.config)?;
+        }
+
         Ok(())
     }
 }
