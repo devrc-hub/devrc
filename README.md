@@ -25,12 +25,6 @@ Why?
 Installation
 ------------
 
-## Homebrew
-
-
-```shell
-brew install devrc
-```
 
 ## Install from crates.io
 
