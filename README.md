@@ -4,7 +4,11 @@ Tasks automation tool for developers
 **devrc** is an easy to use YAML-based task runner written in Rust.
 
 
-`devrcfile` store tasks in yaml format (like .gitlab-ci).
+Tasks are stored in YAML file named Devrcfile by default. It's very similar to .gitlab-ci file.
+All tasks are stored as mappings (hashes/dictionaries/key-value pairs).
+Key is used as task name and value is used to create task logic.
+Some key names are reserved and described below.
+
 
 Features
 --------
@@ -49,8 +53,8 @@ rustup update stable
 cargo install
 ```
 
-Getting started
----------------
+# Getting started
+
 
 ## Listing tasks
 
@@ -63,6 +67,8 @@ Getting started
 
 ## Environment variables
 
+
+## Architecture
 
 ### Contributing
 Any suggestion, feedback or contributing is highly appreciated. Thank you for your support!
