@@ -114,9 +114,7 @@ impl TaskKind {
     }
 
     pub fn perform(&self, name: &str, parent_scope: &Scope, params: &[String], config: &Config) -> DevrcResult<()>{
-
         println!("\n==> Running task: `{:}` ...", &name);
-        dbg!(&parent_scope);
         match self {
             TaskKind::Empty => {
                 return Err(DevrcError::NotImplemented)

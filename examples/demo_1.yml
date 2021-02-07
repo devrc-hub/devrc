@@ -1,5 +1,13 @@
-_devrc:
+devrc_config:
   shell: bash -c
+
+
+env_file:
+  - ./.env
+  - file: ./.env_3
+    ignore_errors: true
+  - ./.env_2
+  - file: ./.env_2
 
 
 before_script: echo "Before script"
@@ -30,7 +38,7 @@ command_3:
   exec:
     - echo "Hello {{ var_1 }}"
     - echo "Hello {{ var_3 }} $var_3"
-    # - echo "Hello status"; exit 113;
+    - echo "Hello status"; exit 113;
 
   variables:
     var_3: variable value_3
@@ -40,7 +48,21 @@ command_3:
 
 
 command_4:
+  desc: "Command 4 description"
+  exec: "echo \"Sleep\"; sleep 20; echo \"Done\""
+
+
+command_5:
+  desc: "Execute python script"
   exec: |
     #!/usr/bin/env python
 
-    print("Hello world 12345")
+    print("Hello world from python")
+
+
+command_6:
+  desc: "Execute javascript by node"
+  exec: |
+    #!/usr/bin/env node
+
+    console.log("Hello world from node")

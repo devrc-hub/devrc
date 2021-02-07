@@ -6,12 +6,14 @@ use serde_yaml::{Error as SerdeYamlError};
 
 use tera::{ErrorKind as TeraErrorKing, Error as TeraError};
 
+use dotenv::{self, Error as DotenvError};
+
 pub type DevrcResult<T> = Result<T, DevrcError>;
 
 
 #[derive(Debug)]
 pub enum DevrcError {
-    Dotenv,
+    Dotenv(DotenvError),
     NotExists,
     GlobalNotExists,
     LocalNotExists,
@@ -26,7 +28,7 @@ pub enum DevrcError {
     Code {
         code: i32
     },
-    RuntimeError
+    RuntimeError,
 }
 
 
@@ -62,10 +64,10 @@ impl Display for DevrcError {
 }
 
 
-impl From<dotenv::Error> for DevrcError {
+impl From<DotenvError> for DevrcError {
 
-    fn from(error: dotenv::Error) -> DevrcError {
-        DevrcError::Dotenv
+    fn from(error: DotenvError) -> DevrcError {
+        DevrcError::Dotenv(error)
     }
 }
 

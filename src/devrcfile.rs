@@ -1,6 +1,6 @@
-use std::cmp;
+use std::{cmp, path::PathBuf};
 
-use crate::{config::Config, config::{RawConfig}, environment::{Environment, RawEnvironment}, errors::DevrcResult, raw_devrcfile::RawDevrcfile, scope::Scope, tasks::{Task, Tasks}, variables::{RawVariables, Variables}};
+use crate::{config::Config, config::{RawConfig}, environment::{EnvFile, EnvFilesWrapper, Environment, RawEnvironment}, errors::DevrcResult, raw_devrcfile::RawDevrcfile, scope::Scope, tasks::{Task, Tasks}, variables::{RawVariables, Variables}};
 
 use unicode_width::UnicodeWidthStr;
 
@@ -131,6 +131,14 @@ impl Devrcfile {
         Ok(())
     }
 
+    pub fn add_env_file(&mut self, files: EnvFile, base_path: Option<&PathBuf>) -> DevrcResult<()>{
+         for (key, value) in files.load(base_path)? {
+            self.add_env(&key, &value)?;
+        }
+
+        Ok(())
+    }
+
     /// Add objects from given `RawDevrcfile` to current object
     ///
     /// this method implement merge stategy
@@ -157,6 +165,10 @@ impl Devrcfile {
 
         for (name, task) in file.tasks.items {
             self.add_task(name, task)?;
+        }
+
+        if let Some(files) = file.envs_files {
+            self.add_env_file(files, file.path.as_ref())?;
         }
 
         self.add_variables(file.variables)?;
@@ -201,7 +213,6 @@ impl Devrcfile {
         if let Some(before_script) = &self.before_script {
             before_script.perform("before_script", &scope, &[], &self.config)?;
         }
-        // TODO: add before_script call here
 
         while i < params.len(){
             let name = &params[i];

@@ -1,7 +1,7 @@
 use std::{env, fs, io::Read};
 use std::path::PathBuf;
 
-use crate::{config::Config, devrcfile::Devrcfile, errors::{DevrcError, DevrcResult}, interrupt::setup_interrupt_handler, raw_devrcfile::RawDevrcfile, scope::Scope, utils::{expand_path, get_global_devrc_file, get_local_devrc_file, is_global_devrc_file_exists}};
+use crate::{config::Config, devrcfile::Devrcfile, errors::{DevrcError, DevrcResult}, interrupt::setup_interrupt_handler, raw_devrcfile::RawDevrcfile, scope::Scope, utils::{get_absolute_path, get_global_devrc_file, get_local_devrc_file, is_global_devrc_file_exists}};
 use crate::utils;
 use unicode_width::UnicodeWidthStr;
 
@@ -10,8 +10,6 @@ use std::fmt::Debug;
 use serde::Deserialize;
 use serde_yaml;
 use std::io;
-
-
 
 
 #[derive(Debug, Clone)]
@@ -44,27 +42,39 @@ impl Runner {
         self.dry_run = true;
     }
 
-    pub fn get_global_rawdevrc_file(&self) -> Option<RawDevrcfile> {
+    pub fn get_global_rawdevrc_file(&self) -> DevrcResult<RawDevrcfile> {
         if let Some(value) = get_global_devrc_file(){
-            if let Ok(parsed_file) = RawDevrcfile::from_file(&value){
-                return Some(parsed_file)
+            match RawDevrcfile::from_file(&value) {
+                Ok(mut parsed_file) => {
+                    parsed_file.setup_path(value)?;
+                    return Ok(parsed_file)
+                },
+                Err(error) => {
+                    return Err(error)
+                }
             }
-        };
-        None
+        }
+        Err(DevrcError::GlobalNotExists)
     }
 
-    pub fn get_local_rawdevrc_file(&self) -> Option<RawDevrcfile> {
+    pub fn get_local_rawdevrc_file(&self) -> DevrcResult<RawDevrcfile> {
         if let Some(value) = get_local_devrc_file(){
-            if let Ok(parsed_file) = RawDevrcfile::from_file(&value){
-                return Some(parsed_file)
+            match RawDevrcfile::from_file(&value) {
+                Ok(mut parsed_file) => {
+                    parsed_file.setup_path(value)?;
+                    return Ok(parsed_file)
+                },
+                Err(error) => {
+                    return Err(error)
+                }
             }
-        };
-        None
+        }
+        Err(DevrcError::LocalNotExists)
     }
 
     pub fn load(&mut self) -> DevrcResult<()>{
 
-        if let Some(devrcfile) = self.get_global_rawdevrc_file() {
+        if let Ok(devrcfile) = self.get_global_rawdevrc_file() {
             self.devrc.add_raw_devrcfile(devrcfile)?;
         }
 
@@ -72,14 +82,15 @@ impl Runner {
             match RawDevrcfile::from_file(file) {
                 Ok(parsed_file) => {
                     let mut parsed_file: RawDevrcfile = parsed_file;
-                    parsed_file.setup_path(file.to_path_buf());
+                    parsed_file.setup_path(file.to_path_buf())?;
+                    dbg!(&parsed_file);
                     self.devrc.add_raw_devrcfile(parsed_file)?;
                 },
                 Err(error) => return Err(error)
             };
         }
 
-        if let Some(devrcfile) = self.get_local_rawdevrc_file() {
+        if let Ok(mut devrcfile) = self.get_local_rawdevrc_file() {
             self.devrc.add_raw_devrcfile(devrcfile)?;
         }
 
@@ -93,7 +104,7 @@ impl Runner {
         match RawDevrcfile::from_str(&buffer) {
             Ok(parsed_file) => {
                 let mut parsed_file: RawDevrcfile = parsed_file;
-                parsed_file.setup_path(PathBuf::from("/dev/stdin"));
+                parsed_file.setup_path(PathBuf::from("/dev/stdin"))?;
                 self.devrc.add_raw_devrcfile(parsed_file)?;
             },
             Err(error) => return Err(error)
@@ -103,8 +114,7 @@ impl Runner {
     }
 
     pub fn add_file(&mut self, file: PathBuf) -> DevrcResult<()> {
-        let full_path = utils::expand_path(&file);
-        match full_path {
+        match utils::get_absolute_path(&file, env::current_dir().ok().as_ref()) {
             Ok(path) => {
                 self.files.push(path);
                 Ok(())
@@ -114,6 +124,7 @@ impl Runner {
     }
 
     pub fn add_files(&mut self, files: &[PathBuf]) -> DevrcResult<()> {
+
         for file in files.iter() {
             self.add_file(file.to_path_buf())?;
         }
@@ -193,7 +204,7 @@ impl Runner {
 
         for file in &self.files{
 
-            if let Ok(file) = expand_path(&file){
+            if let Ok(file) = get_absolute_path(&file, None){
                 if file.exists() {
                     info!("Given devrcfile exists: {:?}", file);
                 }

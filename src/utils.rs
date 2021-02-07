@@ -13,8 +13,8 @@ const DEFAULT_DEVRC_FILE_NAME: &str = "devrcfile";
 /// Global devrc file name
 const HOME_DEVRC_FILE_NAME: &str = ".devrc";
 
-/// User defined local devrc file
-/// that override project defined tasks and variables
+/// User defined local devrcfile
+/// It overwrite project defined tasks and variables
 const LOCAL_DEVRC_FILE_NAME: &str = "devrcfile.local";
 
 
@@ -26,19 +26,28 @@ pub fn get_env_dict() {
     }
 }
 
-pub fn get_local_file_content() {
-    dbg!("Fetch content from local file");
-}
+pub fn get_absolute_path(file: &PathBuf, base: Option<&PathBuf>) -> DevrcResult<PathBuf> {
+    if file.is_absolute() {
+        return Ok(file.to_path_buf());
+    }
 
-// pub fn parse_config(file: PathBuf) -> std::io::Result<Value> {
-//     let contents = fs::read_to_string(fs::canonicalize(file)?)?;
+    let file = if let Some(value) = base.clone() {
+        let mut new_path = value.clone();
+        if new_path.is_file() {
+            if let Some(value) = new_path.parent() {
+                new_path = value.to_path_buf();
+            }
+        }
+        new_path.push(file);
+        new_path
+    } else {
+        file.clone()
+    };
 
-//     Ok(contents.parse::<Value>().unwrap())
-// }
-
-pub fn expand_path(file: &PathBuf) -> DevrcResult<PathBuf> {
     match fs::canonicalize(file){
-        Ok(value) => Ok(value),
+        Ok(value) => {
+            Ok(value)
+        },
         Err(error) => Err(DevrcError::IoError(error))
     }
 }

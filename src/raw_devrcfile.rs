@@ -9,7 +9,7 @@ use serde::Deserialize;
 use serde_yaml;
 
 use crate::environment::RawEnvironment;
-use crate::environment::{EnvFiles, EnvFilesWrapper};
+use crate::environment::{EnvFile, EnvFilesWrapper};
 use crate::tasks::Tasks;
 
 use crate::variables::RawVariables;
@@ -40,7 +40,7 @@ pub struct RawDevrcfile {
 
     // #[serde(default)]
     #[serde(rename(deserialize = "env_file"))]
-    envs_files: Option<EnvFilesWrapper>,
+    pub envs_files: Option<EnvFile>,
 
     #[serde(default, deserialize_with = "deserialize_some")]
     pub after_script: Option<Option<Task>>,
@@ -55,19 +55,23 @@ pub struct RawDevrcfile {
     pub after_task: Option<Option<Task>>,
 
     #[serde(default)]
-    #[serde(rename(deserialize = "_devrc"))]
+    #[serde(rename(deserialize = "devrc_config"))]
     pub config: RawConfig,
 
     #[serde(flatten)]
     pub tasks: Tasks,
 
-    path: Option<PathBuf>
+    pub path: Option<PathBuf>
 
 }
 
 impl RawDevrcfile {
     // TODO: split to separate functions
     pub fn from_file(file: &PathBuf) -> DevrcResult<Self> {
+        if !file.exists() {
+            return Err(DevrcError::NotExists)
+        }
+
         let contents = match fs::read_to_string(&file) {
             Ok(value) => value,
             Err(error) => {
@@ -75,12 +79,7 @@ impl RawDevrcfile {
             },
         };
 
-        let config: Self = match serde_yaml::from_str(&contents) {
-            Ok(value) => value,
-            Err(error) => return Err(DevrcError::YamlParseError(error))
-        };
-
-        Ok(config)
+        Self::from_str(&contents)
     }
 
     pub fn get_tasks(&self) -> &Tasks{
@@ -105,11 +104,15 @@ impl RawDevrcfile {
         Ok(scope)
     }
 
-    pub fn setup_path(&mut self, path: PathBuf){
-        match fs::canonicalize(path.clone()){
-            Ok(value) => self.path = Some(value),
-            _ => {}
-        }
+    pub fn setup_path(&mut self, path: PathBuf) -> DevrcResult<()>{
+        match fs::canonicalize(path){
+            Ok(value) => {
+                self.path = Some(value)
+            },
+            Err(error) => return Err(DevrcError::IoError(error))
+        };
+
+        Ok(())
     }
 }
 
