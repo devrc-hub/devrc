@@ -35,8 +35,8 @@ pub struct RawDevrcfile {
     pub variables: RawVariables,
 
     #[serde(default)]
-    #[serde(rename(deserialize = "include_files"))]
-    include_files: IncludeFilesWrapper,
+    #[serde(rename(deserialize = "include"))]
+    include: IncludeFilesWrapper,
 
     // #[serde(default)]
     #[serde(rename(deserialize = "env_file"))]
@@ -71,7 +71,6 @@ impl RawDevrcfile {
         let contents = match fs::read_to_string(&file) {
             Ok(value) => value,
             Err(error) => {
-                panic!("Can't read config file: {:?}", &file);
                 return Err(DevrcError::IoError(error))
             },
         };
@@ -86,6 +85,14 @@ impl RawDevrcfile {
 
     pub fn get_tasks(&self) -> &Tasks{
         &self.tasks
+    }
+
+    pub fn from_str(content: &str) -> DevrcResult<Self>{
+        let config: Self = match serde_yaml::from_str(content){
+            Ok(value) => value,
+            Err(error) => return Err(DevrcError::YamlParseError(error))
+        };
+        Ok(config)
     }
 
     pub fn get_evolved_scope(&self, parent_scope: Option<Scope>) -> DevrcResult<Scope> {

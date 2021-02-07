@@ -33,7 +33,6 @@ pub struct Devrcfile {
 impl Devrcfile {
 
     pub fn add_task(&mut self, name: String, task: Task) -> DevrcResult<()>{
-        // println!("Add task: {:?}", new);
 
         self.tasks.add_task(name, task);
 
@@ -105,7 +104,7 @@ impl Devrcfile {
             match variables.evaluate(value) {
                 Ok(value) => {
                     for (name, value) in &value {
-                        self.add_var(name, value);
+                        self.add_var(name, value)?;
                     }
                 },
                 Err(error) => return Err(error)
@@ -122,7 +121,7 @@ impl Devrcfile {
             match variables.evaluate(value) {
                 Ok(value) => {
                     for (name, value) in &value {
-                        self.add_env(name, value);
+                        self.add_env(name, value)?;
                     }
                 },
                 Err(error) => return Err(error)
@@ -137,32 +136,32 @@ impl Devrcfile {
     /// this method implement merge stategy
     pub fn add_raw_devrcfile(&mut self, file: RawDevrcfile) -> DevrcResult<()>{
 
-        self.add_config(file.config);
+        self.add_config(file.config)?;
 
         // Field value present or null
         if let Some(value) = file.after_script {
-            self.add_after_script(value);
+            self.add_after_script(value)?;
         }
 
         if let Some(value) = file.before_script {
-            self.add_before_script(value);
+            self.add_before_script(value)?;
         }
 
         if let Some(value) = file.before_task {
-            self.add_before_task(value);
+            self.add_before_task(value)?;
         }
 
         if let Some(value) = file.after_task {
-            self.add_after_task(value);
+            self.add_after_task(value)?;
         }
 
         for (name, task) in file.tasks.items {
-            self.add_task(name, task);
+            self.add_task(name, task)?;
         }
 
-        self.add_variables(file.variables);
+        self.add_variables(file.variables)?;
 
-        self.add_env_variables(file.environment);
+        self.add_env_variables(file.environment)?;
 
         Ok(())
     }
@@ -229,6 +228,7 @@ impl Devrcfile {
         Ok(())
     }
 }
+
 
 
 #[cfg(test)]

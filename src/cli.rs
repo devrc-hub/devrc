@@ -30,6 +30,10 @@ pub struct CommandLine {
     #[structopt(short = "l", long = "list", help = "List option help")]
     pub list: bool,
 
+    /// Read stdin instead of reading default devrcfile
+    #[structopt(long="stdin")]
+    pub read_stdin: bool,
+
     /** Show devrc file variables */
     #[structopt(long = "vars")]
     pub list_vars: bool,

@@ -9,8 +9,6 @@ use log::info;
 fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
 
-    // info!("devrc tasks automation");
-
     // logger::init(&LoggerOptions {
     //     level: cli_args.log_level.clone(),
     //     color: !cli_args.disable_color,
@@ -35,11 +33,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if opt.dry_run {
-
         runner.dry_run();
     }
 
-    runner.load()?;
+    if opt.read_stdin {
+        runner.load_stdin()?
+    } else {
+         runner.load()?;
+    }
 
     if opt.list {
         runner.list_tasks()?;
@@ -53,16 +54,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     else {
         runner.run(opt.rest)?;
     }
-
-    // dbg!(runner);
-
-    //let args: Vec<String> = env::args().collect::<Vec<String>>();
-    //dbg!(args);
-
-    // let config = match utils::get_config(&opt.input) {
-    //     Ok(value) => value,
-    //     _ => panic!("Invalid config file: {:?}", &opt.input),
-    // };
 
     Ok(())
 }

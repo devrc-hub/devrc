@@ -1,4 +1,4 @@
-use std::{env, fs};
+use std::{env, fs, io::Read};
 use std::path::PathBuf;
 
 use crate::{config::Config, devrcfile::Devrcfile, errors::{DevrcError, DevrcResult}, interrupt::setup_interrupt_handler, raw_devrcfile::RawDevrcfile, scope::Scope, utils::{expand_path, get_global_devrc_file, get_local_devrc_file, is_global_devrc_file_exists}};
@@ -9,6 +9,7 @@ use std::fmt::Debug;
 
 use serde::Deserialize;
 use serde_yaml;
+use std::io;
 
 
 
@@ -82,6 +83,22 @@ impl Runner {
             self.devrc.add_raw_devrcfile(devrcfile)?;
         }
 
+        Ok(())
+    }
+
+    pub fn load_stdin(&mut self) -> DevrcResult<()>{
+        let mut buffer = String::new();
+        io::stdin().read_to_string(&mut buffer)?;
+
+        match RawDevrcfile::from_str(&buffer) {
+            Ok(parsed_file) => {
+                let mut parsed_file: RawDevrcfile = parsed_file;
+                parsed_file.setup_path(PathBuf::from("/dev/stdin"));
+                self.devrc.add_raw_devrcfile(parsed_file)?;
+            },
+            Err(error) => return Err(error)
+
+        }
         Ok(())
     }
 

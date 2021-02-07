@@ -13,7 +13,7 @@ use serde::{Deserialize, Deserializer};
 use serde::de::{Visitor, MapAccess, SeqAccess};
 
 
-use crate::{config::{Config, RawConfig}, environment::RawEnvironment, errors::{DevrcError, DevrcResult}, scope::Scope, variables::RawVariables};
+use crate::{config::{Config, RawConfig}, devrcfile::Devrcfile, environment::RawEnvironment, errors::{DevrcError, DevrcResult}, scope::Scope, variables::RawVariables};
 
 pub mod params;
 pub mod examples;
@@ -116,7 +116,7 @@ impl TaskKind {
     pub fn perform(&self, name: &str, parent_scope: &Scope, params: &[String], config: &Config) -> DevrcResult<()>{
 
         println!("\n==> Running task: `{:}` ...", &name);
-
+        dbg!(&parent_scope);
         match self {
             TaskKind::Empty => {
                 return Err(DevrcError::NotImplemented)
