@@ -1,0 +1,12 @@
+variables:
+  first_name: "Alex"
+  second_name: "Alice"
+
+environment:
+  ENV_NAME: "{{ second_name }}"
+
+task_name:
+  desc: "Task description"
+  exec:
+    - echo "Hello {{ first_name }}!"
+    - echo "Hello $ENV_NAME!"

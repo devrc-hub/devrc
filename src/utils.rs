@@ -8,14 +8,14 @@ use dirs;
 use crate::errors::{DevrcError, DevrcResult};
 
 /// Current directory/project devrc file name
-const DEFAULT_DEVRC_FILE_NAME: &str = "devrcfile";
+const DEFAULT_DEVRC_FILE_NAME: &str = "Devrcfile";
 
 /// Global devrc file name
 const HOME_DEVRC_FILE_NAME: &str = ".devrc";
 
 /// User defined local devrcfile
 /// It overwrite project defined tasks and variables
-const LOCAL_DEVRC_FILE_NAME: &str = "devrcfile.local";
+const LOCAL_DEVRC_FILE_NAME: &str = "Devrcfile.local";
 
 
 pub fn get_env_dict() {

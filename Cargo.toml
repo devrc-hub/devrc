@@ -2,7 +2,7 @@
 name = "devrc"
 version = "0.0.1"
 authors = ["Alex <lispython@users.noreply.github.com>"]
-description = "Devrc is an easy tasks automation tool for developers"
+description = "devrc is an easy to use task automation tool on steroids for developers"
 edition = "2018"
 keywords = ["tasks", "automation", "makefile", "command-line"]
 categories = ["command-line-utilities",  "development-tools", "config"]
@@ -34,6 +34,7 @@ atty = "0.2.14"
 run_script = "0.6.3"
 tempfile = "3.2.0"
 ctrlc = "3.1.7"
+# ssh2 = "0.9.1"
 
 
 # standard crate data is left out
