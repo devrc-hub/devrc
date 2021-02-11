@@ -12,6 +12,14 @@ jobs:
           toolchain: stable
           override: true
           components: rustfmt
+      - name: Cache cargo directories
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - run: cargo fmt --all -- --check
 
   clippy:
@@ -27,6 +35,13 @@ jobs:
           toolchain: stable
           override: true
           components: clippy
+      - name: Cache cargo directories
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: cargo clippy --all-targets --workspace -- -D warnings
 
   compile:
@@ -48,6 +63,14 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
+
+      - name: Cache cargo directories
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build devrc
         uses: actions-rs/cargo@v1
@@ -84,6 +107,14 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
+
+      - name: Cache cargo directories
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
         run: cargo test --no-fail-fast
