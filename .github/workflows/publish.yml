@@ -1,8 +1,10 @@
 name: publish
-on:
-  push:
-    tags:
-      - "v*"
+# on:
+#   push:
+#     tags:
+#       - "v*"
+
+on: [push]
 
 jobs:
   publish:
@@ -29,7 +31,7 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{ matrix.rust }}
+          toolchain: stable
           profile: minimal
           override: true
 
@@ -39,7 +41,7 @@ jobs:
 
       - name: "Package ${{ github.ref }} ${{ matrix.os }} ${{ matrix.target }}"
         id: package
-        if: startsWith(github.ref, 'refs/tags/')
+        # if: startsWith(github.ref, 'refs/tags/')
         run: |
           echo "Create package: ${{github.ref}} ${{matrix.os}} ${{ matrix.target }}";
 
@@ -67,7 +69,7 @@ jobs:
 
       - name: Release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+        # if: startsWith(github.ref, 'refs/tags/')
         with:
           body_path: ${{ github.workflow }}-CHANGELOG.txt
           draft: true
