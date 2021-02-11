@@ -1,0 +1,160 @@
+name: Build and publish packages
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release-linux:
+    name: Release ${{ matrix.target }} package
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            cross: false
+          - target: x86_64-unknown-linux-gnu
+            cross: false
+
+    steps:
+      - name: Install musl tools and dependencies
+        run: |
+          sudo apt-get install musl-tools libssl-dev
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Cache cargo directories
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install target x86_64-unknown-linux-musl
+        run: |
+          rustup target add x86_64-unknown-linux-musl
+
+      # - name: Build binary for target ${{ matrix.target }}
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: build
+      #     args: --release --target ${{ matrix.target }}
+
+      - name: Create archive ${{ matrix.target }}
+        run: |
+          rustup target add x86_64-unknown-linux-musl
+
+          cargo build --release --target ${{ matrix.target }}
+          mv target/${{ matrix.target }}/release/devrc ./devrc
+          chmod +x devrc
+          tar -czf devrc-${{ matrix.target }}.tar.gz devrc
+
+      - name: Generate Changelog ${{ matrix.target }}
+        run: echo "# Good things have arrived 1" > ${{ github.workflow }}-CHANGELOG.txt
+
+      - name: Publish ${{ matrix.target }}
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          body_path: ${{ github.workflow }}-CHANGELOG.txt
+          draft: true
+          prerelease: true
+          files: ./devrc-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-darwin:
+    name: Release darwin package
+    runs-on: macos-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-apple-darwin
+            cross: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Cache cargo directories
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      # - name: Build binary for target ${{ matrix.target }}
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: build
+      #     args: --release --target ${{ matrix.target }}
+
+      - name: Create archive ${{ matrix.target }}
+        run: |
+
+          cargo build --release --target ${{ matrix.target }}
+          mv target/${{ matrix.target }}/release/devrc ./devrc
+          chmod +x devrc
+          tar -czf devrc-${{ matrix.target }}.tar.gz devrc
+
+      - name: Publish ${{ matrix.target }}
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          draft: true
+          prerelease: true
+          files: ./devrc-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-crate:
+    name: Release crate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Cache cargo directories
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Show package contents
+        run: |
+          cargo package --list
+
+      - name: Build package and publish the crate to crates.io
+        run: |
+          cargo publish --token=${{ secrets.CRATES_TOKEN }}
