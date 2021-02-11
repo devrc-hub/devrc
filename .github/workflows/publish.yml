@@ -1,0 +1,27 @@
+name: publish
+on: [push]
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Install cargo-workspaces
+        uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-workspaces
+
+      - name: Release
+        shell: bash
+        run: |
+          echo "Create release ${{ github.ref }}"

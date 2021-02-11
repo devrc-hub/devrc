@@ -1,0 +1,94 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: clippy
+      - run: cargo clippy --all-targets --workspace -- -D warnings
+
+  compile:
+    name: "Compile ${{ matrix.rust }} / ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    needs: [rustfmt, clippy]
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [stable, beta, nightly, 1.48.0]
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+
+      - name: Build devrc
+        uses: actions-rs/cargo@v1
+        with:
+          command: build --release
+
+      - name: Install devrc
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --debug devrc
+
+  tests:
+    needs: [compile]
+
+    name: "Test ${{ matrix.rust }} / ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+
+    continue-on-error: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [stable, beta, nightly, 1.48.0]
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+
+      - name: Run tests
+        run: cargo test --no-fail-fast
+        env:
+          RUST_BACKTRACE: full
+          CARGO_INCREMENTAL: 0
+          # RUSTDOCFLAGS: "-Cpanic=abort"
+          # RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
