@@ -1,4 +1,4 @@
-use devrc::environment::{EnvFiles, EnvFilesWrapper, RawEnvironment, FileInclude, FileRemote, StringFileInclude};
+use devrc::environment::{EnvFile, EnvFilesWrapper, RawEnvironment, FileInclude, FileRemote, StringFileInclude};
 use std::fmt::Debug;
 
 use serde::Deserialize;
@@ -47,27 +47,27 @@ env_file:
 
     let container: Container = serde_yaml::from_str::<Container>(content).unwrap();
 
-    if let EnvFiles::List(val) = container.files.0 {
-        if let EnvFiles::Simple(variant) = &val[0] {
-            assert_eq!(variant.0, "./.env".to_string());
+    if let EnvFile::List(val) = container.files.0 {
+        if let EnvFile::Simple(variant) = &val[0] {
+            assert_eq!(variant.to_str().unwrap(), "./.env".to_string());
         } else {
             assert!(false);
         }
 
-        if let EnvFiles::Simple(variant) = &val[1] {
-            assert_eq!(variant.0, "/path/to/file_1".to_string());
+        if let EnvFile::Simple(variant) = &val[1] {
+            assert_eq!(variant.to_str().unwrap(), "/path/to/file_1".to_string());
         } else {
             assert!(false);
         }
 
-        if let EnvFiles::Remote(variant) = &val[2] {
-            assert_eq!(variant.remote, "http://example.com".to_string());
+        if let EnvFile::Remote(FileRemote { remote }) = &val[2] {
+            assert_eq!(remote.to_string(), "http://example.com".to_string());
         } else {
             assert!(false);
         }
 
-        if let EnvFiles::File(variant) = &val[3] {
-            assert_eq!(variant.file, "/path/to/file_2".to_string());
+        if let EnvFile::File(FileInclude { file, ignore_errors }) = &val[3] {
+            assert_eq!(file.to_str().unwrap(), "/path/to/file_2".to_string());
         } else {
             assert!(false);
         }
@@ -84,10 +84,10 @@ fn test_include_remote(){
     let content: &str = r#"
 remote: http://example.com
 "#;
-    let container = serde_yaml::from_str::<EnvFiles>(content).unwrap();
+    let container = serde_yaml::from_str::<EnvFile>(content).unwrap();
 
-    if let EnvFiles::Remote(variant) = &container {
-        assert_eq!(variant.remote, "http://example.com".to_string());
+    if let EnvFile::Remote(FileRemote { remote }) = &container {
+        assert_eq!(remote.to_owned(), "http://example.com".to_string());
     } else {
         assert!(false);
     }
@@ -100,10 +100,10 @@ fn test_include_file(){
     let content: &str = r#"
 file: /path/to/file_2
 "#;
-    let container = serde_yaml::from_str::<EnvFiles>(content).unwrap();
+    let container = serde_yaml::from_str::<EnvFile>(content).unwrap();
 
-    if let EnvFiles::File(variant) = &container {
-        assert_eq!(variant.file, "/path/to/file_2".to_string());
+    if let EnvFile::File(FileInclude { file, ignore_errors }) = &container {
+        assert_eq!(file.to_str().unwrap(), "/path/to/file_2".to_string());
     } else {
         assert!(false);
     }
@@ -116,10 +116,10 @@ fn test_include_simple_file(){
     let content: &str = r#"
 ./.env
 "#;
-    let container = serde_yaml::from_str::<EnvFiles>(content).unwrap();
+    let container = serde_yaml::from_str::<EnvFile>(content).unwrap();
 
-    if let EnvFiles::Simple(variant) = container {
-        assert_eq!(variant.0, "./.env".to_string());
+    if let EnvFile::Simple(variant) = container {
+        assert_eq!(variant.to_str().unwrap(), "./.env".to_string());
     } else {
         assert!(false);
     }
