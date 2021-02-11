@@ -234,13 +234,15 @@ More complex examples can be found in [examples](https://github.com/devrc-hub/de
 
 ### Reserved keywords
 
-`devrc_config` - [global options](#configuration) such as `shell`, `log_level`, `current_directory`;
-`variables` - global set of variables that are used by template engine;
-`environment` - global set of environment variables that are passed to children process's environment;
-`before_script` - is a task that are executed before first task;
-`after_script` - is a task that are executed after last task;
-`before_task` - is a task that are executed before each task;
-`after_task` - is a task that are executed after each task;
+There are few reserved keywords that can't be used as task name:
+
+* `devrc_config` - [global options](#configuration) such as `shell`, `log_level`, `current_directory`;
+* `variables` - global set of variables that are used by template engine;
+* `environment` - global set of environment variables that are passed to children process's environment;
+* `before_script` - is a task that are executed before first task;
+* `after_script` - is a task that are executed after last task;
+* `before_task` - is a task that are executed before each task;
+* `after_task` - is a task that are executed after each task;
 
 
 ### Configuration
