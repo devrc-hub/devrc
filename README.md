@@ -48,6 +48,20 @@ devrc task_name
 
 For more details look into [usage section](#usage) or [examples](https://github.com/devrc-hub/devrc/blob/master/examples/).
 
+### Features
+
+Lets start with an overview of features that exist in devrc:
+
+  * [x] All tasks can be listed from the command line with documentation
+  * [x] Template engine and variables interpolation are supported
+  * [x] [Environment variables](#environment-variables) customization
+  * [x] Command line completion scripts
+  * [x] devrc supports [dotenv files](#dotenv-files)
+  * [x] Writing task commands in different languages
+  * [ ] Task parameters and user input
+  * [ ] Remote command execution
+  * [x] Global and local defined variables and environment variables
+
 
 ### Why YAML is used?
 
@@ -62,25 +76,10 @@ What are the benefits of using YAML for this purpose and why it's choosen:
 5. Good parsers for YAML already exist and I don't need to waste time for implementing and testing a self-written parser.
 
 
-
-### Features
-
-Lets start with an overview of features that exist in devrc:
-
-  * [x] All tasks can be listed from the command line
-  * [x] Template engine and variables interpolation are supported
-  * [x] [Environment variables](#environment-variables) customization
-  * [x] Command line completion scripts
-  * [x] devrc supports [dotenv files](#dotenv-files)
-  * [x] Writing task commands in different languages
-
-
-
-
 ## Table of contents
 
 * [Overview](#overview)
-    * [Why YAML is used?](#why-is-yaml-used)
+    * [Why YAML is used?](#why-yaml-is-used)
     * [Quick introduction](#quick-introduction)
     * [Features](#features)
 * [Installation](#installation)
@@ -90,12 +89,16 @@ Lets start with an overview of features that exist in devrc:
 
 * [Usage](#usage)
     * [Task definition](#task-definition)
+    * [Reserved keywords](#reserved-keywords)
     * [Template engine](#template-engine)
     * [Execution and compututation rules](#execution-and-computation-rules)
     * [Variables](#variables)
     * [Environment varibles](#environment-variables)
     * [Dotenv files](#dotenv-files)
     * [Writing task in different languages](#writing-task-commands-in-different-languages)
+    * [Task parameters and user input](#task-parameters-and-user-input)
+    * [Remote command execution](#remote-command-execution)
+
 
 * [Contributing, feedback and suggestions](#contributing)
 
@@ -228,14 +231,31 @@ Pay attention that `{{ first_name }}` are replaced by `Alex` by template engine 
 
 More complex examples can be found in [examples](https://github.com/devrc-hub/devrc/blob/master/examples/) directory.
 
+
+### Reserved keywords
+
+`devrc_config` - [global options](#configuration) such as `shell`, `log_level`, `current_directory`;
+`variables` - global set of variables that are used by template engine;
+`environment` - global set of environment variables that are passed to children process's environment;
+`before_script` - is a task that are executed before first task;
+`after_script` - is a task that are executed after last task;
+`before_task` - is a task that are executed before each task;
+`after_task` - is a task that are executed after each task;
+
+
+### Configuration
+
 ### Variables
 
 Variables are used by template engine to compute commands, another variables (global or local) or environment variables.
+If there exists global and local variables with the same name, then local will overwrite it's value.
 
 ### Environment variables
 
-### Dotenv files support
+Environment variables that are passed to children process's environment. Environment variables can be defined globally or locally in task.
+If there exists global and local environment variables with the same name, then local will overwrite it's value.
 
+### Dotenv files support
 
 ### Execution and computation rules
 
@@ -256,6 +276,70 @@ environment:
 
 
 ### Template engine
+
+### Task parameters and user input
+
+Task may have parameters or user input.
+
+_Notice:_ This feature has't been implemented yet.
+
+Here task has a required parameter `name`, an optional parameter `other` with default value of `Alice` and host parameter `host` which is assigned after user input:
+
+```yaml
+
+task_name:
+  exec:
+    - echo "Hello {{ name }} and {{ other}}"
+    - curl -v {{ host }}
+
+  params:
+    name: required
+    other: "Alice"
+    host:
+      type: input
+      default: host1
+
+```
+
+```bash
+
+devrc task_name name="Alex"
+
+Please, enter a value for parameter `host`:
+```
+
+
+### Remote command execution
+
+It's also possible to execute task on remote hosts.
+
+_Notice:_ This feature has't been implemented yet.
+
+```yaml
+
+task_name:
+  exec: echo "Hello {{ name }} from $(hostname)"
+  variables:
+    name: "Alex"
+    username: root
+
+  remote:
+    - "{{ username }}@hostname1:22"
+    - root@hostname2:22
+```
+
+```yaml
+task_name:
+  exec: echo "Hello {{ name }} from $(hostname)"
+  variables:
+    name: "Alex"
+    username: root
+
+  remote:
+    hosts:
+      - "{{ username }}@hostname1:22"
+      - hostname2
+```
 
 ### Writing task commands in different languages
 
