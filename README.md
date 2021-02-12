@@ -6,8 +6,9 @@
 [![Crates.io](https://img.shields.io/crates/v/devrc)](https://crates.io/crates/devrc)
 [![Crates.io](https://img.shields.io/crates/d/devrc)](https://crates.io/crates/devrc)
 [![CI](https://github.com/devrc-hub/devrc/workflows/CI/badge.svg?branch=master)](https://github.com/devrc-hub/devrc/actions)
-![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/devrc-hub/devrc/CI/master)
+[![Security audit](https://github.com/devrc-hub/devrc/workflows/Security%20audit/badge.svg?branch=master)](https://github.com/devrc-hub/devrc/actions)
 [![GitHub](https://img.shields.io/github/license/devrc-hub/devrc)](https://github.com/devrc-hub/devrc/blob/master/LICENSE)
+![Lines Of Code](https://tokei.rs/b1/github/devrc-hub/devrc?category=code)
 
 
 ##  Overview
@@ -299,7 +300,7 @@ task_name:
     other: "Alice"
     host:
       type: input
-      default: host1
+      default: https://github.com
 
 ```
 
@@ -377,7 +378,7 @@ Hello from node
 * Bash or makefile :-)
 * [just](https://github.com/casey/just) - is a handy way to save and run project-specific commands. Commands are stored in a file called justfile with syntax inspired by `make`.
 * [robo](https://github.com/tj/robo) - Simple YAML-based task runner written in Go. It looks abandoned.
-* [go-task](https://github.com/go-task/task) - simpler Make alternative written in Go. It use Go's template engine which syntax makes me cry.
+* [go-task](https://github.com/go-task/task) - simpler Make alternative written in Go. It uses Go's template engine which syntax makes me cry.
 
 
 ## Contributing
