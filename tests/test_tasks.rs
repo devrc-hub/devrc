@@ -74,9 +74,6 @@ fn test_extented_task_syntax_2(){
 task_3:
   exec:
     - echo "Task 3 first command"
-    - exec": echo 'Task 3 second command'
-      register: output
-
     - echo "Output"
 "#;
 
@@ -92,6 +89,7 @@ fn test_extented_task_syntax_with_deps(){
 
     let content: &str = r#"
 task_with_deps:
+  exec: echo "Hello world"
   deps:
     - task1
     - task2

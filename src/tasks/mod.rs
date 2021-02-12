@@ -1,10 +1,12 @@
 use std::marker::PhantomData;
 use std::fmt;
 
-use serde::{self, export::Option,
-            private::de::{Content,
-                          ContentRefDeserializer,
-                          UntaggedUnitVisitor}};
+use serde::{self, // export::Option,
+            // private::de::{Content,
+            //               ContentRefDeserializer,
+            //               UntaggedUnitVisitor}
+
+};
 use indexmap::IndexMap;
 
 
@@ -68,7 +70,8 @@ pub struct Include {
 
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
 pub enum TaskKind {
     Empty,
     Command(String),
@@ -119,8 +122,9 @@ impl TaskKind {
             TaskKind::Empty => {
                 return Err(DevrcError::NotImplemented)
             },
-            TaskKind::Command(_) => {
-                return Err(DevrcError::NotImplemented);
+            TaskKind::Command(value) => {
+                let complex_command = ComplexCommand::from(value);
+                complex_command.perform(name, parent_scope, params, &config)?;
             },
             TaskKind::ComplexCommand(value) => {
                 value.perform(name, parent_scope, params, &config)?;
@@ -204,8 +208,6 @@ impl<'de> Deserialize<'de> for Tasks {
             {
                 let mut elements: IndexMap<TaskName, Task> = IndexMap::new();
 
-                // let tasks = Tasks::default();
-
                 while let Some((key, value)) = match access.next_entry(){
                     Ok(value) => value,
                     Err(error) => return Err(error)
@@ -231,65 +233,65 @@ impl<'de> Deserialize<'de> for Tasks {
     }
 }
 
-macro_rules! task_value_result_map {
+// macro_rules! task_value_result_map {
 
-    ($var:ident, $from:ty => $to:expr, $value:ident, $return:expr) => {
+//     ($var:ident, $from:ty => $to:expr, $value:ident, $return:expr) => {
 
-        if let Ok($value) = Result::map(
-            <$from as Deserialize>::deserialize(
-                ContentRefDeserializer::<D::Error>::new(&$var)
-            ),
-            $to
-        ){
-            let value = match $value {
-                TaskKind::Command(inner) => {
-                    TaskKind::ComplexCommand(ComplexCommand::from(inner))
-                },
-                value => {
-                    value
-                }
-            };
+//         if let Ok($value) = Result::map(
+//             <$from as Deserialize>::deserialize(
+//                 ContentRefDeserializer::<D::Error>::new(&$var)
+//             ),
+//             $to
+//         ){
+//             let value = match $value {
+//                 TaskKind::Command(inner) => {
+//                     TaskKind::ComplexCommand(ComplexCommand::from(inner))
+//                 },
+//                 value => {
+//                     value
+//                 }
+//             };
 
-            return Ok(value);
-        }
-    };
-    ($var:ident, $from:ty => $to:expr) => {
-        task_value_result_map!{$var, $from => $to, value, value}
-    }
-}
+//             return Ok(value);
+//         }
+//     };
+//     ($var:ident, $from:ty => $to:expr) => {
+//         task_value_result_map!{$var, $from => $to, value, value}
+//     }
+// }
 
-impl<'de> Deserialize<'de> for TaskKind {
+// impl<'de> Deserialize<'de> for TaskKind {
 
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de> {
+//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+//     where
+//         D: Deserializer<'de> {
 
-        let content = match <Content as Deserialize>::deserialize(deserializer){
-            Ok(val) => val,
-            Err(error) => {
-                return Err(error);
-            }
+//         let content = match <Content as Deserialize>::deserialize(deserializer){
+//             Ok(val) => val,
+//             Err(error) => {
+//                 return Err(error);
+//             }
 
-        };
+//         };
 
-        if let Ok(value) = match Deserializer::deserialize_any(
-            ContentRefDeserializer::<D::Error>::new(&content),
-            UntaggedUnitVisitor::new("TaskValue", "Empty")){
-            Ok(value) => Ok(TaskKind::Empty),
-            Err(error) => Err(error)
-        }{
-            return Ok(value);
-        }
+//         if let Ok(value) = match Deserializer::deserialize_any(
+//             ContentRefDeserializer::<D::Error>::new(&content),
+//             UntaggedUnitVisitor::new("TaskValue", "Empty")){
+//             Ok(value) => Ok(TaskKind::Empty),
+//             Err(error) => Err(error)
+//         }{
+//             return Ok(value);
+//         }
 
-        task_value_result_map!{content, String => TaskKind::Command, value, value};
-        task_value_result_map!{content, Include => TaskKind::Include, value, value};
-        task_value_result_map!{content, ComplexCommand => TaskKind::ComplexCommand, value, value};
-        task_value_result_map!{content, Commands => TaskKind::Commands, value, value};
-        // task_value_result_map!{content, Vec<TaskKind> => TaskKind::Commands, value, value};
+//         task_value_result_map!{content, String => TaskKind::Command, value, value};
+//         task_value_result_map!{content, Include => TaskKind::Include, value, value};
+//         task_value_result_map!{content, ComplexCommand => TaskKind::ComplexCommand, value, value};
+//         task_value_result_map!{content, Commands => TaskKind::Commands, value, value};
+//         // task_value_result_map!{content, Vec<TaskKind> => TaskKind::Commands, value, value};
 
-        Ok(TaskKind::Empty)
-    }
-}
+//         Ok(TaskKind::Empty)
+//     }
+// }
 
 impl<'de> Deserialize<'de> for Commands{
 

@@ -87,12 +87,12 @@ impl ComplexCommand {
     }
 }
 
-impl From<String> for ComplexCommand {
+impl<T> From<T> for ComplexCommand where T: ToString {
 
-    fn from(v: String) -> ComplexCommand {
+    fn from(v: T) -> ComplexCommand {
         ComplexCommand{
             name: None,
-            exec: ExecKind::String(v),
+            exec: ExecKind::String(v.to_string()),
             desc: None,
             examples: None,
             variables: RawVariables::default(),
