@@ -1,36 +1,41 @@
-use std::marker::PhantomData;
 use std::fmt;
+use std::marker::PhantomData;
 
-use serde::{self, // export::Option,
-            // private::de::{Content,
-            //               ContentRefDeserializer,
-            //               UntaggedUnitVisitor}
-
-};
 use indexmap::IndexMap;
-
+use serde::{
+    self, // export::Option,
+          // private::de::{Content,
+          //               ContentRefDeserializer,
+          //               UntaggedUnitVisitor}
+};
 
 use serde::{Deserialize, Deserializer};
 
-use serde::de::{Visitor, MapAccess, SeqAccess};
+use serde::de::{MapAccess, SeqAccess, Visitor};
 
+use crate::{
+    config::{Config, RawConfig},
+    devrcfile::Devrcfile,
+    environment::RawEnvironment,
+    errors::{DevrcError, DevrcResult},
+    scope::Scope,
+    variables::RawVariables,
+};
 
-use crate::{config::{Config, RawConfig}, devrcfile::Devrcfile, environment::RawEnvironment, errors::{DevrcError, DevrcResult}, scope::Scope, variables::RawVariables};
-
-pub mod params;
+pub mod complex;
 pub mod examples;
 pub mod exec;
-pub mod complex;
+pub mod params;
 
-pub use crate::tasks::params::Params;
 pub use crate::tasks::examples::Examples;
 pub use crate::tasks::exec::ExecKind;
+pub use crate::tasks::params::Params;
 
 use self::complex::ComplexCommand;
 
 #[derive(Debug, Clone, Default)]
-pub struct Commands{
-    pub items: Vec<TaskKind>
+pub struct Commands {
+    pub items: Vec<TaskKind>,
 }
 
 impl Commands {
@@ -40,35 +45,30 @@ impl Commands {
     }
 }
 
-
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct FileInclude {
-    pub file: String
+    pub file: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct RemoteInclude {
-    pub remote: String
+    pub remote: String,
 }
-
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
-pub enum IncludeKind{
+pub enum IncludeKind {
     Empty,
     Simple(String),
     File(FileInclude),
     Remote(RemoteInclude),
-    List(Vec<IncludeKind>)
+    List(Vec<IncludeKind>),
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Include {
-    include: IncludeKind
+    include: IncludeKind,
 }
-
-
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
@@ -77,33 +77,25 @@ pub enum TaskKind {
     Command(String),
     ComplexCommand(ComplexCommand),
     Commands(Commands),
-    Include(Include)
+    Include(Include),
 }
 
 impl Default for TaskKind {
-    fn default() -> Self { TaskKind::Empty }
+    fn default() -> Self {
+        TaskKind::Empty
+    }
 }
 
 impl TaskKind {
-
     pub fn format_help(&self) -> DevrcResult<&str> {
         match self {
-            TaskKind::Empty => {
-                Ok("doc string")
-            },
+            TaskKind::Empty => Ok("doc string"),
             TaskKind::Command(command) => {
-                 return Err(DevrcError::NotImplemented);
+                return Err(DevrcError::NotImplemented);
             }
-            TaskKind::ComplexCommand(command) => {
-                Ok(command.format_help())
-
-            },
-            TaskKind::Commands(_) => {
-                Ok("doc string")
-            },
-            TaskKind::Include(_) => {
-                Ok("doc string")
-            },
+            TaskKind::ComplexCommand(command) => Ok(command.format_help()),
+            TaskKind::Commands(_) => Ok("doc string"),
+            TaskKind::Include(_) => Ok("doc string"),
         }
     }
 
@@ -116,25 +108,27 @@ impl TaskKind {
         // }
     }
 
-    pub fn perform(&self, name: &str, parent_scope: &Scope, params: &[String], config: &Config) -> DevrcResult<()>{
+    pub fn perform(
+        &self,
+        name: &str,
+        parent_scope: &Scope,
+        params: &[String],
+        config: &Config,
+    ) -> DevrcResult<()> {
         println!("\n==> Running task: `{:}` ...", &name);
         match self {
-            TaskKind::Empty => {
-                return Err(DevrcError::NotImplemented)
-            },
+            TaskKind::Empty => return Err(DevrcError::NotImplemented),
             TaskKind::Command(value) => {
                 let complex_command = ComplexCommand::from(value);
                 complex_command.perform(name, parent_scope, params, &config)?;
-            },
+            }
             TaskKind::ComplexCommand(value) => {
                 value.perform(name, parent_scope, params, &config)?;
-            },
-            TaskKind::Commands(value) => {
-                return Err(DevrcError::NotImplemented)
-            },
+            }
+            TaskKind::Commands(value) => return Err(DevrcError::NotImplemented),
             TaskKind::Include(value) => {
                 dbg!(value);
-                return Err(DevrcError::NotImplemented)
+                return Err(DevrcError::NotImplemented);
             }
         }
 
@@ -148,7 +142,6 @@ impl TaskKind {
 pub type Task = TaskKind;
 pub type TaskName = String;
 
-
 #[derive(Debug, Clone, Default)]
 pub struct Tasks {
     pub items: IndexMap<TaskName, Task>,
@@ -157,48 +150,35 @@ pub struct Tasks {
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct TasksFiles {}
 
-
 impl Tasks {
-
     pub fn add_task(&mut self, name: TaskName, task: Task) {
         self.items.insert(name, task);
     }
 
     pub fn find_task(&self, name: &str) -> DevrcResult<Task> {
-
         let task = self.items.get(name);
 
         match task {
-            Some(value) => {
-                Ok(value.clone())
-            },
-            None => {
-                Err(DevrcError::TaskNotFound)
-            }
+            Some(value) => Ok(value.clone()),
+            None => Err(DevrcError::TaskNotFound),
         }
     }
 }
 
-
 impl<'de> Deserialize<'de> for Tasks {
-
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de> {
-
+        D: Deserializer<'de>,
+    {
         struct StructVisitor<'de> {
             marker: PhantomData<Tasks>,
             lifetime: PhantomData<&'de ()>,
         }
 
-        impl<'de> Visitor<'de> for StructVisitor<'de>{
-
+        impl<'de> Visitor<'de> for StructVisitor<'de> {
             type Value = Tasks;
 
-            fn expecting(
-                &self,
-                formatter: &mut fmt::Formatter,
-            ) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 fmt::Formatter::write_str(formatter, "struct Tasks")
             }
 
@@ -208,19 +188,15 @@ impl<'de> Deserialize<'de> for Tasks {
             {
                 let mut elements: IndexMap<TaskName, Task> = IndexMap::new();
 
-                while let Some((key, value)) = match access.next_entry(){
+                while let Some((key, value)) = match access.next_entry() {
                     Ok(value) => value,
-                    Err(error) => return Err(error)
-                }
-                {
+                    Err(error) => return Err(error),
+                } {
                     // TODO: process key with params
                     elements.insert(key, value);
                 }
 
-                Ok(Tasks {
-                    items: elements
-                })
-
+                Ok(Tasks { items: elements })
             }
         }
 
@@ -228,8 +204,9 @@ impl<'de> Deserialize<'de> for Tasks {
             deserializer,
             StructVisitor {
                 marker: PhantomData::<Tasks>,
-                lifetime: PhantomData
-            })
+                lifetime: PhantomData,
+            },
+        )
     }
 }
 
@@ -293,23 +270,20 @@ impl<'de> Deserialize<'de> for Tasks {
 //     }
 // }
 
-impl<'de> Deserialize<'de> for Commands{
-
+impl<'de> Deserialize<'de> for Commands {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de> {
-
+        D: Deserializer<'de>,
+    {
         struct StructVisitor<T>(PhantomData<T>);
 
         impl<'de, T> Visitor<'de> for StructVisitor<T>
-        where T: Deserialize<'de>
+        where
+            T: Deserialize<'de>,
         {
             type Value = Commands;
 
-            fn expecting(
-                &self,
-                formatter: &mut fmt::Formatter,
-            ) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 fmt::Formatter::write_str(formatter, "struct Tasks")
             }
 
@@ -317,37 +291,31 @@ impl<'de> Deserialize<'de> for Commands{
             where
                 A: SeqAccess<'de>,
             {
-
                 let mut commands = Commands::default();
 
-                while let Some(value) = match seq.next_element(){
+                while let Some(value) = match seq.next_element() {
                     Ok(value) => value,
-                    Err(error) => return Err(error)
-                }{
+                    Err(error) => return Err(error),
+                } {
                     commands.push(value);
                 }
 
                 Ok(commands)
             }
-
         }
 
         let visitor = StructVisitor(PhantomData::<Commands>);
 
         deserializer.deserialize_seq(visitor)
 
-
         // Ok(Commands::default())
     }
 }
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_task_execute() {
-
-    }
+    fn test_task_execute() {}
 }

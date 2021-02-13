@@ -17,7 +17,6 @@ const HOME_DEVRC_FILE_NAME: &str = ".devrc";
 /// It overwrite project defined tasks and variables
 const LOCAL_DEVRC_FILE_NAME: &str = "Devrcfile.local";
 
-
 pub fn get_env_dict() {
     // We will iterate through the references to the element returned by
     // env::vars();
@@ -44,11 +43,9 @@ pub fn get_absolute_path(file: &PathBuf, base: Option<&PathBuf>) -> DevrcResult<
         file.clone()
     };
 
-    match fs::canonicalize(file){
-        Ok(value) => {
-            Ok(value)
-        },
-        Err(error) => Err(DevrcError::IoError(error))
+    match fs::canonicalize(file) {
+        Ok(value) => Ok(value),
+        Err(error) => Err(DevrcError::IoError(error)),
     }
 }
 
@@ -58,9 +55,7 @@ pub fn get_devrc_file_name() -> String {
             debug!("DERVC_FILE environment variable exists: {:?}", val);
             val.into()
         }
-        _ => {
-            DEFAULT_DEVRC_FILE_NAME.into()
-        }
+        _ => DEFAULT_DEVRC_FILE_NAME.into(),
     }
 }
 

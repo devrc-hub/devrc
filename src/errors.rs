@@ -1,15 +1,16 @@
-
-use std::{fmt, io::{self, Error as IoError}};
-use std::fmt::{Display, Formatter};
+use serde_yaml::Error as SerdeYamlError;
 use std::error::Error as StdError;
-use serde_yaml::{Error as SerdeYamlError};
+use std::fmt::{Display, Formatter};
+use std::{
+    fmt,
+    io::{self, Error as IoError},
+};
 
-use tera::{ErrorKind as TeraErrorKing, Error as TeraError};
+use tera::{Error as TeraError, ErrorKind as TeraErrorKing};
 
 use dotenv::{self, Error as DotenvError};
 
 pub type DevrcResult<T> = Result<T, DevrcError>;
-
 
 #[derive(Debug)]
 pub enum DevrcError {
@@ -25,17 +26,12 @@ pub enum DevrcError {
     TaskNotFound,
     NotImplemented,
     Signal,
-    Code {
-        code: i32
-    },
+    Code { code: i32 },
     RuntimeError,
 }
 
-
 impl Display for DevrcError {
-
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-
         write!(f, "{}: \n", "devrc error");
 
         match self {
@@ -44,33 +40,27 @@ impl Display for DevrcError {
                 match TeraError::source(&terra_error) {
                     Some(value) => {
                         write!(f, "{:}", &value);
-                    },
+                    }
                     value => {
                         println!("another value");
                     }
                 }
                 // write!(f, "{}: ", terra_error);
-            },
-            DevrcError::Code {code} => {
-                write!(f, "Recipe failed with code {:}", code);
-            },
-            _ => {
-
             }
+            DevrcError::Code { code } => {
+                write!(f, "Recipe failed with code {:}", code);
+            }
+            _ => {}
         }
         Ok(())
     }
-
 }
 
-
 impl From<DotenvError> for DevrcError {
-
     fn from(error: DotenvError) -> DevrcError {
         DevrcError::Dotenv(error)
     }
 }
-
 
 impl From<tera::Error> for DevrcError {
     fn from(error: tera::Error) -> DevrcError {
@@ -84,7 +74,4 @@ impl From<IoError> for DevrcError {
     }
 }
 
-
-impl StdError for DevrcError {
-
-}
+impl StdError for DevrcError {}

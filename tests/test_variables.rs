@@ -1,7 +1,6 @@
 // use devrc::variables::*;
 // use indexmap::indexmap;
 
-
 // #[test]
 // fn test_environment_des_variant_1(){
 

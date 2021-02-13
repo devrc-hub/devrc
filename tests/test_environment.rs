@@ -1,4 +1,6 @@
-use devrc::environment::{EnvFile, EnvFilesWrapper, RawEnvironment, FileInclude, FileRemote, StringFileInclude};
+use devrc::environment::{
+    EnvFile, EnvFilesWrapper, FileInclude, FileRemote, RawEnvironment, StringFileInclude,
+};
 use std::fmt::Debug;
 
 use serde::Deserialize;
@@ -7,13 +9,13 @@ use serde_yaml;
 #[macro_use]
 use indexmap::indexmap;
 
-
 #[test]
 fn test_environment_des_variant_1() {
     let content = r#"ENV_VAR_1: env_var_1_value
 "#;
 
-    let env: RawEnvironment<String> = serde_yaml::from_str::<RawEnvironment<String>>(content).unwrap();
+    let env: RawEnvironment<String> =
+        serde_yaml::from_str::<RawEnvironment<String>>(content).unwrap();
 
     assert_eq!(
         env,
@@ -25,17 +27,13 @@ fn test_environment_des_variant_1() {
     );
 }
 
-
-
 #[test]
-fn test_include_environment_files(){
-
+fn test_include_environment_files() {
     #[derive(Debug, Deserialize, Clone)]
     pub struct Container {
         #[serde(rename(deserialize = "env_file"))]
         files: EnvFilesWrapper,
     }
-
 
     let content: &str = r#"
 env_file:
@@ -66,21 +64,22 @@ env_file:
             assert!(false);
         }
 
-        if let EnvFile::File(FileInclude { file, ignore_errors }) = &val[3] {
+        if let EnvFile::File(FileInclude {
+            file,
+            ignore_errors,
+        }) = &val[3]
+        {
             assert_eq!(file.to_str().unwrap(), "/path/to/file_2".to_string());
         } else {
             assert!(false);
         }
-
     } else {
         assert!(false);
     }
-
 }
 
 #[test]
-fn test_include_remote(){
-
+fn test_include_remote() {
     let content: &str = r#"
 remote: http://example.com
 "#;
@@ -93,26 +92,26 @@ remote: http://example.com
     }
 }
 
-
 #[test]
-fn test_include_file(){
-
+fn test_include_file() {
     let content: &str = r#"
 file: /path/to/file_2
 "#;
     let container = serde_yaml::from_str::<EnvFile>(content).unwrap();
 
-    if let EnvFile::File(FileInclude { file, ignore_errors }) = &container {
+    if let EnvFile::File(FileInclude {
+        file,
+        ignore_errors,
+    }) = &container
+    {
         assert_eq!(file.to_str().unwrap(), "/path/to/file_2".to_string());
     } else {
         assert!(false);
     }
-
 }
 
 #[test]
-fn test_include_simple_file(){
-
+fn test_include_simple_file() {
     let content: &str = r#"
 ./.env
 "#;
@@ -123,5 +122,4 @@ fn test_include_simple_file(){
     } else {
         assert!(false);
     }
-
 }

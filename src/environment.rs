@@ -1,12 +1,20 @@
-use std::{fs::File, path::{Path, PathBuf}};
+use std::{
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 use serde::Deserialize;
 
 use dotenv;
 
-use crate::{errors::{DevrcError, DevrcResult}, evaluate::Evaluatable, scope::Scope, template::render_string, utils::get_absolute_path, variables::ValueKind};
-
-
+use crate::{
+    errors::{DevrcError, DevrcResult},
+    evaluate::Evaluatable,
+    scope::Scope,
+    template::render_string,
+    utils::get_absolute_path,
+    variables::ValueKind,
+};
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct RawEnvironment<T> {
@@ -21,7 +29,7 @@ impl<T> Default for RawEnvironment<T> {
     }
 }
 
-fn get_default_skip_on_error()-> bool{
+fn get_default_skip_on_error() -> bool {
     false
 }
 
@@ -29,20 +37,17 @@ fn get_default_skip_on_error()-> bool{
 pub struct FileInclude {
     pub file: PathBuf,
 
-
-    #[serde(default="get_default_skip_on_error")]
-    pub ignore_errors: bool
+    #[serde(default = "get_default_skip_on_error")]
+    pub ignore_errors: bool,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct FileRemote {
-    pub remote: String
+    pub remote: String,
 }
-
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct StringFileInclude(pub String);
-
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
@@ -51,43 +56,45 @@ pub enum EnvFile {
     Simple(PathBuf),
     File(FileInclude),
     Remote(FileRemote),
-    List(Vec<EnvFile>)
+    List(Vec<EnvFile>),
 }
 
 impl EnvFile {
-    pub fn load(&self, base_path: Option<&PathBuf>) -> DevrcResult<indexmap::IndexMap<String, String>>{
-
+    pub fn load(
+        &self,
+        base_path: Option<&PathBuf>,
+    ) -> DevrcResult<indexmap::IndexMap<String, String>> {
         let mut environment: indexmap::IndexMap<String, String> = indexmap::IndexMap::new();
 
         match self {
-            EnvFile::Empty => {},
+            EnvFile::Empty => {}
             EnvFile::Simple(path) => {
                 let file = get_absolute_path(&path, base_path)?;
                 self.get_from_file(file, &mut environment)?;
-            },
-            EnvFile::File(FileInclude { file, ignore_errors}) => {
-
-                match get_absolute_path(&file, base_path) {
-                    Ok(file) => {
-                        match self.get_from_file(file, &mut environment){
-                            Err(error) => {
-                                if !ignore_errors {
-                                    return Err(error)
-                                }
-                            },
-                            _ => {}
-                        }
-                    }
+            }
+            EnvFile::File(FileInclude {
+                file,
+                ignore_errors,
+            }) => match get_absolute_path(&file, base_path) {
+                Ok(file) => match self.get_from_file(file, &mut environment) {
                     Err(error) => {
                         if !ignore_errors {
-                            return Err(error)
+                            return Err(error);
                         }
+                    }
+                    _ => {}
+                },
+                Err(error) => {
+                    if !ignore_errors {
+                        return Err(error);
                     }
                 }
             },
-            EnvFile::Remote(_) => {todo!()},
+            EnvFile::Remote(_) => {
+                todo!()
+            }
             EnvFile::List(items) => {
-                for item in items.into_iter(){
+                for item in items.into_iter() {
                     for (key, value) in item.load(base_path)? {
                         environment.insert(key, value);
                     }
@@ -98,12 +105,16 @@ impl EnvFile {
         Ok(environment)
     }
 
-    pub fn get_from_file(&self, file: PathBuf, environment: &mut indexmap::IndexMap<String, String>) -> DevrcResult<()>{
-        for item in dotenv::from_path_iter(file)?{
+    pub fn get_from_file(
+        &self,
+        file: PathBuf,
+        environment: &mut indexmap::IndexMap<String, String>,
+    ) -> DevrcResult<()> {
+        for item in dotenv::from_path_iter(file)? {
             match item {
                 Ok((key, value)) => {
                     environment.insert(key, value);
-                },
+                }
                 Err(error) => {
                     return Err(DevrcError::Dotenv(error));
                 }
@@ -116,14 +127,13 @@ impl EnvFile {
 #[derive(Debug, Deserialize, Clone)]
 pub struct EnvFilesWrapper(pub EnvFile);
 
-
 pub type Environment<T> = indexmap::IndexMap<T, String>;
 
-
 impl<T> RawEnvironment<T>
-where T: Evaluatable{
-    pub fn evaluate(&self, parent_scope: &Scope) -> DevrcResult<Environment<String>>
-    {
+where
+    T: Evaluatable,
+{
+    pub fn evaluate(&self, parent_scope: &Scope) -> DevrcResult<Environment<String>> {
         let mut local_scope = parent_scope.clone();
         let mut vars = Environment::default();
         for (key, value) in &self.vars {
@@ -131,10 +141,9 @@ where T: Evaluatable{
                 Ok(value) => {
                     // local_scope.insert_var(&key, &value);
                     vars.insert(key.clone(), value)
-                },
-                Err(error) => return Err(error)
+                }
+                Err(error) => return Err(error),
             };
-
         }
         Ok(vars)
     }
@@ -143,7 +152,6 @@ where T: Evaluatable{
         self.vars.insert(name.to_owned(), value);
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -154,7 +162,7 @@ mod tests {
 
     use super::*;
 
-    use tera::{Error as TeraError};
+    use tera::Error as TeraError;
 
     #[test]
     fn test_string_evaluation() {
@@ -166,11 +174,13 @@ mod tests {
 
         assert_eq!(variables.evaluate(&scope).unwrap(), {
             let mut control = Environment::default();
-            control.insert("key1".to_owned(), "key1 value \"parent_scope_var_value\"".to_owned());
+            control.insert(
+                "key1".to_owned(),
+                "key1 value \"parent_scope_var_value\"".to_owned(),
+            );
             control
         });
     }
-
 
     #[test]
     fn test_string_evaluation_error() {
@@ -183,10 +193,12 @@ mod tests {
 
         match variables.evaluate(&scope) {
             Err(DevrcError::RenderError(terra_error)) => {
-                assert_eq!("Variable `key1` not found in context while rendering \'key2\'",
-                           format!("{:}", TeraError::source(&terra_error).unwrap()));
-            },
-            _ => assert!(false)
+                assert_eq!(
+                    "Variable `key1` not found in context while rendering \'key2\'",
+                    format!("{:}", TeraError::source(&terra_error).unwrap())
+                );
+            }
+            _ => assert!(false),
         }
     }
 }

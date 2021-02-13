@@ -1,10 +1,12 @@
 use std::error::Error;
 
-use devrc::{cli::{self, CommandLine}, raw_devrcfile::RawDevrcfile, utils::{get_local_devrc_file, is_local_devrc_file_exists}};
 use devrc::runner::Runner;
+use devrc::{
+    cli::{self, CommandLine},
+    raw_devrcfile::RawDevrcfile,
+    utils::{get_local_devrc_file, is_local_devrc_file_exists},
+};
 use log::info;
-
-
 
 fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
@@ -39,19 +41,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     if opt.read_stdin {
         runner.load_stdin()?
     } else {
-         runner.load()?;
+        runner.load()?;
     }
 
     if opt.list {
         runner.list_tasks()?;
-    }
-    else if opt.describe {
+    } else if opt.describe {
         runner.describe(opt.rest)?;
-    }
-    else if opt.dbg {
+    } else if opt.dbg {
         runner.diagnostic(opt.rest);
-    }
-    else {
+    } else {
         runner.run(opt.rest)?;
     }
 

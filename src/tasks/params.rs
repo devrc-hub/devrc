@@ -1,30 +1,26 @@
 use serde::{Deserialize, Deserializer};
 
-use serde::de::{Visitor, MapAccess, SeqAccess};
-
+use serde::de::{MapAccess, SeqAccess, Visitor};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ComplexParam {
     pub default: Option<String>,
-    pub desc: Option<String>
+    pub desc: Option<String>,
 }
-
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum ParamValue {
     Required,
     Default(String),
-    Complex(ComplexParam)
+    Complex(ComplexParam),
 }
-
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Params {
     #[serde(flatten)]
     pub params: indexmap::IndexMap<String, ParamValue>,
 }
-
 
 impl Default for Params {
     fn default() -> Self {
