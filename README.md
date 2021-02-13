@@ -7,8 +7,9 @@
 [![Crates.io](https://img.shields.io/crates/d/devrc)](https://crates.io/crates/devrc)
 [![CI](https://github.com/devrc-hub/devrc/workflows/CI/badge.svg?branch=master)](https://github.com/devrc-hub/devrc/actions)
 [![Security audit](https://github.com/devrc-hub/devrc/workflows/Security%20audit/badge.svg?branch=master)](https://github.com/devrc-hub/devrc/actions)
-[![GitHub](https://img.shields.io/github/license/devrc-hub/devrc)](https://github.com/devrc-hub/devrc/blob/master/LICENSE)
-![Lines Of Code](https://tokei.rs/b1/github/devrc-hub/devrc?category=code)
+[![Minimum supported Rust version](https://img.shields.io/badge/rustc-1.48+-brightgreen.svg)](#compile-from-sources)
+[![Lines Of Code](https://tokei.rs/b1/github/devrc-hub/devrc?category=code)](#contributing)
+[![LICENSE](https://img.shields.io/github/license/devrc-hub/devrc)](https://github.com/devrc-hub/devrc/blob/master/LICENSE)
 
 
 ##  Overview
@@ -128,7 +129,7 @@ Cargo will build the `devrc` binary and place it in `$HOME/.cargo`.
 
 ### Compile from sources
 
-![GitHub](https://img.shields.io/badge/rustc-1.48+-lightgray.svg) ![GitHub](https://img.shields.io/github/license/devrc-hub/devrc)
+![GitHub](https://img.shields.io/badge/rustc-1.48+-brightgreen.svg) ![GitHub](https://img.shields.io/github/license/devrc-hub/devrc)
 
 Clone the repository and change it to your working directory.
 
