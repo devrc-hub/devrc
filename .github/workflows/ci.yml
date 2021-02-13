@@ -50,7 +50,6 @@ jobs:
   compile:
     name: "Compile ${{ matrix.rust }} / ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
-    needs: [rustfmt, clippy]
     strategy:
       fail-fast: false
       matrix:
@@ -78,7 +77,8 @@ jobs:
       - name: Build devrc
         uses: actions-rs/cargo@v1
         with:
-          command: build --all --verbose
+          command: build
+          args: --release --verbose
 
       - name: Install devrc
         uses: actions-rs/cargo@v1
