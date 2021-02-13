@@ -1,4 +1,4 @@
-use std::{env, io::Read, path::PathBuf};
+use std::{env, io::Read, path::PathBuf, str::FromStr};
 
 use crate::{
     devrcfile::Devrcfile,
@@ -140,7 +140,7 @@ impl Runner {
         for (name, task) in self.devrc.tasks.items.clone() {
             let help = task.format_help()?;
 
-            if name.starts_with("_") {
+            if name.starts_with('_') {
                 continue;
             }
 
@@ -214,6 +214,12 @@ impl Runner {
         );
 
         dbg!(self);
+    }
+}
+
+impl Default for Runner {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

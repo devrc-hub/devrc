@@ -1,7 +1,6 @@
 use std::{fmt, marker::PhantomData};
 
 use indexmap::IndexMap;
-use serde;
 
 use serde::{Deserialize, Deserializer};
 
@@ -59,6 +58,7 @@ pub struct Include {
     include: IncludeKind,
 }
 
+// TODO: put `ComplexCommand` into `Box`
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum TaskKind {
@@ -80,7 +80,7 @@ impl TaskKind {
         match self {
             TaskKind::Empty => Ok("doc string"),
             TaskKind::Command(_command) => {
-                return Err(DevrcError::NotImplemented);
+                Err(DevrcError::NotImplemented)
             }
             TaskKind::ComplexCommand(command) => Ok(command.format_help()),
             TaskKind::Commands(_) => Ok("doc string"),

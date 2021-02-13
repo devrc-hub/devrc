@@ -27,8 +27,10 @@ impl Scope {
         self.environment.get(key)
     }
 
-    pub fn clone(&self) -> Self {
-        // TODO: rewrite and remove copy
+}
+
+impl Clone for Scope {
+    fn clone(&self) -> Self {
         let mut scope = Self::default();
 
         for (name, value) in &self.variables {

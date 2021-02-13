@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::{fs, path::PathBuf, str::FromStr};
 
 use crate::{
     config::RawConfig,
@@ -11,7 +11,6 @@ use crate::{
 use std::fmt::Debug;
 
 use serde::Deserialize;
-use serde_yaml;
 
 use crate::{
     environment::{EnvFile, RawEnvironment},
@@ -88,13 +87,6 @@ impl RawDevrcfile {
         &self.tasks
     }
 
-    pub fn from_str(content: &str) -> DevrcResult<Self> {
-        let config: Self = match serde_yaml::from_str(content) {
-            Ok(value) => value,
-            Err(error) => return Err(DevrcError::YamlParseError(error)),
-        };
-        Ok(config)
-    }
 
     pub fn get_evolved_scope(&self, parent_scope: Option<Scope>) -> DevrcResult<Scope> {
         let scope = Scope::default();
@@ -115,6 +107,18 @@ impl RawDevrcfile {
         Ok(())
     }
 }
+impl FromStr for RawDevrcfile {
+    type Err = DevrcError;
+
+    fn from_str(content: &str) -> Result<Self, Self::Err> {
+        let config: Self = match serde_yaml::from_str(content) {
+            Ok(value) => value,
+            Err(error) => return Err(DevrcError::YamlParseError(error)),
+        };
+        Ok(config)
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

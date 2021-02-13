@@ -1,10 +1,14 @@
 // List of ignored linters
-#![allow()]
+
 #![deny(
     clippy::all,
     // clippy::pedantic,
     // clippy::restriction,
     // clippy::correctness
+)]
+
+#![allow(
+    clippy::large_enum_variant
 )]
 
 // #![feature(custom_inner_attributes)]

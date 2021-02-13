@@ -160,7 +160,7 @@ mod tests {
                     format!("{:}", TeraError::source(&terra_error).unwrap())
                 );
             }
-            _ => assert!(false),
+            _ => unreachable!()
         }
     }
 

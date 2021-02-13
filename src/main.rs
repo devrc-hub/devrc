@@ -27,8 +27,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         runner.use_global();
     }
 
-    if opt.configs.len() > 0 {
-        runner.add_files(opt.configs.clone().as_slice().as_ref())?;
+    if !opt.configs.is_empty() {
+        runner.add_files(opt.configs.as_slice().as_ref())?;
     }
 
     if opt.dry_run {

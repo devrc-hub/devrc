@@ -2,9 +2,8 @@ use devrc::environment::{EnvFile, EnvFilesWrapper, FileInclude, FileRemote, RawE
 use std::fmt::Debug;
 
 use serde::Deserialize;
-use serde_yaml;
 
-use indexmap;
+
 
 #[test]
 fn test_environment_des_variant_1() {
@@ -46,19 +45,19 @@ env_file:
         if let EnvFile::Simple(variant) = &val[0] {
             assert_eq!(variant.to_str().unwrap(), "./.env".to_string());
         } else {
-            assert!(false);
+            unreachable!();
         }
 
         if let EnvFile::Simple(variant) = &val[1] {
             assert_eq!(variant.to_str().unwrap(), "/path/to/file_1".to_string());
         } else {
-            assert!(false);
+            unreachable!();
         }
 
         if let EnvFile::Remote(FileRemote { remote }) = &val[2] {
             assert_eq!(remote.to_string(), "http://example.com".to_string());
         } else {
-            assert!(false);
+            unreachable!();
         }
 
         if let EnvFile::File(FileInclude {
@@ -68,10 +67,10 @@ env_file:
         {
             assert_eq!(file.to_str().unwrap(), "/path/to/file_2".to_string());
         } else {
-            assert!(false);
+            unreachable!()
         }
     } else {
-        assert!(false);
+        unreachable!()
     }
 }
 
@@ -85,7 +84,7 @@ remote: http://example.com
     if let EnvFile::Remote(FileRemote { remote }) = &container {
         assert_eq!(remote.to_owned(), "http://example.com".to_string());
     } else {
-        assert!(false);
+       unreachable!()
     }
 }
 
@@ -103,7 +102,7 @@ file: /path/to/file_2
     {
         assert_eq!(file.to_str().unwrap(), "/path/to/file_2".to_string());
     } else {
-        assert!(false);
+        unreachable!();
     }
 }
 
@@ -117,6 +116,6 @@ fn test_include_simple_file() {
     if let EnvFile::Simple(variant) = container {
         assert_eq!(variant.to_str().unwrap(), "./.env".to_string());
     } else {
-        assert!(false);
+        unreachable!();
     }
 }

@@ -2,8 +2,6 @@ use std::{env, fs};
 
 use std::path::{Path, PathBuf};
 
-use dirs;
-
 use crate::errors::{DevrcError, DevrcResult};
 
 /// Current directory/project devrc file name
@@ -30,7 +28,7 @@ pub fn get_absolute_path(file: &PathBuf, base: Option<&PathBuf>) -> DevrcResult<
         return Ok(file.to_path_buf());
     }
 
-    let file = if let Some(value) = base.clone() {
+    let file = if let Some(value) = base {
         let mut new_path = value.clone();
         if new_path.is_file() {
             if let Some(value) = new_path.parent() {
@@ -53,7 +51,7 @@ pub fn get_devrc_file_name() -> String {
     match env::var("DEVRC_FILE") {
         Ok(val) => {
             debug!("DERVC_FILE environment variable exists: {:?}", val);
-            val.into()
+            val
         }
         _ => DEFAULT_DEVRC_FILE_NAME.into(),
     }
@@ -61,14 +59,14 @@ pub fn get_devrc_file_name() -> String {
 
 pub fn get_local_devrc_file() -> Option<PathBuf> {
     match env::current_dir() {
-        Ok(path) => Some(Path::new(&path).join(get_devrc_file_name()).to_path_buf()),
+        Ok(path) => Some(Path::new(&path).join(get_devrc_file_name())),
         Err(_) => None,
     }
 }
 
 pub fn get_global_devrc_file() -> Option<PathBuf> {
     match dirs::home_dir() {
-        Some(path) => Some(Path::new(&path).join(HOME_DEVRC_FILE_NAME).to_path_buf()),
+        Some(path) => Some(Path::new(&path).join(HOME_DEVRC_FILE_NAME)),
         _ => None,
     }
 }
@@ -76,13 +74,13 @@ pub fn get_global_devrc_file() -> Option<PathBuf> {
 pub fn is_local_devrc_file_exists() -> bool {
     match get_local_devrc_file() {
         Some(path) => path.exists(),
-        _ => return false,
+        _ => false,
     }
 }
 
 pub fn is_global_devrc_file_exists() -> bool {
     match get_global_devrc_file() {
         Some(path) => path.exists(),
-        _ => return false,
+        _ => false,
     }
 }

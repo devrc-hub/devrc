@@ -192,7 +192,7 @@ impl Devrcfile {
         for (name, _task) in self.tasks.items.iter() {
             name_width = cmp::max(
                 name_width,
-                UnicodeWidthStr::width(format!("{}", &name).as_str()),
+                UnicodeWidthStr::width(name.to_string().as_str()),
             );
         }
         (name_width, doc_width)
@@ -338,8 +338,7 @@ mod tests {
         devrcfile.add_task("task_1".to_owned(), task).unwrap();
 
         for i in 1..10 {
-            let mut cmd = ComplexCommand::default();
-            cmd.exec = ExecKind::String(format!("echo \"Hello {:}\"", i));
+            let cmd = ComplexCommand::from(format!("echo \"Hello {:}\"", i));
 
             let task = Task::ComplexCommand(cmd);
 
@@ -354,7 +353,7 @@ mod tests {
                 assert_eq!(exec, "echo \"Hello 3\"");
             }
             _ => {
-                assert!(false);
+                unreachable!();
             }
         }
     }

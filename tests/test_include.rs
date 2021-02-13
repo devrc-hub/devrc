@@ -2,7 +2,7 @@ use devrc::include::IncludeFilesWrapper;
 use std::fmt::Debug;
 
 use serde::Deserialize;
-use serde_yaml;
+
 
 #[test]
 fn test_empty_include() {

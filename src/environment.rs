@@ -69,13 +69,12 @@ impl EnvFile {
                 file,
                 ignore_errors,
             }) => match get_absolute_path(&file, base_path) {
-                Ok(file) => match self.get_from_file(file, &mut environment) {
-                    Err(error) => {
+                Ok(file) => {
+                    if let Err(error) = self.get_from_file(file, &mut environment){
                         if !ignore_errors {
                             return Err(error);
                         }
                     }
-                    _ => {}
                 },
                 Err(error) => {
                     if !ignore_errors {
@@ -87,7 +86,7 @@ impl EnvFile {
                 todo!()
             }
             EnvFile::List(items) => {
-                for item in items.into_iter() {
+                for item in items.iter() {
                     for (key, value) in item.load(base_path)? {
                         environment.insert(key, value);
                     }
@@ -190,7 +189,7 @@ mod tests {
                     format!("{:}", TeraError::source(&terra_error).unwrap())
                 );
             }
-            _ => assert!(false),
+            _ => unreachable!()
         }
     }
 }

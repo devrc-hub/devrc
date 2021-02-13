@@ -39,6 +39,7 @@ impl Interpreter {
         let mut args: Vec<String> = Vec::new();
 
         if let Some(value) = parts.next() {
+            #[allow(clippy::while_let_on_iterator)]
             while let Some(arg) = parts.next() {
                 args.push(arg.to_owned())
             }
@@ -76,7 +77,7 @@ impl Interpreter {
                 if let Some(code) = exit_status.code() {
                     if code != 0 {
                         // Raise runtime error
-                        return Err(DevrcError::Code { code: code });
+                        return Err(DevrcError::Code { code });
                     }
                 } else {
                     println!("Process terminated by signal");
@@ -228,7 +229,7 @@ fn set_execute_permission(path: &Path) -> DevrcResult<()> {
     permissions.set_mode(permissions.mode() | 0o100);
 
     // set the new permissions
-    fs::set_permissions(&path, permissions).map_err(|error| DevrcError::IoError(error))
+    fs::set_permissions(&path, permissions).map_err( DevrcError::IoError)
 }
 
 #[allow(dead_code)]
