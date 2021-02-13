@@ -1,8 +1,8 @@
 use serde_yaml::Error as SerdeYamlError;
-use std::error::Error as StdError;
-use std::fmt::{Display, Formatter};
 use std::{
+    error::Error as StdError,
     fmt,
+    fmt::{Display, Formatter},
     io::{self, Error as IoError},
 };
 

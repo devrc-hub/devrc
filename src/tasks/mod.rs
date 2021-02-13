@@ -1,5 +1,4 @@
-use std::fmt;
-use std::marker::PhantomData;
+use std::{fmt, marker::PhantomData};
 
 use indexmap::IndexMap;
 use serde::{
@@ -27,9 +26,7 @@ pub mod examples;
 pub mod exec;
 pub mod params;
 
-pub use crate::tasks::examples::Examples;
-pub use crate::tasks::exec::ExecKind;
-pub use crate::tasks::params::Params;
+pub use crate::tasks::{examples::Examples, exec::ExecKind, params::Params};
 
 use self::complex::ComplexCommand;
 

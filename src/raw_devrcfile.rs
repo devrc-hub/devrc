@@ -1,5 +1,4 @@
-use std::fs;
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 use crate::{
     config::RawConfig,
@@ -15,9 +14,10 @@ use std::fmt::Debug;
 use serde::Deserialize;
 use serde_yaml;
 
-use crate::environment::RawEnvironment;
-use crate::environment::{EnvFile, EnvFilesWrapper};
-use crate::tasks::Tasks;
+use crate::{
+    environment::{EnvFile, EnvFilesWrapper, RawEnvironment},
+    tasks::Tasks,
+};
 
 use crate::variables::RawVariables;
 

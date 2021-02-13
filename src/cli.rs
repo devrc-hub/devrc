@@ -1,7 +1,8 @@
 use std::{io::Cursor, path::PathBuf};
-use structopt::clap::AppSettings;
-use structopt::clap::Shell;
-use structopt::StructOpt;
+use structopt::{
+    clap::{AppSettings, Shell},
+    StructOpt,
+};
 
 pub fn get_crate_version() -> &'static str {
     env!("CARGO_PKG_VERSION")

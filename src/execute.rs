@@ -14,8 +14,7 @@ use crate::{
     scope::Scope,
 };
 use run_script::{IoOptions, ScriptOptions};
-use std::os::unix::fs::PermissionsExt;
-use std::os::unix::process::ExitStatusExt;
+use std::os::unix::{fs::PermissionsExt, process::ExitStatusExt};
 use tempfile::Builder;
 
 pub trait CommandExt {

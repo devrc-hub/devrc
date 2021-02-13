@@ -1,7 +1,6 @@
 use std::{env, fs};
 
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use dirs;
 

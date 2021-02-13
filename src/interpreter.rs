@@ -1,10 +1,11 @@
 use core::time;
-use std::fmt;
-use std::{fmt::Display, marker::PhantomData};
+use std::{fmt, fmt::Display, marker::PhantomData};
 
 use crate::{config::Config, errors::DevrcResult, execute::CommandExt, scope::Scope};
-use serde::de::{self, Visitor};
-use serde::{Deserialize, Deserializer};
+use serde::{
+    de::{self, Visitor},
+    Deserialize, Deserializer,
+};
 use std::{
     fs,
     io::{self, Write},
@@ -16,10 +17,8 @@ use std::{
 
 use crate::errors::DevrcError;
 use run_script::{IoOptions, ScriptOptions};
-use std::os::unix::fs::PermissionsExt;
-use std::os::unix::process::ExitStatusExt;
-use tempfile::Builder;
-use tempfile::NamedTempFile;
+use std::os::unix::{fs::PermissionsExt, process::ExitStatusExt};
+use tempfile::{Builder, NamedTempFile};
 
 pub const DEFAULT_SHELL: &str = "sh";
 pub const DEFAULT_SHELL_ARG: &str = "-c";

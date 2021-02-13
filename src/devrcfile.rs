@@ -1,8 +1,7 @@
 use std::{cmp, path::PathBuf};
 
 use crate::{
-    config::Config,
-    config::RawConfig,
+    config::{Config, RawConfig},
     environment::{EnvFile, EnvFilesWrapper, Environment, RawEnvironment},
     errors::DevrcResult,
     raw_devrcfile::RawDevrcfile,
@@ -253,8 +252,10 @@ impl Devrcfile {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tasks::*;
-    use crate::{tasks::complex::ComplexCommand, tasks::exec::ExecKind, variables::ValueKind};
+    use crate::{
+        tasks::{complex::ComplexCommand, exec::ExecKind, *},
+        variables::ValueKind,
+    };
 
     #[test]
     fn test_variables() {

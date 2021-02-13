@@ -1,9 +1,9 @@
 use std::error::Error;
 
-use devrc::runner::Runner;
 use devrc::{
     cli::{self, CommandLine},
     raw_devrcfile::RawDevrcfile,
+    runner::Runner,
     utils::{get_local_devrc_file, is_local_devrc_file_exists},
 };
 use log::info;
