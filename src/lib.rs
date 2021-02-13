@@ -2,12 +2,13 @@
 #![allow()]
 #![deny(
     clippy::all,
-    clippy::pedantic,
-    clippy::restriction,
-    clippy::correctness
+    // clippy::pedantic,
+    // clippy::restriction,
+    // clippy::correctness
 )]
-#![feature(custom_inner_attributes)]
-#![clippy::msrv = "1.48.0"]
+
+// #![feature(custom_inner_attributes)]
+// #![clippy::msrv = "1.48.0"]
 
 #[macro_use]
 extern crate log;

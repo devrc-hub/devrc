@@ -2,8 +2,6 @@ use std::path::PathBuf;
 
 use serde::Deserialize;
 
-use dotenv;
-
 use crate::{
     errors::{DevrcError, DevrcResult},
     evaluate::Evaluatable,

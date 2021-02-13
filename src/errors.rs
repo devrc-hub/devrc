@@ -32,7 +32,7 @@ pub enum DevrcError {
 
 impl Display for DevrcError {
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-        write!(f, "devrc error: \n")?;
+        writeln!(f, "devrc error: ")?;
 
         match self {
             // TODO: add source context to error

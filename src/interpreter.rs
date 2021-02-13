@@ -114,7 +114,7 @@ impl Interpreter {
                 if let Some(code) = exit_status.code() {
                     if code != 0 {
                         // Raise runtime error
-                        return Err(DevrcError::Code { code: code });
+                        return Err(DevrcError::Code { code });
                     }
                 } else {
                     println!("Process terminated by signal");
