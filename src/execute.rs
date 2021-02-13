@@ -1,20 +1,9 @@
-use std::{
-    fs,
-    io::{self, Write},
-    path::{Path, PathBuf},
-    process::{self, Command, Stdio},
-    thread,
-    time::Duration,
-};
-
 use crate::{
-    config::Config,
-    errors::{DevrcError, DevrcResult},
-    interpreter::{Interpreter, ShebangDetector},
+    errors::{DevrcResult},
     scope::Scope,
 };
 
-
+use std::{process::Command};
 
 
 pub trait CommandExt {

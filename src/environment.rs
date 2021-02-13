@@ -1,6 +1,5 @@
 use std::{
-    fs::File,
-    path::{Path, PathBuf},
+    path::{PathBuf},
 };
 
 use serde::Deserialize;
@@ -11,9 +10,7 @@ use crate::{
     errors::{DevrcError, DevrcResult},
     evaluate::Evaluatable,
     scope::Scope,
-    template::render_string,
     utils::get_absolute_path,
-    variables::ValueKind,
 };
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]

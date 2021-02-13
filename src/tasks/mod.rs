@@ -2,10 +2,7 @@ use std::{fmt, marker::PhantomData};
 
 use indexmap::IndexMap;
 use serde::{
-    self, // export::Option,
-          // private::de::{Content,
-          //               ContentRefDeserializer,
-          //               UntaggedUnitVisitor}
+    self,
 };
 
 use serde::{Deserialize, Deserializer};
@@ -13,12 +10,9 @@ use serde::{Deserialize, Deserializer};
 use serde::de::{MapAccess, SeqAccess, Visitor};
 
 use crate::{
-    config::{Config, RawConfig},
-    devrcfile::Devrcfile,
-    environment::RawEnvironment,
+    config::{Config},
     errors::{DevrcError, DevrcResult},
     scope::Scope,
-    variables::RawVariables,
 };
 
 pub mod complex;

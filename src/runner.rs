@@ -1,7 +1,6 @@
 use std::{env, io::Read, path::PathBuf};
 
 use crate::{
-    config::Config,
     devrcfile::Devrcfile,
     errors::{DevrcError, DevrcResult},
     interrupt::setup_interrupt_handler,
@@ -9,7 +8,7 @@ use crate::{
     scope::Scope,
     utils,
     utils::{
-        get_absolute_path, get_global_devrc_file, get_local_devrc_file, is_global_devrc_file_exists,
+        get_absolute_path, get_global_devrc_file, get_local_devrc_file,
     },
 };
 

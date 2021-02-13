@@ -1,6 +1,6 @@
 use crate::{
     de::deserialize_some,
-    interpreter::{get_default_shell, Interpreter, DEFAULT_SHELL},
+    interpreter::{Interpreter},
 };
 use std::{env, fmt::Debug, path::PathBuf};
 

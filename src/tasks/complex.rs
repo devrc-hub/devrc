@@ -1,5 +1,5 @@
 use crate::{
-    config::Config, environment::RawEnvironment, errors::DevrcResult, evaluate::Evaluatable,
+    config::Config, environment::RawEnvironment, errors::DevrcResult,
     interpreter::Interpreter, scope::Scope, variables::RawVariables,
 };
 

@@ -8,11 +8,9 @@ use serde::{
 };
 use std::{
     fs,
-    io::{self, Write},
+    io::{Write},
     path::{Path, PathBuf},
-    process::{self, Command, Stdio},
-    thread,
-    time::Duration,
+    process::{self, Command},
 };
 
 use crate::errors::DevrcError;
