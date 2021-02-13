@@ -26,7 +26,6 @@ impl Scope {
     pub fn get_env_var(&self, key: &str) -> Option<&String> {
         self.environment.get(key)
     }
-
 }
 
 impl Clone for Scope {

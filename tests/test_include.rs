@@ -3,7 +3,6 @@ use std::fmt::Debug;
 
 use serde::Deserialize;
 
-
 #[test]
 fn test_empty_include() {
     #[derive(Debug, Deserialize, Clone)]

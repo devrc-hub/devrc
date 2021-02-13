@@ -87,7 +87,6 @@ impl RawDevrcfile {
         &self.tasks
     }
 
-
     pub fn get_evolved_scope(&self, parent_scope: Option<Scope>) -> DevrcResult<Scope> {
         let scope = Scope::default();
         match parent_scope {
@@ -118,7 +117,6 @@ impl FromStr for RawDevrcfile {
         Ok(config)
     }
 }
-
 
 #[cfg(test)]
 mod tests {

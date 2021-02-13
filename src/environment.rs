@@ -70,12 +70,12 @@ impl EnvFile {
                 ignore_errors,
             }) => match get_absolute_path(&file, base_path) {
                 Ok(file) => {
-                    if let Err(error) = self.get_from_file(file, &mut environment){
+                    if let Err(error) = self.get_from_file(file, &mut environment) {
                         if !ignore_errors {
                             return Err(error);
                         }
                     }
-                },
+                }
                 Err(error) => {
                     if !ignore_errors {
                         return Err(error);
@@ -189,7 +189,7 @@ mod tests {
                     format!("{:}", TeraError::source(&terra_error).unwrap())
                 );
             }
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 }

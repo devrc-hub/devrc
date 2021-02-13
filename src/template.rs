@@ -62,7 +62,7 @@ mod tests {
             }) => {
                 assert_eq!(kind, "Failed to parse \'var_name\'");
             }
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 }

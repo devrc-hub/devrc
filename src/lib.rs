@@ -6,10 +6,7 @@
     // clippy::restriction,
     // clippy::correctness
 )]
-
-#![allow(
-    clippy::large_enum_variant
-)]
+#![allow(clippy::large_enum_variant)]
 
 // #![feature(custom_inner_attributes)]
 // #![clippy::msrv = "1.48.0"]

@@ -79,9 +79,7 @@ impl TaskKind {
     pub fn format_help(&self) -> DevrcResult<&str> {
         match self {
             TaskKind::Empty => Ok("doc string"),
-            TaskKind::Command(_command) => {
-                Err(DevrcError::NotImplemented)
-            }
+            TaskKind::Command(_command) => Err(DevrcError::NotImplemented),
             TaskKind::ComplexCommand(command) => Ok(command.format_help()),
             TaskKind::Commands(_) => Ok("doc string"),
             TaskKind::Include(_) => Ok("doc string"),

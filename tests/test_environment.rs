@@ -3,8 +3,6 @@ use std::fmt::Debug;
 
 use serde::Deserialize;
 
-
-
 #[test]
 fn test_environment_des_variant_1() {
     let content = r#"ENV_VAR_1: env_var_1_value
@@ -84,7 +82,7 @@ remote: http://example.com
     if let EnvFile::Remote(FileRemote { remote }) = &container {
         assert_eq!(remote.to_owned(), "http://example.com".to_string());
     } else {
-       unreachable!()
+        unreachable!()
     }
 }
 

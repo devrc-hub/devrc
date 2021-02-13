@@ -229,7 +229,7 @@ fn set_execute_permission(path: &Path) -> DevrcResult<()> {
     permissions.set_mode(permissions.mode() | 0o100);
 
     // set the new permissions
-    fs::set_permissions(&path, permissions).map_err( DevrcError::IoError)
+    fs::set_permissions(&path, permissions).map_err(DevrcError::IoError)
 }
 
 #[allow(dead_code)]
