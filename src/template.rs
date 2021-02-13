@@ -38,7 +38,7 @@ mod tests {
     use tera::{Error as TeraError, ErrorKind as TerraErrorKind};
 
     use crate::{
-        errors::{DevrcResult, DevrcError},
+        errors::{DevrcError},
         scope::Scope,
     };
 

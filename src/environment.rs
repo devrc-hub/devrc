@@ -159,9 +159,6 @@ mod tests {
 
     use crate::errors::DevrcError;
     use std::error::Error as StdError;
-
-    use super::*;
-
     use tera::Error as TeraError;
 
     #[test]

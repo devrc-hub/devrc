@@ -1,16 +1,14 @@
 use std::{fmt, marker::PhantomData};
 
 use indexmap::IndexMap;
-use serde::{
-    self,
-};
+use serde;
 
 use serde::{Deserialize, Deserializer};
 
 use serde::de::{MapAccess, SeqAccess, Visitor};
 
 use crate::{
-    config::{Config},
+    config::Config,
     errors::{DevrcError, DevrcResult},
     scope::Scope,
 };
@@ -305,8 +303,6 @@ impl<'de> Deserialize<'de> for Commands {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn test_task_execute() {}
 }

@@ -243,7 +243,6 @@ impl Runner {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
     fn test_devrcfile() {}

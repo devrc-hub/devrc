@@ -2,6 +2,10 @@
 use std::{fmt, fmt::Display, marker::PhantomData};
 
 use crate::{config::Config, errors::DevrcResult, execute::CommandExt, scope::Scope};
+
+use std::os::unix::fs::PermissionsExt;
+use std::os::unix::process::ExitStatusExt;
+
 use serde::{
     de::{self, Visitor},
     Deserialize, Deserializer,
@@ -15,7 +19,6 @@ use std::{
 
 use crate::errors::DevrcError;
 
-use std::os::unix::{fs::PermissionsExt, process::ExitStatusExt};
 use tempfile::{Builder, NamedTempFile};
 
 pub const DEFAULT_SHELL: &str = "sh";
@@ -236,7 +239,6 @@ fn signal_from_exit_status(exit_status: process::ExitStatus) -> Option<i32> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
     fn test_name() {}

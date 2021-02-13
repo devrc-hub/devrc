@@ -1,12 +1,12 @@
 use devrc::environment::{
-    EnvFile, EnvFilesWrapper, FileInclude, FileRemote, RawEnvironment, StringFileInclude,
+    EnvFile, EnvFilesWrapper, FileInclude, FileRemote, RawEnvironment,
 };
 use std::fmt::Debug;
 
 use serde::Deserialize;
 use serde_yaml;
 
-use indexmap::indexmap;
+use indexmap;
 
 #[test]
 fn test_environment_des_variant_1() {
@@ -19,7 +19,7 @@ fn test_environment_des_variant_1() {
     assert_eq!(
         env,
         RawEnvironment {
-            vars: indexmap! {
+            vars: indexmap::indexmap! {
                 "ENV_VAR_1".to_string() => "env_var_1_value".to_string(),
             }
         }
@@ -65,7 +65,7 @@ env_file:
 
         if let EnvFile::File(FileInclude {
             file,
-            ignore_errors,
+            ignore_errors: _,
         }) = &val[3]
         {
             assert_eq!(file.to_str().unwrap(), "/path/to/file_2".to_string());
@@ -100,7 +100,7 @@ file: /path/to/file_2
 
     if let EnvFile::File(FileInclude {
         file,
-        ignore_errors,
+        ignore_errors: _,
     }) = &container
     {
         assert_eq!(file.to_str().unwrap(), "/path/to/file_2".to_string());
