@@ -115,7 +115,6 @@ jobs:
 
       - name: Create archive ${{ matrix.target }}
         run: |
-
           cargo build --release --target ${{ matrix.target }}
           mv target/${{ matrix.target }}/release/devrc ./devrc
           chmod +x devrc

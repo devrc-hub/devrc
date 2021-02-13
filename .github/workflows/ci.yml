@@ -54,7 +54,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.48.0]
+        rust: [stable, beta, nightly, 1.45.0]
         os: [ubuntu-latest, macos-latest]
     steps:
       - name: Checkout repository
@@ -78,7 +78,7 @@ jobs:
       - name: Build devrc
         uses: actions-rs/cargo@v1
         with:
-          command: build --release
+          command: build --all --verbose
 
       - name: Install devrc
         uses: actions-rs/cargo@v1
@@ -95,7 +95,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.48.0]
+        rust: [stable, beta, nightly, 1.45.0]
         os: [ubuntu-latest, macos-latest]
 
     steps:
