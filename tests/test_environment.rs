@@ -6,7 +6,6 @@ use std::fmt::Debug;
 use serde::Deserialize;
 use serde_yaml;
 
-#[macro_use]
 use indexmap::indexmap;
 
 #[test]

@@ -99,8 +99,8 @@ impl RawDevrcfile {
     pub fn get_evolved_scope(&self, parent_scope: Option<Scope>) -> DevrcResult<Scope> {
         let scope = Scope::default();
         match parent_scope {
-            Some(parent_scope) => self.variables.evaluate(&parent_scope),
-            None => self.variables.evaluate(&Scope::default()),
+            Some(parent_scope) => self.variables.evaluate(&parent_scope)?,
+            None => self.variables.evaluate(&Scope::default())?,
         };
 
         Ok(scope)

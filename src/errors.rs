@@ -32,14 +32,14 @@ pub enum DevrcError {
 
 impl Display for DevrcError {
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}: \n", "devrc error");
+        write!(f, "devrc error: \n")?;
 
         match self {
             // TODO: add source context to error
             DevrcError::RenderError(terra_error) => {
                 match TeraError::source(&terra_error) {
                     Some(value) => {
-                        write!(f, "{:}", &value);
+                        write!(f, "{:}", &value)?;
                     }
                     _value => {
                         println!("another value");
@@ -48,7 +48,7 @@ impl Display for DevrcError {
                 // write!(f, "{}: ", terra_error);
             }
             DevrcError::Code { code } => {
-                write!(f, "Recipe failed with code {:}", code);
+                write!(f, "Recipe failed with code {:}", code)?;
             }
             _ => {}
         }
