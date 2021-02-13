@@ -7,15 +7,10 @@ use crate::{
     raw_devrcfile::RawDevrcfile,
     scope::Scope,
     utils,
-    utils::{
-        get_absolute_path, get_global_devrc_file, get_local_devrc_file,
-    },
+    utils::{get_absolute_path, get_global_devrc_file, get_local_devrc_file},
 };
 
-
 use std::fmt::Debug;
-
-
 
 use std::io;
 
@@ -163,7 +158,7 @@ impl Runner {
         Ok(())
     }
 
-    fn list_vars(&self) -> DevrcResult<()> {
+    pub fn list_vars(&self) -> DevrcResult<()> {
         println!("List devrc variables:");
         Ok(())
     }

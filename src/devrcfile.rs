@@ -12,8 +12,6 @@ use crate::{
 
 use unicode_width::UnicodeWidthStr;
 
-
-
 #[derive(Debug, Clone, Default)]
 pub struct Devrcfile {
     environment: Environment<String>,

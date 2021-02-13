@@ -1,10 +1,6 @@
-
 use tera::{Context, Tera};
 
-use crate::{
-    errors::{DevrcResult},
-    scope::Scope,
-};
+use crate::{errors::DevrcResult, scope::Scope};
 
 pub fn render_string(name: &str, template: &str, scope: &Scope) -> DevrcResult<String> {
     let context: Context = scope.into();
@@ -37,11 +33,7 @@ mod tests {
     use super::*;
     use tera::{Error as TeraError, ErrorKind as TerraErrorKind};
 
-    use crate::{
-        errors::{DevrcError},
-        scope::Scope,
-    };
-
+    use crate::{errors::DevrcError, scope::Scope};
 
     #[test]
     fn test_render_string() {

@@ -1,7 +1,4 @@
-use crate::{
-    de::deserialize_some,
-    interpreter::{Interpreter},
-};
+use crate::{de::deserialize_some, interpreter::Interpreter};
 use std::{env, fmt::Debug, path::PathBuf};
 
 use serde::Deserialize;
@@ -32,10 +29,6 @@ impl Default for LogLevel {
     fn default() -> Self {
         LogLevel::Info
     }
-}
-
-fn default_global() -> bool {
-    false
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]

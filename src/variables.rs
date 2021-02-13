@@ -9,7 +9,6 @@ use crate::{
 
 use serde::Deserialize;
 
-
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct Http {
     fetch: String,

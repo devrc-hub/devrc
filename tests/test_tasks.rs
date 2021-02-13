@@ -1,5 +1,4 @@
-use devrc::{tasks::*};
-
+use devrc::tasks::*;
 
 // #[test]
 // fn test_string_or_struct() {

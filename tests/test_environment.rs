@@ -1,6 +1,4 @@
-use devrc::environment::{
-    EnvFile, EnvFilesWrapper, FileInclude, FileRemote, RawEnvironment,
-};
+use devrc::environment::{EnvFile, EnvFilesWrapper, FileInclude, FileRemote, RawEnvironment};
 use std::fmt::Debug;
 
 use serde::Deserialize;

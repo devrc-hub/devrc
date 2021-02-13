@@ -1,6 +1,4 @@
-use std::{
-    path::{PathBuf},
-};
+use std::path::PathBuf;
 
 use serde::Deserialize;
 
@@ -107,7 +105,6 @@ impl EnvFile {
         file: PathBuf,
         environment: &mut indexmap::IndexMap<String, String>,
     ) -> DevrcResult<()> {
-
         // This method is no longer deprecated
         #[allow(deprecated)]
         for item in dotenv::from_path_iter(file)? {

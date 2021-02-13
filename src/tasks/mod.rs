@@ -286,7 +286,7 @@ impl<'de> Deserialize<'de> for Commands {
                     Ok(value) => value,
                     Err(error) => return Err(error),
                 } {
-                   let _ = commands.push(value);
+                    let _ = commands.push(value);
                 }
 
                 Ok(commands)

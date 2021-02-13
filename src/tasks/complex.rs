@@ -1,9 +1,9 @@
 use crate::{
-    config::Config, environment::RawEnvironment, errors::DevrcResult,
-    interpreter::Interpreter, scope::Scope, variables::RawVariables,
+    config::Config, environment::RawEnvironment, errors::DevrcResult, interpreter::Interpreter,
+    scope::Scope, variables::RawVariables,
 };
 
-use serde::{Deserialize};
+use serde::Deserialize;
 
 use super::{examples::Examples, exec::ExecKind, params::Params};
 

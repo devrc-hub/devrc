@@ -1,10 +1,6 @@
-use crate::{
-    errors::{DevrcResult},
-    scope::Scope,
-};
+use crate::{errors::DevrcResult, scope::Scope};
 
-use std::{process::Command};
-
+use std::process::Command;
 
 pub trait CommandExt {
     fn export_scope(&mut self, scope: &Scope) -> DevrcResult<()>;

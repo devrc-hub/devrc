@@ -3,10 +3,10 @@ use std::{
     error::Error as StdError,
     fmt,
     fmt::{Display, Formatter},
-    io::{Error as IoError},
+    io::Error as IoError,
 };
 
-use tera::{Error as TeraError};
+use tera::Error as TeraError;
 
 use dotenv::{self, Error as DotenvError};
 

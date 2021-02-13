@@ -5,7 +5,6 @@ use devrc::{
     runner::Runner,
 };
 
-
 fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
 
@@ -44,6 +43,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if opt.list {
         runner.list_tasks()?;
+    } else if opt.list_vars {
+        runner.list_vars()?;
     } else if opt.describe {
         runner.describe(opt.rest)?;
     } else if opt.dbg {

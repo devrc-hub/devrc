@@ -1,6 +1,4 @@
-use serde::{Deserialize};
-
-
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ComplexParam {

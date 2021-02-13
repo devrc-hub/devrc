@@ -1,10 +1,8 @@
-
 use std::{fmt, fmt::Display, marker::PhantomData};
 
 use crate::{config::Config, errors::DevrcResult, execute::CommandExt, scope::Scope};
 
-use std::os::unix::fs::PermissionsExt;
-use std::os::unix::process::ExitStatusExt;
+use std::os::unix::{fs::PermissionsExt, process::ExitStatusExt};
 
 use serde::{
     de::{self, Visitor},
@@ -12,7 +10,7 @@ use serde::{
 };
 use std::{
     fs,
-    io::{Write},
+    io::Write,
     path::{Path, PathBuf},
     process::{self, Command},
 };
@@ -233,6 +231,7 @@ fn set_execute_permission(path: &Path) -> DevrcResult<()> {
     fs::set_permissions(&path, permissions).map_err(|error| DevrcError::IoError(error))
 }
 
+#[allow(dead_code)]
 fn signal_from_exit_status(exit_status: process::ExitStatus) -> Option<i32> {
     exit_status.signal()
 }
