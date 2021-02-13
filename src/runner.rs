@@ -1,4 +1,4 @@
-use std::{env, fs, io::Read, path::PathBuf};
+use std::{env, io::Read, path::PathBuf};
 
 use crate::{
     config::Config,
@@ -12,12 +12,12 @@ use crate::{
         get_absolute_path, get_global_devrc_file, get_local_devrc_file, is_global_devrc_file_exists,
     },
 };
-use unicode_width::UnicodeWidthStr;
+
 
 use std::fmt::Debug;
 
-use serde::Deserialize;
-use serde_yaml;
+
+
 use std::io;
 
 #[derive(Debug, Clone)]
@@ -91,7 +91,7 @@ impl Runner {
             };
         }
 
-        if let Ok(mut devrcfile) = self.get_local_rawdevrc_file() {
+        if let Ok(devrcfile) = self.get_local_rawdevrc_file() {
             self.devrc.add_raw_devrcfile(devrcfile)?;
         }
 
@@ -182,12 +182,12 @@ impl Runner {
     // }
 
     /// Show description for given task, variable or environment variable
-    pub fn describe(&self, params: Vec<String>) -> DevrcResult<()> {
+    pub fn describe(&self, _params: Vec<String>) -> DevrcResult<()> {
         println!("Describe task or variable");
         Ok(())
     }
 
-    pub fn get_calculated_scope(&self, scope: &Scope) {}
+    pub fn get_calculated_scope(&self, _scope: &Scope) {}
 
     pub fn diagnostic(&mut self, params: Vec<String>) {
         println!("Show diagnostic info:");

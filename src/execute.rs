@@ -13,9 +13,9 @@ use crate::{
     interpreter::{Interpreter, ShebangDetector},
     scope::Scope,
 };
-use run_script::{IoOptions, ScriptOptions};
-use std::os::unix::{fs::PermissionsExt, process::ExitStatusExt};
-use tempfile::Builder;
+
+
+
 
 pub trait CommandExt {
     fn export_scope(&mut self, scope: &Scope) -> DevrcResult<()>;

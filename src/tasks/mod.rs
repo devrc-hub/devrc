@@ -87,7 +87,7 @@ impl TaskKind {
     pub fn format_help(&self) -> DevrcResult<&str> {
         match self {
             TaskKind::Empty => Ok("doc string"),
-            TaskKind::Command(command) => {
+            TaskKind::Command(_command) => {
                 return Err(DevrcError::NotImplemented);
             }
             TaskKind::ComplexCommand(command) => Ok(command.format_help()),
@@ -122,7 +122,7 @@ impl TaskKind {
             TaskKind::ComplexCommand(value) => {
                 value.perform(name, parent_scope, params, &config)?;
             }
-            TaskKind::Commands(value) => return Err(DevrcError::NotImplemented),
+            TaskKind::Commands(_value) => return Err(DevrcError::NotImplemented),
             TaskKind::Include(value) => {
                 dbg!(value);
                 return Err(DevrcError::NotImplemented);

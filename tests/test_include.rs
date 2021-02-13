@@ -10,7 +10,7 @@ use serde::Deserialize;
 use serde_yaml;
 
 #[macro_use]
-use indexmap::indexmap;
+
 
 #[test]
 fn test_empty_include() {

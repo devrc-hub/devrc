@@ -1,4 +1,4 @@
-use core::time;
+
 use std::{fmt, fmt::Display, marker::PhantomData};
 
 use crate::{config::Config, errors::DevrcResult, execute::CommandExt, scope::Scope};
@@ -16,7 +16,7 @@ use std::{
 };
 
 use crate::errors::DevrcError;
-use run_script::{IoOptions, ScriptOptions};
+
 use std::os::unix::{fs::PermissionsExt, process::ExitStatusExt};
 use tempfile::{Builder, NamedTempFile};
 

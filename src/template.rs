@@ -1,15 +1,15 @@
-use std::error::Error as StdError;
+
 use tera::{Context, Tera};
 
 use crate::{
-    errors::{DevrcError, DevrcResult},
+    errors::{DevrcResult},
     scope::Scope,
 };
 
 pub fn render_string(name: &str, template: &str, scope: &Scope) -> DevrcResult<String> {
     let context: Context = scope.into();
 
-    let autoescape = true;
+    let _autoescape = true;
 
     // TODO: pass tera as input parameter
     let mut tera = Tera::default();
@@ -36,6 +36,12 @@ pub fn render_string(name: &str, template: &str, scope: &Scope) -> DevrcResult<S
 mod tests {
     use super::*;
     use tera::{Error as TeraError, ErrorKind as TerraErrorKind};
+
+    use crate::{
+        errors::{DevrcResult, DevrcError},
+        scope::Scope,
+    };
+
 
     #[test]
     fn test_render_string() {

@@ -2,7 +2,6 @@ use std::{fs, path::PathBuf};
 
 use crate::{
     config::RawConfig,
-    devrcfile::Devrcfile,
     errors::{DevrcError, DevrcResult},
     include::IncludeFilesWrapper,
     scope::Scope,
@@ -15,7 +14,7 @@ use serde::Deserialize;
 use serde_yaml;
 
 use crate::{
-    environment::{EnvFile, EnvFilesWrapper, RawEnvironment},
+    environment::{EnvFile, RawEnvironment},
     tasks::Tasks,
 };
 
@@ -98,7 +97,7 @@ impl RawDevrcfile {
     }
 
     pub fn get_evolved_scope(&self, parent_scope: Option<Scope>) -> DevrcResult<Scope> {
-        let mut scope = Scope::default();
+        let scope = Scope::default();
         match parent_scope {
             Some(parent_scope) => self.variables.evaluate(&parent_scope),
             None => self.variables.evaluate(&Scope::default()),

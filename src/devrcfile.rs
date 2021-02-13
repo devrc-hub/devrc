@@ -2,7 +2,7 @@ use std::{cmp, path::PathBuf};
 
 use crate::{
     config::{Config, RawConfig},
-    environment::{EnvFile, EnvFilesWrapper, Environment, RawEnvironment},
+    environment::{EnvFile, Environment, RawEnvironment},
     errors::DevrcResult,
     raw_devrcfile::RawDevrcfile,
     scope::Scope,
@@ -12,7 +12,7 @@ use crate::{
 
 use unicode_width::UnicodeWidthStr;
 
-use indexmap::IndexMap;
+
 
 #[derive(Debug, Clone, Default)]
 pub struct Devrcfile {
@@ -190,7 +190,7 @@ impl Devrcfile {
 
     pub fn get_max_taskname_width(&self) -> (usize, usize) {
         let mut name_width = 0;
-        let mut doc_width = 0;
+        let doc_width = 0;
         for (name, _task) in self.tasks.items.iter() {
             name_width = cmp::max(
                 name_width,

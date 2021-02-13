@@ -3,7 +3,7 @@ use crate::{
     interpreter::Interpreter, scope::Scope, variables::RawVariables,
 };
 
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize};
 
 use super::{examples::Examples, exec::ExecKind, params::Params};
 
@@ -52,7 +52,7 @@ impl ComplexCommand {
 
     pub fn perform(
         &self,
-        name: &str,
+        _name: &str,
         parent_scope: &Scope,
         params: &[String],
         config: &Config,
@@ -66,7 +66,7 @@ impl ComplexCommand {
     }
 
     /// Prepare template scope
-    pub fn get_scope(&self, parent_scope: &Scope, params: &[String]) -> DevrcResult<Scope> {
+    pub fn get_scope(&self, parent_scope: &Scope, _params: &[String]) -> DevrcResult<Scope> {
         let mut scope = parent_scope.clone();
 
         for (key, value) in &self.variables.evaluate(&parent_scope)? {
@@ -79,7 +79,7 @@ impl ComplexCommand {
                     scope.insert_env(name, value);
                 }
             }
-            Err(error) => {}
+            Err(_error) => {}
         }
         // for (name, value) in self.environment.evaluate(&scope) {
         //     scope.insert_env(name, value);

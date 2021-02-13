@@ -3,10 +3,10 @@ use std::{
     error::Error as StdError,
     fmt,
     fmt::{Display, Formatter},
-    io::{self, Error as IoError},
+    io::{Error as IoError},
 };
 
-use tera::{Error as TeraError, ErrorKind as TeraErrorKing};
+use tera::{Error as TeraError};
 
 use dotenv::{self, Error as DotenvError};
 
@@ -41,7 +41,7 @@ impl Display for DevrcError {
                     Some(value) => {
                         write!(f, "{:}", &value);
                     }
-                    value => {
+                    _value => {
                         println!("another value");
                     }
                 }

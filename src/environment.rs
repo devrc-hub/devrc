@@ -134,7 +134,7 @@ where
     T: Evaluatable,
 {
     pub fn evaluate(&self, parent_scope: &Scope) -> DevrcResult<Environment<String>> {
-        let mut local_scope = parent_scope.clone();
+        let local_scope = parent_scope.clone();
         let mut vars = Environment::default();
         for (key, value) in &self.vars {
             match value.evaluate(&key, &local_scope) {

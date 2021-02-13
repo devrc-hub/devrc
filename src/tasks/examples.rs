@@ -1,4 +1,4 @@
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize};
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]

@@ -1,14 +1,14 @@
 use crate::{
     errors::{
-        DevrcError::{self, EmptyVariable},
+        DevrcError::{self},
         DevrcResult,
     },
     scope::Scope,
     template::render_string,
 };
-use indexmap::IndexMap;
+
 use serde::Deserialize;
-use tera;
+
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct Http {
