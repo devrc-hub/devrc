@@ -1,24 +1,28 @@
-use indexmap::IndexMap;
-use serde::Deserialize;
-use crate::{errors::{DevrcError::{self, EmptyVariable}, DevrcResult}, scope::Scope, template::render_string};
-use tera;
+use crate::{
+    errors::{
+        DevrcError::{self},
+        DevrcResult,
+    },
+    scope::Scope,
+    template::render_string,
+};
 
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
-pub struct Http{
-    fetch: String
+pub struct Http {
+    fetch: String,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
-pub struct File{
-    file: String
+pub struct File {
+    file: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Computable {
-    exec: String
+    exec: String,
 }
-
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
@@ -27,16 +31,14 @@ pub enum ValueKind {
     String(String),
     Http(Http),
     File(File),
-    Computable(Computable)
+    Computable(Computable),
 }
 
 impl Default for ValueKind {
     fn default() -> Self {
         ValueKind::None
     }
-
 }
-
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct RawVariables {
@@ -45,7 +47,6 @@ pub struct RawVariables {
 }
 
 pub type Variables<T> = indexmap::IndexMap<T, String>;
-
 
 // #[derive(Debug, Clone, Default, PartialEq)]
 // pub struct EvaludatedVariables{
@@ -60,10 +61,8 @@ impl Default for RawVariables {
     }
 }
 
-
 impl RawVariables {
-    pub fn evaluate(&self, parent_scope: &Scope) -> DevrcResult<Variables<String>>
-    {
+    pub fn evaluate(&self, parent_scope: &Scope) -> DevrcResult<Variables<String>> {
         let mut local_scope = parent_scope.clone();
         let mut vars = Variables::default();
         for (key, value) in &self.vars {
@@ -71,10 +70,9 @@ impl RawVariables {
                 Ok(value) => {
                     local_scope.insert_var(&key, &value);
                     vars.insert(key.clone(), value)
-                },
-                Err(error) => return Err(error)
+                }
+                Err(error) => return Err(error),
             };
-
         }
         Ok(vars)
     }
@@ -85,20 +83,16 @@ impl RawVariables {
 }
 
 impl ValueKind {
-
     pub fn evaluate(&self, name: &str, scope: &Scope) -> DevrcResult<String> {
         match self {
             Self::String(template) => render_string(name, &template, scope),
-            Self::None => {
-                Err(DevrcError::EmptyVariable)
-            },
-            Self::Http(_) => {Ok("TODO: replace me".to_owned())},
-            Self::File(_) => {Ok("TODO: replace me".to_owned())},
-            Self::Computable(_) => {Ok("TODO: replace me".to_owned())}
+            Self::None => Err(DevrcError::EmptyVariable),
+            Self::Http(_) => Ok("TODO: replace me".to_owned()),
+            Self::File(_) => Ok("TODO: replace me".to_owned()),
+            Self::Computable(_) => Ok("TODO: replace me".to_owned()),
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -108,14 +102,20 @@ mod tests {
     use crate::errors::DevrcError;
     use std::error::Error as StdError;
 
-    use tera::{Error as TeraError};
+    use tera::Error as TeraError;
 
     #[test]
     fn test_string_evaluation() {
         let mut variables = RawVariables::default();
 
-        variables.add("key1", ValueKind::String("key1 value \"{{ parent_scope_var }}\"".to_owned()));
-        variables.add("key2", ValueKind::String("key2 value \"{{ key1 }}\"".to_owned()));
+        variables.add(
+            "key1",
+            ValueKind::String("key1 value \"{{ parent_scope_var }}\"".to_owned()),
+        );
+        variables.add(
+            "key2",
+            ValueKind::String("key2 value \"{{ key1 }}\"".to_owned()),
+        );
 
         // variables.vars.insert("key1".to_owned(), ValueKind::String("key1 value \"{{ parent_scope_var }}\"".to_owned()));
         // variables.vars.insert("key2".to_owned(), ValueKind::String("key2 value \"{{ key1 }}\"".to_owned()));
@@ -126,8 +126,14 @@ mod tests {
 
         assert_eq!(variables.evaluate(&scope).unwrap(), {
             let mut control = Variables::default();
-            control.insert("key1".to_owned(), "key1 value \"parent_scope_var_value\"".to_owned());
-            control.insert("key2".to_owned(), "key2 value \"key1 value \"parent_scope_var_value\"\"".to_owned());
+            control.insert(
+                "key1".to_owned(),
+                "key1 value \"parent_scope_var_value\"".to_owned(),
+            );
+            control.insert(
+                "key2".to_owned(),
+                "key2 value \"key1 value \"parent_scope_var_value\"\"".to_owned(),
+            );
             control
         });
     }
@@ -136,30 +142,34 @@ mod tests {
     fn test_string_evaluation_error() {
         let mut variables = RawVariables::default();
 
-        variables.add("key1", ValueKind::String("key1 value \"{{ parent_scope_var }}\"".to_owned()));
-        variables.add("key2", ValueKind::String("key2 value \"{{ key1 }}\"".to_owned()));
+        variables.add(
+            "key1",
+            ValueKind::String("key1 value \"{{ parent_scope_var }}\"".to_owned()),
+        );
+        variables.add(
+            "key2",
+            ValueKind::String("key2 value \"{{ key1 }}\"".to_owned()),
+        );
 
         let scope = Scope::default();
 
         match variables.evaluate(&scope) {
             Err(DevrcError::RenderError(terra_error)) => {
-                assert_eq!("Variable `parent_scope_var` not found in context while rendering \'key1\'",
-                           format!("{:}", TeraError::source(&terra_error).unwrap()));
-            },
-            _ => assert!(false)
+                assert_eq!(
+                    "Variable `parent_scope_var` not found in context while rendering \'key1\'",
+                    format!("{:}", TeraError::source(&terra_error).unwrap())
+                );
+            }
+            _ => unreachable!(),
         }
     }
 
     #[test]
-    fn test_file_variable() {
-
-    }
+    fn test_file_variable() {}
 
     #[test]
-    fn test_http_variable() {
-
-    }
+    fn test_http_variable() {}
 
     #[test]
-    fn test_computable_variable(){}
+    fn test_computable_variable() {}
 }

@@ -1,10 +1,9 @@
 use std::error::Error;
 
-use devrc::{cli::{self, CommandLine}, raw_devrcfile::RawDevrcfile, utils::{get_local_devrc_file, is_local_devrc_file_exists}};
-use devrc::runner::Runner;
-use log::info;
-
-
+use devrc::{
+    cli::{self, CommandLine},
+    runner::Runner,
+};
 
 fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
@@ -28,8 +27,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         runner.use_global();
     }
 
-    if opt.configs.len() > 0 {
-        runner.add_files(opt.configs.clone().as_slice().as_ref())?;
+    if !opt.configs.is_empty() {
+        runner.add_files(opt.configs.as_slice().as_ref())?;
     }
 
     if opt.dry_run {
@@ -39,19 +38,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     if opt.read_stdin {
         runner.load_stdin()?
     } else {
-         runner.load()?;
+        runner.load()?;
     }
 
     if opt.list {
         runner.list_tasks()?;
-    }
-    else if opt.describe {
+    } else if opt.list_vars {
+        runner.list_vars()?;
+    } else if opt.describe {
         runner.describe(opt.rest)?;
-    }
-    else if opt.dbg {
+    } else if opt.dbg {
         runner.diagnostic(opt.rest);
-    }
-    else {
+    } else {
         runner.run(opt.rest)?;
     }
 

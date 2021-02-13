@@ -1,7 +1,8 @@
 use std::{io::Cursor, path::PathBuf};
-use structopt::StructOpt;
-use structopt::clap::{AppSettings};
-use structopt::clap::Shell;
+use structopt::{
+    clap::{AppSettings, Shell},
+    StructOpt,
+};
 
 pub fn get_crate_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
@@ -31,7 +32,7 @@ pub struct CommandLine {
     pub list: bool,
 
     /// Read stdin instead of reading default devrcfile
-    #[structopt(long="stdin")]
+    #[structopt(long = "stdin")]
     pub read_stdin: bool,
 
     /** Show devrc file variables */
@@ -55,24 +56,27 @@ pub struct CommandLine {
     pub dry_run: bool,
 
     /// Describe task or variable
-    #[structopt(short="d", long = "--describe")]
+    #[structopt(short = "d", long = "--describe")]
     pub describe: bool,
 
-    #[structopt(long="--dbg-runner", hidden = true)]
-    pub dbg: bool
-
-    // #[structopt(subcommand)]
-    // pub sub: Option<Subcommands>, // /// Trailing newline behavior for the password. If "auto",
-    //                               // /// a trailing newline will be printed iff stdout is detected to be a tty.
-    //                               // #[structopt(long="newline", default_value="auto", raw(possible_values="&NewlineBehavior::variants()"))]
-    //                               // newline: NewlineBehavior
+    #[structopt(long = "--dbg-runner", hidden = true)]
+    pub dbg: bool, // #[structopt(subcommand)]
+                   // pub sub: Option<Subcommands>, // /// Trailing newline behavior for the password. If "auto",
+                   //                               // /// a trailing newline will be printed iff stdout is detected to be a tty.
+                   //                               // #[structopt(long="newline", default_value="auto", raw(possible_values="&NewlineBehavior::variants()"))]
+                   //                               // newline: NewlineBehavior
 }
 
 impl CommandLine {
-    pub fn generate_completions(shell: Shell){
+    pub fn generate_completions(shell: Shell) {
         let mut cursor = Cursor::new(Vec::new());
         Self::clap().gen_completions_to(env!("CARGO_PKG_NAME"), shell, &mut cursor);
-        println!("{}", String::from_utf8(cursor.into_inner()).expect("Clap completion not UTF-8").trim());
+        println!(
+            "{}",
+            String::from_utf8(cursor.into_inner())
+                .expect("Clap completion not UTF-8")
+                .trim()
+        );
     }
 }
 

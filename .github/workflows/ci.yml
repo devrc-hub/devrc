@@ -1,6 +1,9 @@
 name: CI
 on: [push, pull_request]
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   rustfmt:
     runs-on: ubuntu-latest
@@ -47,11 +50,10 @@ jobs:
   compile:
     name: "Compile ${{ matrix.rust }} / ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
-    needs: [rustfmt, clippy]
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.48.0]
+        rust: [stable, beta, nightly, 1.45.0]
         os: [ubuntu-latest, macos-latest]
     steps:
       - name: Checkout repository
@@ -75,7 +77,8 @@ jobs:
       - name: Build devrc
         uses: actions-rs/cargo@v1
         with:
-          command: build --release
+          command: build
+          args: --release --verbose
 
       - name: Install devrc
         uses: actions-rs/cargo@v1
@@ -84,8 +87,6 @@ jobs:
           args: --debug devrc
 
   tests:
-    needs: [compile]
-
     name: "Test ${{ matrix.rust }} / ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
 
@@ -94,7 +95,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.48.0]
+        rust: [stable, beta, nightly, 1.45.0]
         os: [ubuntu-latest, macos-latest]
 
     steps:

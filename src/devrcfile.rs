@@ -1,15 +1,19 @@
 use std::{cmp, path::PathBuf};
 
-use crate::{config::Config, config::{RawConfig}, environment::{EnvFile, EnvFilesWrapper, Environment, RawEnvironment}, errors::DevrcResult, raw_devrcfile::RawDevrcfile, scope::Scope, tasks::{Task, Tasks}, variables::{RawVariables, Variables}};
+use crate::{
+    config::{Config, RawConfig},
+    environment::{EnvFile, Environment, RawEnvironment},
+    errors::DevrcResult,
+    raw_devrcfile::RawDevrcfile,
+    scope::Scope,
+    tasks::{Task, Tasks},
+    variables::{RawVariables, Variables},
+};
 
 use unicode_width::UnicodeWidthStr;
 
-use indexmap::IndexMap;
-
-
 #[derive(Debug, Clone, Default)]
 pub struct Devrcfile {
-
     environment: Environment<String>,
 
     variables: Variables<String>,
@@ -23,17 +27,13 @@ pub struct Devrcfile {
 
     // TODO: evaluate scope only then add devrcfile
     // pub scope: Scope,
-
     pub tasks: Tasks,
 
-    pub max_taskname_width: u32
+    pub max_taskname_width: u32,
 }
 
-
 impl Devrcfile {
-
-    pub fn add_task(&mut self, name: String, task: Task) -> DevrcResult<()>{
-
+    pub fn add_task(&mut self, name: String, task: Task) -> DevrcResult<()> {
         self.tasks.add_task(name, task);
 
         Ok(())
@@ -72,7 +72,6 @@ impl Devrcfile {
     }
 
     pub fn add_config(&mut self, config: RawConfig) -> DevrcResult<()> {
-
         if let Some(Some(value)) = config.interpreter {
             self.config.interpreter = value;
         };
@@ -85,12 +84,11 @@ impl Devrcfile {
             match dry_run {
                 Some(dry_run) => {
                     self.config.dry_run = dry_run;
-                },
+                }
                 None => {
                     self.config.dry_run = false;
                 }
             }
-
         }
 
         Ok(())
@@ -100,14 +98,13 @@ impl Devrcfile {
         let scope = self.get_scope();
 
         if let Ok(value) = &scope {
-
             match variables.evaluate(value) {
                 Ok(value) => {
                     for (name, value) in &value {
                         self.add_var(name, value)?;
                     }
-                },
-                Err(error) => return Err(error)
+                }
+                Err(error) => return Err(error),
             };
         }
         Ok(())
@@ -117,22 +114,21 @@ impl Devrcfile {
         let scope = self.get_scope();
 
         if let Ok(value) = &scope {
-
             match variables.evaluate(value) {
                 Ok(value) => {
                     for (name, value) in &value {
                         self.add_env(name, value)?;
                     }
-                },
-                Err(error) => return Err(error)
+                }
+                Err(error) => return Err(error),
             };
         }
 
         Ok(())
     }
 
-    pub fn add_env_file(&mut self, files: EnvFile, base_path: Option<&PathBuf>) -> DevrcResult<()>{
-         for (key, value) in files.load(base_path)? {
+    pub fn add_env_file(&mut self, files: EnvFile, base_path: Option<&PathBuf>) -> DevrcResult<()> {
+        for (key, value) in files.load(base_path)? {
             self.add_env(&key, &value)?;
         }
 
@@ -142,8 +138,7 @@ impl Devrcfile {
     /// Add objects from given `RawDevrcfile` to current object
     ///
     /// this method implement merge stategy
-    pub fn add_raw_devrcfile(&mut self, file: RawDevrcfile) -> DevrcResult<()>{
-
+    pub fn add_raw_devrcfile(&mut self, file: RawDevrcfile) -> DevrcResult<()> {
         self.add_config(file.config)?;
 
         // Field value present or null
@@ -192,11 +187,13 @@ impl Devrcfile {
     }
 
     pub fn get_max_taskname_width(&self) -> (usize, usize) {
-
         let mut name_width = 0;
-        let mut doc_width = 0;
-        for (name, _task) in self.tasks.items.iter(){
-            name_width = cmp::max(name_width, UnicodeWidthStr::width(format!("{}", &name).as_str()));
+        let doc_width = 0;
+        for (name, _task) in self.tasks.items.iter() {
+            name_width = cmp::max(
+                name_width,
+                UnicodeWidthStr::width(name.to_string().as_str()),
+            );
         }
         (name_width, doc_width)
     }
@@ -205,7 +202,7 @@ impl Devrcfile {
         self.tasks.find_task(name)
     }
 
-    pub fn run(&mut self, params: &[String]) -> DevrcResult<()>{
+    pub fn run(&mut self, params: &[String]) -> DevrcResult<()> {
         let mut i = 0;
 
         let scope = self.get_scope()?;
@@ -214,19 +211,29 @@ impl Devrcfile {
             before_script.perform("before_script", &scope, &[], &self.config)?;
         }
 
-        while i < params.len(){
+        while i < params.len() {
             let name = &params[i];
 
             let task = self.find_task(&params[i])?;
 
             if let Some(before_task) = &self.before_task {
-                before_task.perform(&format!("before_task_{:}", &name), &scope, &[], &self.config)?;
+                before_task.perform(
+                    &format!("before_task_{:}", &name),
+                    &scope,
+                    &[],
+                    &self.config,
+                )?;
             }
 
             task.perform(&name, &scope, &params, &self.config)?;
 
             if let Some(before_task) = &self.before_task {
-                before_task.perform(&format!("after_task_{:}", &name), &scope, &[], &self.config)?;
+                before_task.perform(
+                    &format!("after_task_{:}", &name),
+                    &scope,
+                    &[],
+                    &self.config,
+                )?;
             }
 
             i += 1;
@@ -240,13 +247,13 @@ impl Devrcfile {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
-    use crate::{tasks::complex::ComplexCommand, variables::ValueKind, tasks::exec::ExecKind};
-    use crate::tasks::*;
     use super::*;
+    use crate::{
+        tasks::{complex::ComplexCommand, exec::ExecKind, *},
+        variables::ValueKind,
+    };
 
     #[test]
     fn test_variables() {
@@ -268,10 +275,9 @@ mod tests {
 
         variables.insert("var1".to_string(), "value1".to_string());
         variables.insert("var2".to_string(), "value2 value1".to_string());
-        variables.insert("var3".to_string(),  "value3 value2 value1".to_string());
+        variables.insert("var3".to_string(), "value3 value2 value1".to_string());
 
         assert_eq!(variables, devrcfile.variables);
-
     }
 
     #[test]
@@ -295,12 +301,10 @@ mod tests {
         env.insert("env_var1".to_string(), "value3 value2 value1".to_string());
 
         assert_eq!(env, devrcfile.environment);
-
     }
 
     #[test]
     fn test_get_scope() {
-
         let mut raw_variables_1 = RawVariables::default();
 
         raw_variables_1.add("var1", ValueKind::String("value1".to_owned()));
@@ -318,7 +322,7 @@ mod tests {
         let mut scope = Scope::default();
 
         // let scope = Scope { variables: {"var2": "value2 value1", "var1": "value1"}, environment: {"env_var1": "value3 value2 value1"} }
-        scope.insert_var("var1",  "value1");
+        scope.insert_var("var1", "value1");
         scope.insert_var("var2", "value2 value1");
 
         scope.insert_env("env_var1", "value3 value2 value1");
@@ -328,15 +332,13 @@ mod tests {
 
     #[test]
     fn test_find_task() {
-
         let mut devrcfile = Devrcfile::default();
 
         let task = Task::default();
         devrcfile.add_task("task_1".to_owned(), task).unwrap();
 
         for i in 1..10 {
-            let mut cmd = ComplexCommand::default();
-            cmd.exec = ExecKind::String(format!("echo \"Hello {:}\"", i));
+            let cmd = ComplexCommand::from(format!("echo \"Hello {:}\"", i));
 
             let task = Task::ComplexCommand(cmd);
 
@@ -344,13 +346,14 @@ mod tests {
         }
 
         match devrcfile.find_task("task_3").unwrap() {
-            TaskKind::ComplexCommand(
-                ComplexCommand { exec: ExecKind::String(exec), .. }) => {
+            TaskKind::ComplexCommand(ComplexCommand {
+                exec: ExecKind::String(exec),
+                ..
+            }) => {
                 assert_eq!(exec, "echo \"Hello 3\"");
-
-            },
+            }
             _ => {
-                assert!(false);
+                unreachable!();
             }
         }
     }

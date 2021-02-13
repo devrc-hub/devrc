@@ -1,7 +1,4 @@
-use devrc::{tasks::*, variables::*};
-use indexmap::indexmap;
-
-
+use devrc::tasks::*;
 
 // #[test]
 // fn test_string_or_struct() {
@@ -12,16 +9,13 @@ use indexmap::indexmap;
 //    cmd: echo "command as dict"
 // "#;
 
-
 //     let tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 
 //     // dbg!(tasks);
 // }
 
-
 #[test]
-fn test_simple_string_task(){
-
+fn test_simple_string_task() {
     let content: &str = r#"
 
 command_name: command value
@@ -30,13 +24,10 @@ command_name: command value
     let container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 
     dbg!(container);
-
 }
 
-
 #[test]
-fn test_multiline_task(){
-
+fn test_multiline_task() {
     let content: &str = r#"
 
 simple: |
@@ -47,12 +38,10 @@ simple: |
     let container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 
     dbg!(container);
-
 }
 
 #[test]
-fn test_extented_task_syntax_1(){
-
+fn test_extented_task_syntax_1() {
     let content: &str = r#"
 # execute bash command
 bash:
@@ -64,34 +53,27 @@ bash:
     let container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 
     dbg!(container);
-
 }
 
 #[test]
-fn test_extented_task_syntax_2(){
-
+fn test_extented_task_syntax_2() {
     let content: &str = r#"
 task_3:
   exec:
     - echo "Task 3 first command"
-    - exec": echo 'Task 3 second command'
-      register: output
-
     - echo "Output"
 "#;
 
     let container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 
     dbg!(container);
-
 }
 
-
 #[test]
-fn test_extented_task_syntax_with_deps(){
-
+fn test_extented_task_syntax_with_deps() {
     let content: &str = r#"
 task_with_deps:
+  exec: echo "Hello world"
   deps:
     - task1
     - task2
@@ -100,14 +82,10 @@ task_with_deps:
     let container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 
     dbg!(container);
-
 }
 
-
-
 #[test]
-fn test_executable_script(){
-
+fn test_executable_script() {
     let content: &str = r#"
 # execute bash command
 bash:
@@ -119,13 +97,10 @@ bash:
     let container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 
     dbg!(container);
-
 }
 
-
 #[test]
-fn test_extented_task_syntax_with_shebang(){
-
+fn test_extented_task_syntax_with_shebang() {
     let content: &str = r#"
 task3:
   exec: |
@@ -137,5 +112,4 @@ task3:
     let container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 
     dbg!(container);
-
 }

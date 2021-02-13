@@ -1,15 +1,11 @@
+use tera::{Context, Tera};
 
-use tera::{Tera, Context};
-use std::error::Error as StdError;
+use crate::{errors::DevrcResult, scope::Scope};
 
-use crate::{errors::{DevrcError, DevrcResult}, scope::Scope};
-
-
-pub fn render_string(name: &str, template: &str, scope: &Scope) -> DevrcResult<String>{
-
+pub fn render_string(name: &str, template: &str, scope: &Scope) -> DevrcResult<String> {
     let context: Context = scope.into();
 
-    let autoescape = true;
+    let _autoescape = true;
 
     // TODO: pass tera as input parameter
     let mut tera = Tera::default();
@@ -24,51 +20,49 @@ pub fn render_string(name: &str, template: &str, scope: &Scope) -> DevrcResult<S
 
     match result {
         Ok(value) => Ok(value),
-        Err(error) => Err(error.into())
-        // Err(value) => {
-        //     // TODO: wrap Tera error
-        //     // println!("Render template error: {:}", value);
-        //     Err(DevrcError::RenderError(value))
-        // }
+        Err(error) => Err(error.into()), // Err(value) => {
+                                         //     // TODO: wrap Tera error
+                                         //     // println!("Render template error: {:}", value);
+                                         //     Err(DevrcError::RenderError(value))
+                                         // }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tera::{Error as TeraError,
-               ErrorKind as TerraErrorKind};
+    use tera::{Error as TeraError, ErrorKind as TerraErrorKind};
+
+    use crate::{errors::DevrcError, scope::Scope};
 
     #[test]
     fn test_render_string() {
-
         let mut scope = Scope::default();
         scope.insert_var("name", "username");
-        let rendered_template = render_string("var_name",
-                                              "some template string: {{ name }}",
-                                              &scope);
+        let rendered_template =
+            render_string("var_name", "some template string: {{ name }}", &scope);
 
-        assert_eq!(rendered_template.unwrap(), "some template string: username".to_owned());
-
+        assert_eq!(
+            rendered_template.unwrap(),
+            "some template string: username".to_owned()
+        );
     }
 
     #[test]
-    fn test_render_invalid_template(){
-
-        let rendered_template = render_string("var_name",
-                                              "some template {{ } string",
-                                              &Scope::default());
+    fn test_render_invalid_template() {
+        let rendered_template =
+            render_string("var_name", "some template {{ } string", &Scope::default());
 
         assert!(rendered_template.is_err());
 
         match rendered_template.err().unwrap() {
-            DevrcError::RenderError(TeraError{
+            DevrcError::RenderError(TeraError {
                 kind: TerraErrorKind::Msg(kind),
                 ..
             }) => {
                 assert_eq!(kind, "Failed to parse \'var_name\'");
-            },
-            _ => assert!(false)
+            }
+            _ => unreachable!(),
         }
     }
 }

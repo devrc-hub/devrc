@@ -1,27 +1,31 @@
-use std::fs;
-use std::path::PathBuf;
+use std::{fs, path::PathBuf, str::FromStr};
 
-use crate::{config::RawConfig, devrcfile::Devrcfile, errors::{DevrcError, DevrcResult}, include::IncludeFilesWrapper, scope::Scope, tasks::Task};
+use crate::{
+    config::RawConfig,
+    errors::{DevrcError, DevrcResult},
+    include::IncludeFilesWrapper,
+    scope::Scope,
+    tasks::Task,
+};
 
 use std::fmt::Debug;
 
 use serde::Deserialize;
-use serde_yaml;
 
-use crate::environment::RawEnvironment;
-use crate::environment::{EnvFile, EnvFilesWrapper};
-use crate::tasks::Tasks;
+use crate::{
+    environment::{EnvFile, RawEnvironment},
+    tasks::Tasks,
+};
 
 use crate::variables::RawVariables;
 
-use crate::de::{deserialize_some};
+use crate::de::deserialize_some;
 #[derive(Debug, Deserialize, Clone)]
 pub struct GitlabCIConfig {}
 
 fn default_version() -> String {
     "1.0".to_string()
 }
-
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct RawDevrcfile {
@@ -61,67 +65,62 @@ pub struct RawDevrcfile {
     #[serde(flatten)]
     pub tasks: Tasks,
 
-    pub path: Option<PathBuf>
-
+    pub path: Option<PathBuf>,
 }
 
 impl RawDevrcfile {
     // TODO: split to separate functions
     pub fn from_file(file: &PathBuf) -> DevrcResult<Self> {
         if !file.exists() {
-            return Err(DevrcError::NotExists)
+            return Err(DevrcError::NotExists);
         }
 
         let contents = match fs::read_to_string(&file) {
             Ok(value) => value,
-            Err(error) => {
-                return Err(DevrcError::IoError(error))
-            },
+            Err(error) => return Err(DevrcError::IoError(error)),
         };
 
         Self::from_str(&contents)
     }
 
-    pub fn get_tasks(&self) -> &Tasks{
+    pub fn get_tasks(&self) -> &Tasks {
         &self.tasks
     }
 
-    pub fn from_str(content: &str) -> DevrcResult<Self>{
-        let config: Self = match serde_yaml::from_str(content){
-            Ok(value) => value,
-            Err(error) => return Err(DevrcError::YamlParseError(error))
-        };
-        Ok(config)
-    }
-
     pub fn get_evolved_scope(&self, parent_scope: Option<Scope>) -> DevrcResult<Scope> {
-        let mut scope = Scope::default();
+        let scope = Scope::default();
         match parent_scope {
-            Some(parent_scope) => self.variables.evaluate(&parent_scope),
-            None => self.variables.evaluate(&Scope::default())
+            Some(parent_scope) => self.variables.evaluate(&parent_scope)?,
+            None => self.variables.evaluate(&Scope::default())?,
         };
 
         Ok(scope)
     }
 
-    pub fn setup_path(&mut self, path: PathBuf) -> DevrcResult<()>{
-        match fs::canonicalize(path){
-            Ok(value) => {
-                self.path = Some(value)
-            },
-            Err(error) => return Err(DevrcError::IoError(error))
+    pub fn setup_path(&mut self, path: PathBuf) -> DevrcResult<()> {
+        match fs::canonicalize(path) {
+            Ok(value) => self.path = Some(value),
+            Err(error) => return Err(DevrcError::IoError(error)),
         };
 
         Ok(())
     }
 }
+impl FromStr for RawDevrcfile {
+    type Err = DevrcError;
 
-
+    fn from_str(content: &str) -> Result<Self, Self::Err> {
+        let config: Self = match serde_yaml::from_str(content) {
+            Ok(value) => value,
+            Err(error) => return Err(DevrcError::YamlParseError(error)),
+        };
+        Ok(config)
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use super::RawDevrcfile;
-
 
     #[test]
     fn test_rawdevrcfile() {

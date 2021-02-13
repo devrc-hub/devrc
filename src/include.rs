@@ -3,15 +3,14 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize, Clone)]
 pub struct StringFileInclude(pub String);
 
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct FileInclude {
-    pub file: String
+    pub file: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct RemoteInclude {
-    pub remote: String
+    pub remote: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -21,16 +20,13 @@ pub enum IncludeFiles {
     Simple(StringFileInclude),
     File(FileInclude),
     Remote(RemoteInclude),
-    List(Vec<IncludeFiles>)
+    List(Vec<IncludeFiles>),
 }
-
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct IncludeFilesWrapper(pub IncludeFiles);
 
-
 impl Default for IncludeFilesWrapper {
-
     fn default() -> Self {
         Self(IncludeFiles::Empty)
     }

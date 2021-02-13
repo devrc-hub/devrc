@@ -1,26 +1,16 @@
-use devrc::environment::{EnvFile, EnvFilesWrapper, RawEnvironment, FileInclude, FileRemote, StringFileInclude};
+use devrc::include::IncludeFilesWrapper;
 use std::fmt::Debug;
-use devrc::include::{IncludeFilesWrapper, IncludeFiles};
 
 use serde::Deserialize;
-use serde_yaml;
-
-#[macro_use]
-use indexmap::indexmap;
-
-
 
 #[test]
-fn test_empty_include(){
-
+fn test_empty_include() {
     #[derive(Debug, Deserialize, Clone)]
     pub struct Container {
         #[serde(default)]
         #[serde(rename(deserialize = "include"))]
         pub include_files: IncludeFilesWrapper,
-
     }
-
 
     let content: &str = r#"
 
