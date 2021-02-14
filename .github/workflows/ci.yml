@@ -84,7 +84,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: --debug devrc
+          args: --debug --path ./
 
   tests:
     name: "Test ${{ matrix.rust }} / ${{ matrix.os }}"
