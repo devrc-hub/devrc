@@ -242,6 +242,7 @@ There are few reserved keywords that can't be used as task name:
 * `after_script` - is a task that are executed after last task;
 * `before_task` - is a task that are executed before each task;
 * `after_task` - is a task that are executed after each task;
+* `env_file` - is used for (dotenv files)[#dotenv-files-support];
 
 
 ### Configuration
@@ -253,10 +254,43 @@ If there exists global and local variables with the same name, then local will o
 
 ### Environment variables
 
-Environment variables that are passed to children process's environment. Environment variables can be defined globally or locally in task.
-If there exists global and local environment variables with the same name, then local will overwrite it's value.
+Environment variables that are passed to children process's environment and they must be accessed using $VARIABLE_NAME in commands. Environment variables can be defined globally or locally in task. If there exists global and local environment variables with the same name, then local will overwrite it's value.
+The shell will expand or substitute the value of a variable into a command line if you put a Dollar Sign `$` in front of the variable name.
+
+```yaml
+
+tast_name:
+  environment:
+    name: "Alex"
+
+  exec: Hello $name!
+
+```
 
 ### Dotenv files support
+
+`devrc` can load environment variables from env (dotenv) files. These variables are environment variables, not template variables. By default if something goes wrong in dotenv loading, `devrc` will break and exit. You can change default behaviour by using option `ignore_errors` and if something goes wrong, `devrc` will continue.
+
+If env file contains:
+```text
+ENV_NAME=Alex
+```
+
+you can load environment varibles from files using one of variants:
+
+```yaml
+env_file:
+  - ./.env
+  - file: ./.env_3
+    ignore_errors: true
+  - file: ./.env_2
+
+task_name: echo "Hello $ENV_NAME"
+
+```
+
+File path can be absolute or relative. Part `./` substitute to current directory.
+
 
 ### Execution and computation rules
 
