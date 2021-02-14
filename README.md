@@ -1,8 +1,5 @@
 # Task automation tool on steroids for developers
 
-**devrc** is an easy to use _task runner on steroids_ written in Rust.
-
-
 [![Crates.io](https://img.shields.io/crates/v/devrc)](https://crates.io/crates/devrc)
 [![Crates.io](https://img.shields.io/crates/d/devrc)](https://crates.io/crates/devrc)
 [![CI](https://github.com/devrc-hub/devrc/workflows/CI/badge.svg?branch=master)](https://github.com/devrc-hub/devrc/actions)
@@ -16,7 +13,7 @@
 
 ---
 
-The **devrc** is a small and fast utility written in Rust.
+**devrc** is an easy to use _task runner on steroids_. It's a small and fast utility written in Rust 🦀.
 
 It's userful for project or common routine automation such as minification, compilation, unit testing, linting and many more.
 
@@ -62,6 +59,7 @@ Lets start with an overview of features that exist in devrc:
   * [x] Writing task commands in different languages
   * [ ] Task parameters and user input
   * [ ] Remote command execution
+  * [x] Read `Devrcfile` contents from stdin
   * [x] Global and local defined variables and environment variables
 
 
@@ -100,6 +98,7 @@ What are the benefits of using YAML for this purpose and why it's choosen:
     * [Writing task in different languages](#writing-task-commands-in-different-languages)
     * [Task parameters and user input](#task-parameters-and-user-input)
     * [Remote command execution](#remote-command-execution)
+    * [Read `Devrcfile` from sdtin](#read-devrcfile-from-stdin)
 
 
 * [Contributing, feedback and suggestions](#contributing)
@@ -166,7 +165,6 @@ The files loading process sequence:
 4. Loading `Devrcfile.local`.
 
 The name of the file is a case sensitive.
-
 
 Task defition is like to definition of job in .gitlab-ci files. Key is used as task name and value is used to create task logic.
 Some key names are reserved and described below.
@@ -245,6 +243,7 @@ There are few reserved keywords that can't be used as task name:
 * `after_script` - is a task that are executed after last task;
 * `before_task` - is a task that are executed before each task;
 * `after_task` - is a task that are executed after each task;
+* `env_file` - is used for (dotenv files)[#dotenv-files-support];
 
 
 ### Configuration
@@ -256,10 +255,43 @@ If there exists global and local variables with the same name, then local will o
 
 ### Environment variables
 
-Environment variables that are passed to children process's environment. Environment variables can be defined globally or locally in task.
-If there exists global and local environment variables with the same name, then local will overwrite it's value.
+Environment variables that are passed to children process's environment and they must be accessed using $VARIABLE_NAME in commands. Environment variables can be defined globally or locally in task. If there exists global and local environment variables with the same name, then local will overwrite it's value.
+The shell will expand or substitute the value of a variable into a command line if you put a Dollar Sign `$` in front of the variable name.
+
+```yaml
+
+tast_name:
+  environment:
+    name: "Alex"
+
+  exec: Hello $name!
+
+```
 
 ### Dotenv files support
+
+`devrc` can load environment variables from env (dotenv) files. These variables are environment variables, not template variables. By default if something goes wrong in dotenv loading, `devrc` will break and exit. You can change default behaviour by using option `ignore_errors` and if something goes wrong, `devrc` will continue.
+
+If env file contains:
+```text
+ENV_NAME=Alex
+```
+
+you can load environment varibles from files using one of variants:
+
+```yaml
+env_file:
+  - ./.env
+  - file: ./.env_3
+    ignore_errors: true
+  - file: ./.env_2
+
+task_name: echo "Hello $ENV_NAME"
+
+```
+
+File path can be absolute or relative. Part `./` substitute to current directory.
+
 
 ### Execution and computation rules
 
@@ -371,6 +403,20 @@ Command `devrc hello_1 hello_2` output:
 ```text
 Hello from python
 Hello from node
+```
+
+### Read Devrcfile from stdin
+
+Instead of reading files `devrc` can read tasks file from stdin. To enable this behaviour pass `--stdin` flag:
+
+```bash
+cat ./Devrcfile | devrc --stdin task_name
+```
+
+or
+
+```bash
+devrc --stdin task_name < ./Devrcfile
 ```
 
 

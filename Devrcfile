@@ -2,15 +2,10 @@
 variables:
   name: "my_name_is_world"
 
-publish:
-  desc: "Publish envrc package to crates.io"
-  exec: cargo publish --allow-dirty
-
 
 run-help:
   desc: "Show envrc tasks descriptions"
   exec: cargo run --bin=devrc -- --help
-
 
 run:
   desc: "Execute some task"
@@ -26,3 +21,19 @@ hello:
 # specsheet expr.toml -O cmd.target=./my-expr
 xtests: |
    specsheet xtests/*.toml -O cmd.target.devrc="${CARGO_TARGET_DIR:-../target}/debug/devrc
+
+
+lint:
+  desc: "Run code linters and formatters"
+  exec:
+    - cargo clippy --all -- --verbose
+    - cargo +nightly fmt --all -- --check
+
+test:
+  desc: "Run tests"
+  exec: cargo test
+
+
+check:
+  desc: "Run checkups"
+  deps: [lint, test]

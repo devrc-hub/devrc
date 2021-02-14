@@ -10,12 +10,13 @@ pub fn get_crate_version() -> &'static str {
 
 #[derive(StructOpt, Debug)]
 #[structopt(version = get_crate_version())]
-#[structopt(name = "Tasks automation tool for developers")]
-#[structopt(about = "I am a program and I work, just pass `-h`")]
+#[structopt(name = "devrc")]
+#[structopt(about = "⚡ task automation tool on steroids ⚡")]
+#[structopt(after_help = "Wish you productive coding!")]
 #[structopt(setting = AppSettings::ColoredHelp)]
-/// Commands help
 pub struct CommandLine {
-    /** Devrc files to use */
+    /// Specify an alternate Devrcfile files
+    /// (default: Devrcfile)
     #[structopt(
         parse(from_os_str),
         name = "CONFIG",
@@ -35,7 +36,7 @@ pub struct CommandLine {
     #[structopt(long = "stdin")]
     pub read_stdin: bool,
 
-    /** Show devrc file variables */
+    /// Show runtime variables
     #[structopt(long = "vars")]
     pub list_vars: bool,
 
@@ -51,7 +52,7 @@ pub struct CommandLine {
     #[structopt(short = "g")]
     pub global: bool,
 
-    /// Dry run mode
+    /// Print commands and skip execution
     #[structopt(long = "--dry-run")]
     pub dry_run: bool,
 
@@ -59,12 +60,14 @@ pub struct CommandLine {
     #[structopt(short = "d", long = "--describe")]
     pub describe: bool,
 
+    /// Show debug info
     #[structopt(long = "--dbg-runner", hidden = true)]
-    pub dbg: bool, // #[structopt(subcommand)]
-                   // pub sub: Option<Subcommands>, // /// Trailing newline behavior for the password. If "auto",
-                   //                               // /// a trailing newline will be printed iff stdout is detected to be a tty.
-                   //                               // #[structopt(long="newline", default_value="auto", raw(possible_values="&NewlineBehavior::variants()"))]
-                   //                               // newline: NewlineBehavior
+    pub dbg: bool,
+    // #[structopt(subcommand)]
+    // pub sub: Option<Subcommands>, // /// Trailing newline behavior for the password. If "auto",
+    //                               // /// a trailing newline will be printed iff stdout is detected to be a tty.
+    //                               // #[structopt(long="newline", default_value="auto", raw(possible_values="&NewlineBehavior::variants()"))]
+    //                               // newline: NewlineBehavior
 }
 
 impl CommandLine {
