@@ -59,6 +59,7 @@ Lets start with an overview of features that exist in devrc:
   * [x] Writing task commands in different languages
   * [ ] Task parameters and user input
   * [ ] Remote command execution
+  * [x] Read `Devrcfile` contents from stdin
   * [x] Global and local defined variables and environment variables
 
 
@@ -97,6 +98,7 @@ What are the benefits of using YAML for this purpose and why it's choosen:
     * [Writing task in different languages](#writing-task-commands-in-different-languages)
     * [Task parameters and user input](#task-parameters-and-user-input)
     * [Remote command execution](#remote-command-execution)
+    * [Read `Devrcfile` from sdtin](#read-devrcfile-from-stdin)
 
 
 * [Contributing, feedback and suggestions](#contributing)
@@ -163,7 +165,6 @@ The files loading process sequence:
 4. Loading `Devrcfile.local`.
 
 The name of the file is a case sensitive.
-
 
 Task defition is like to definition of job in .gitlab-ci files. Key is used as task name and value is used to create task logic.
 Some key names are reserved and described below.
@@ -402,6 +403,20 @@ Command `devrc hello_1 hello_2` output:
 ```text
 Hello from python
 Hello from node
+```
+
+### Read Devrcfile from stdin
+
+Instead of reading files `devrc` can read tasks file from stdin. To enable this behaviour pass `--stdin` flag:
+
+```bash
+cat ./Devrcfile | devrc --stdin task_name
+```
+
+or
+
+```bash
+devrc --stdin task_name < ./Devrcfile
 ```
 
 
