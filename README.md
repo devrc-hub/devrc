@@ -1,8 +1,5 @@
 # Task automation tool on steroids for developers
 
-**devrc** is an easy to use _task runner on steroids_ written in Rust.
-
-
 [![Crates.io](https://img.shields.io/crates/v/devrc)](https://crates.io/crates/devrc)
 [![Crates.io](https://img.shields.io/crates/d/devrc)](https://crates.io/crates/devrc)
 [![CI](https://github.com/devrc-hub/devrc/workflows/CI/badge.svg?branch=master)](https://github.com/devrc-hub/devrc/actions)
@@ -16,7 +13,7 @@
 
 ---
 
-The **devrc** is a small and fast utility written in Rust.
+**devrc** is an easy to use _task runner on steroids_. It's a small and fast utility written in Rust 🦀.
 
 It's userful for project or common routine automation such as minification, compilation, unit testing, linting and many more.
 

@@ -42,7 +42,7 @@
 <!-- Remove items that do not apply. For completed items, change [ ] to [x]. -->
 
 - [ ] Commit messages satisfies the [recommendations](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html).
-- [ ] Release notes have been added;
+- [ ] Release notes have been added to [`CHANGELOG.md`](CHANGELOG.md);
 - [ ] Tests for the changes have been added (for bug fixes / features);
 - [ ] Docs has been updated;
 
