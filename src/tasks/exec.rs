@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use crate::{
     config::Config,
-    errors::{DevrcError, DevrcResult},
+    errors::DevrcResult,
     evaluate::Evaluatable,
     interpreter::{Interpreter, ShebangDetector},
     scope::Scope,
@@ -25,7 +25,9 @@ impl ExecKind {
         interpreter: &Interpreter,
     ) -> DevrcResult<()> {
         match self {
-            ExecKind::Empty => return Err(DevrcError::NotImplemented),
+            ExecKind::Empty => {
+                // Nothing to do
+            }
             ExecKind::String(value) => {
                 let cmd = value.evaluate("exec", scope)?;
 
@@ -66,6 +68,12 @@ impl ExecKind {
             }
         };
         Ok(())
+    }
+}
+
+impl Default for ExecKind {
+    fn default() -> Self {
+        Self::Empty
     }
 }
 

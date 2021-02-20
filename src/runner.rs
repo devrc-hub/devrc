@@ -2,6 +2,7 @@ use std::{env, io::Read, path::PathBuf, str::FromStr};
 
 use crate::{
     devrcfile::Devrcfile,
+    docs::DocHelper,
     errors::{DevrcError, DevrcResult},
     interrupt::setup_interrupt_handler,
     raw_devrcfile::RawDevrcfile,
@@ -78,7 +79,6 @@ impl Runner {
                 Ok(parsed_file) => {
                     let mut parsed_file: RawDevrcfile = parsed_file;
                     parsed_file.setup_path(file.to_path_buf())?;
-                    dbg!(&parsed_file);
                     self.devrc.add_raw_devrcfile(parsed_file)?;
                 }
                 Err(error) => return Err(error),
@@ -134,10 +134,8 @@ impl Runner {
     /// Show tasks list with short descriptions
     pub fn list_tasks(&self) -> DevrcResult<()> {
         println!("Available devrc tasks:");
-
-        // TODO: remove copy
         let (max_taskname_width, _) = self.devrc.get_max_taskname_width();
-        for (name, task) in self.devrc.tasks.items.clone() {
+        for (name, task) in self.devrc.get_tasks_docs() {
             let help = task.format_help()?;
 
             if name.starts_with('_') {
@@ -158,8 +156,41 @@ impl Runner {
         Ok(())
     }
 
+    /// Show global variables and their computed values
     pub fn list_vars(&self) -> DevrcResult<()> {
-        println!("List devrc variables:");
+        println!("List global devrc variables:");
+
+        let max_variable_name_width = self.devrc.variables.get_max_key_width();
+
+        for (name, value) in self.devrc.get_vars() {
+            println!(
+                "{:width$}{:max_variable_name_width$} = {}",
+                "",
+                name,
+                value,
+                width = 2,
+                max_variable_name_width = max_variable_name_width
+            );
+        }
+        Ok(())
+    }
+
+    /// Show global environment variables and their computed values
+    pub fn list_env_vars(&self) -> DevrcResult<()> {
+        println!("List global devrc environment variables:");
+
+        let max_variable_name_width = self.devrc.environment.get_max_key_width();
+
+        for (name, value) in self.devrc.get_environment_vars() {
+            println!(
+                "{:width$}{:max_variable_name_width$} = {}",
+                "",
+                name,
+                value,
+                width = 2,
+                max_variable_name_width = max_variable_name_width
+            );
+        }
         Ok(())
     }
 
@@ -169,15 +200,22 @@ impl Runner {
         self.use_global = true;
     }
 
-    //  else if utils::is_global_devrc_file_exists() {
-    //     config.add_file(utils::get_global_devrc_file().unwrap());
-    // } else {
-    //     println!("Show help")
-    // }
-
     /// Show description for given task, variable or environment variable
-    pub fn describe(&self, _params: Vec<String>) -> DevrcResult<()> {
-        println!("Describe task or variable");
+    pub fn describe(&self, params: Vec<String>) -> DevrcResult<()> {
+        for name in params {
+            let task = self.devrc.find_task(&name)?;
+            println!(
+                "Usage: {}\nDescription: {}",
+                task.get_usage_help(&name)?,
+                task.format_help()?,
+                // width = 2,
+            );
+
+            if let Some(example) = task.get_example(){
+                println!("Examples: \n{}", example);
+            }
+            println!("");
+        }
         Ok(())
     }
 

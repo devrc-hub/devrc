@@ -6,7 +6,7 @@ use crate::{
     errors::DevrcResult,
     raw_devrcfile::RawDevrcfile,
     scope::Scope,
-    tasks::{Task, Tasks},
+    tasks::{Task, TaskKind, Tasks},
     variables::{RawVariables, Variables},
 };
 
@@ -14,9 +14,9 @@ use unicode_width::UnicodeWidthStr;
 
 #[derive(Debug, Clone, Default)]
 pub struct Devrcfile {
-    environment: Environment<String>,
+    pub environment: Environment<String>,
 
-    variables: Variables<String>,
+    pub variables: Variables<String>,
 
     after_script: Option<Task>,
     before_script: Option<Task>,
@@ -186,10 +186,24 @@ impl Devrcfile {
         Ok(scope)
     }
 
+    /// Get task doct objects
+    // pub fn get_tasks_docs(&self) -> std::iter::Map<indexmap::map::Iter<String, crate::tasks::TaskKind>, |(&String, &crate::tasks::TaskKind)| -> ()> {
+    pub fn get_tasks_docs(&self) -> impl Iterator<Item = (&String, &TaskKind)> {
+        self.tasks.items.iter().map(|(key, value)| (key, value))
+    }
+
+    pub fn get_vars(&self) -> impl Iterator<Item = (&String, &String)> {
+        self.variables.iter().map(|(key, value)| (key, value))
+    }
+
+    pub fn get_environment_vars(&self) -> impl Iterator<Item = (&String, &String)> {
+        self.environment.iter().map(|(key, value)| (key, value))
+    }
+
     pub fn get_max_taskname_width(&self) -> (usize, usize) {
         let mut name_width = 0;
         let doc_width = 0;
-        for (name, _task) in self.tasks.items.iter() {
+        for (name, _task) in self.get_tasks_docs() {
             name_width = cmp::max(
                 name_width,
                 UnicodeWidthStr::width(name.to_string().as_str()),

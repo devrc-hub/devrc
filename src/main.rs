@@ -45,6 +45,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         runner.list_tasks()?;
     } else if opt.list_vars {
         runner.list_vars()?;
+    } else if opt.list_env_vars {
+        runner.list_env_vars()?;
     } else if opt.describe {
         runner.describe(opt.rest)?;
     } else if opt.dbg {

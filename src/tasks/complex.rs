@@ -11,11 +11,13 @@ use super::{examples::Examples, exec::ExecKind, params::Params};
 pub struct ComplexCommand {
     name: Option<String>,
 
+    #[serde(default)]
     pub exec: ExecKind,
     //shell: ShellVariants,
     pub desc: Option<String>,
 
-    examples: Option<Examples>,
+    // pub example: Option<Examples>,
+    pub example: Option<String>,
 
     #[serde(default)]
     variables: RawVariables,
@@ -99,7 +101,7 @@ where
             name: None,
             exec: ExecKind::String(v.to_string()),
             desc: None,
-            examples: None,
+            example: None,
             variables: RawVariables::default(),
             environment: RawEnvironment::default(),
             params: Params::default(),
@@ -115,7 +117,7 @@ impl Default for ComplexCommand {
             name: None,
             exec: ExecKind::Empty,
             desc: None,
-            examples: None,
+            example: None,
             variables: RawVariables::default(),
             environment: RawEnvironment::default(),
             params: Params::default(),

@@ -76,10 +76,24 @@ impl Default for TaskKind {
 }
 
 impl TaskKind {
+
+    pub fn get_example(&self) -> Option<String> {
+
+        match self {
+            TaskKind::ComplexCommand(
+                ComplexCommand { example, .. }) => example.to_owned(),
+            _ => None
+        }
+    }
+
+    pub fn get_usage_help(&self, name: &str) -> DevrcResult<String>{
+        Ok(format!("{}", &name))
+    }
+
     pub fn format_help(&self) -> DevrcResult<&str> {
         match self {
-            TaskKind::Empty => Ok("doc string"),
-            TaskKind::Command(_command) => Err(DevrcError::NotImplemented),
+            TaskKind::Empty => Ok(""),
+            TaskKind::Command(_command) => Ok(""),
             TaskKind::ComplexCommand(command) => Ok(command.format_help()),
             TaskKind::Commands(_) => Ok("doc string"),
             TaskKind::Include(_) => Ok("doc string"),
