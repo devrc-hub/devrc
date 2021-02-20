@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if opt.dry_run {
-        runner.dry_run();
+        runner.setup_dry_run();
     }
 
     if opt.read_stdin {

@@ -76,17 +76,14 @@ impl Default for TaskKind {
 }
 
 impl TaskKind {
-
     pub fn get_example(&self) -> Option<String> {
-
         match self {
-            TaskKind::ComplexCommand(
-                ComplexCommand { example, .. }) => example.to_owned(),
-            _ => None
+            TaskKind::ComplexCommand(ComplexCommand { example, .. }) => example.to_owned(),
+            _ => None,
         }
     }
 
-    pub fn get_usage_help(&self, name: &str) -> DevrcResult<String>{
+    pub fn get_usage_help(&self, name: &str) -> DevrcResult<String> {
         Ok(format!("{}", &name))
     }
 

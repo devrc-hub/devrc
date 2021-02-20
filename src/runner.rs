@@ -8,7 +8,10 @@ use crate::{
     raw_devrcfile::RawDevrcfile,
     scope::Scope,
     utils,
-    utils::{get_absolute_path, get_global_devrc_file, get_local_devrc_file},
+    utils::{
+        get_absolute_path, get_directory_devrc_file, get_global_devrc_file,
+        get_local_user_defined_devrc_file,
+    },
 };
 
 use std::fmt::Debug;
@@ -24,6 +27,10 @@ pub struct Runner {
 
     /// Assembled tasks library
     pub devrc: Devrcfile,
+
+    pub global_loaded: bool,
+
+    pub loaded_files: Vec<PathBuf>,
 }
 
 impl Runner {
@@ -36,15 +43,21 @@ impl Runner {
             rest: vec![],
             dry_run: false,
             devrc: Devrcfile::default(),
+            global_loaded: false,
+            loaded_files: vec![],
         }
     }
 
-    pub fn dry_run(&mut self) {
+    pub fn setup_dry_run(&mut self) {
         self.dry_run = true;
     }
 
-    pub fn get_global_rawdevrc_file(&self) -> DevrcResult<RawDevrcfile> {
-        if let Some(value) = get_global_devrc_file() {
+    // Try to get devrcfile
+    pub fn get_rawdevrc_file<F>(&self, try_file_func: F) -> DevrcResult<RawDevrcfile>
+    where
+        F: Fn() -> Option<PathBuf>,
+    {
+        if let Some(value) = try_file_func() {
             match RawDevrcfile::from_file(&value) {
                 Ok(mut parsed_file) => {
                     parsed_file.setup_path(value)?;
@@ -53,40 +66,71 @@ impl Runner {
                 Err(error) => return Err(error),
             }
         }
-        Err(DevrcError::GlobalNotExists)
+        Err(DevrcError::NotExists)
     }
 
-    pub fn get_local_rawdevrc_file(&self) -> DevrcResult<RawDevrcfile> {
-        if let Some(value) = get_local_devrc_file() {
-            match RawDevrcfile::from_file(&value) {
-                Ok(mut parsed_file) => {
-                    parsed_file.setup_path(value)?;
-                    return Ok(parsed_file);
-                }
-                Err(error) => return Err(error),
+    pub fn load_global(&mut self) -> DevrcResult<()> {
+        if let Ok(devrcfile) = self.get_rawdevrc_file(get_global_devrc_file) {
+            if let Some(path) = devrcfile.path.clone() {
+                self.add_loaded_file(path)?;
             }
+            self.devrc.add_raw_devrcfile(devrcfile)?;
         }
-        Err(DevrcError::LocalNotExists)
+        self.global_loaded = true;
+
+        Ok(())
+    }
+
+    pub fn load_file<F>(&mut self, try_file_func: F) -> DevrcResult<()>
+    where
+        F: Fn() -> Option<PathBuf>,
+    {
+        if let Ok(devrcfile) = self.get_rawdevrc_file(try_file_func) {
+            // Load global file if option is enabled before adding current file
+            if devrcfile.is_global_enabled() == true && self.global_loaded == false {
+                self.load_global()?
+            }
+            if let Some(path) = devrcfile.path.clone() {
+                self.add_loaded_file(path)?;
+            }
+            self.devrc.add_raw_devrcfile(devrcfile)?;
+        }
+
+        Ok(())
     }
 
     pub fn load(&mut self) -> DevrcResult<()> {
-        if let Ok(devrcfile) = self.get_global_rawdevrc_file() {
-            self.devrc.add_raw_devrcfile(devrcfile)?;
+        // Try to load global devrcfile if flag is enabled
+        if self.use_global {
+            self.load_global()?;
         }
 
-        for file in self.files.iter() {
-            match RawDevrcfile::from_file(file) {
-                Ok(parsed_file) => {
-                    let mut parsed_file: RawDevrcfile = parsed_file;
-                    parsed_file.setup_path(file.to_path_buf())?;
-                    self.devrc.add_raw_devrcfile(parsed_file)?;
+        // Load files only if option specified
+        if !self.files.is_empty() {
+            let mut loaded_files: Vec<PathBuf> = Vec::new();
+
+            for file in &self.files {
+                match self.get_rawdevrc_file(|| Some(file.to_path_buf())) {
+                    Ok(devrcfile) => {
+                        if let Some(path) = devrcfile.path.clone() {
+                            loaded_files.push(path);
+                        }
+                        self.devrc.add_raw_devrcfile(devrcfile)?;
+                    }
+                    Err(error) => return Err(error),
                 }
-                Err(error) => return Err(error),
-            };
-        }
+            }
 
-        if let Ok(devrcfile) = self.get_local_rawdevrc_file() {
-            self.devrc.add_raw_devrcfile(devrcfile)?;
+            for file in loaded_files {
+                self.add_loaded_file(file)?;
+            }
+        } else {
+            // Try to load Devrcfile from current directory
+
+            self.load_file(get_directory_devrc_file)?;
+
+            // Try to load Devrcfile.local
+            self.load_file(get_local_user_defined_devrc_file)?;
         }
 
         Ok(())
@@ -104,6 +148,11 @@ impl Runner {
             }
             Err(error) => return Err(error),
         }
+        Ok(())
+    }
+
+    pub fn add_loaded_file(&mut self, file: PathBuf) -> DevrcResult<()> {
+        self.loaded_files.push(file);
         Ok(())
     }
 
@@ -196,7 +245,6 @@ impl Runner {
 
     /// Load global devrc
     pub fn use_global(&mut self) {
-        println!("Use global devrc file");
         self.use_global = true;
     }
 
@@ -211,7 +259,7 @@ impl Runner {
                 // width = 2,
             );
 
-            if let Some(example) = task.get_example(){
+            if let Some(example) = task.get_example() {
                 println!("Examples: \n{}", example);
             }
             println!("");
@@ -226,30 +274,38 @@ impl Runner {
 
         self.rest = params;
 
+        info!(
+            "Global defined interpreter: `{:}`",
+            &self.devrc.config.interpreter
+        );
+
         if let Some(value) = get_global_devrc_file() {
-            info!("Global devrcfile exists: {:?}", value);
+            info!("Global .devrc exists: {:?}", value);
         }
 
-        if let Some(value) = get_local_devrc_file() {
-            info!("Local devrcfile exists: {:?}", value);
+        if let Some(value) = get_directory_devrc_file() {
+            info!("Local directory Devrcfile exists: {:?}", value);
+        }
+
+        if let Some(value) = get_local_user_defined_devrc_file() {
+            info!("Local user defined Devrcfile.local exists: {:?}", value);
         }
 
         for file in &self.files {
             if let Ok(file) = get_absolute_path(&file, None) {
                 if file.exists() {
-                    info!("Given devrcfile exists: {:?}", file);
+                    info!("Given Devrcfile exists: {:?}", file);
                 } else {
-                    info!("Given devrcfile not exists: {:?}", file);
+                    info!("Given Devrcfile not exists: {:?}", file);
                 }
             } else {
-                error!("Given devrcfile with broken path: {:?}", &file);
+                error!("Given Devrcfile with broken path: {:?}", &file);
             }
         }
 
-        info!(
-            "Global defined interpreter: `{:}`",
-            &self.devrc.config.interpreter
-        );
+        for file in &self.loaded_files {
+            info!("Loaded file: {:?}", file);
+        }
 
         dbg!(self);
     }

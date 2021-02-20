@@ -57,7 +57,7 @@ pub fn get_devrc_file_name() -> String {
     }
 }
 
-pub fn get_local_devrc_file() -> Option<PathBuf> {
+pub fn get_directory_devrc_file() -> Option<PathBuf> {
     match env::current_dir() {
         Ok(path) => Some(Path::new(&path).join(get_devrc_file_name())),
         Err(_) => None,
@@ -71,8 +71,15 @@ pub fn get_global_devrc_file() -> Option<PathBuf> {
     }
 }
 
+pub fn get_local_user_defined_devrc_file() -> Option<PathBuf> {
+    match env::current_dir() {
+        Ok(path) => Some(Path::new(&path).join(LOCAL_DEVRC_FILE_NAME)),
+        Err(_) => None,
+    }
+}
+
 pub fn is_local_devrc_file_exists() -> bool {
-    match get_local_devrc_file() {
+    match get_directory_devrc_file() {
         Some(path) => path.exists(),
         _ => false,
     }

@@ -5,7 +5,7 @@ use crate::{
 
 use serde::Deserialize;
 
-use super::{examples::Examples, exec::ExecKind, params::Params};
+use super::{exec::ExecKind, params::Params};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ComplexCommand {

@@ -105,6 +105,13 @@ impl RawDevrcfile {
 
         Ok(())
     }
+
+    pub fn is_global_enabled(&self) -> bool {
+        if let Some(use_global) = self.config.global {
+            return use_global;
+        }
+        false
+    }
 }
 impl FromStr for RawDevrcfile {
     type Err = DevrcError;
