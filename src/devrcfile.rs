@@ -1,9 +1,9 @@
 use std::{cmp, path::PathBuf};
 
 use crate::{
-    config::{Config, RawConfig},
+    config::{Config, DefaultOption, RawConfig},
     environment::{EnvFile, Environment, RawEnvironment},
-    errors::DevrcResult,
+    errors::{DevrcError, DevrcResult},
     raw_devrcfile::RawDevrcfile,
     scope::Scope,
     tasks::{Task, TaskKind, Tasks},
@@ -91,6 +91,15 @@ impl Devrcfile {
             }
         }
 
+        if let Some(DefaultOption::List(values)) = config.default {
+            self.config.default = values;
+        }
+
+        Ok(())
+    }
+
+    pub fn setup_dry_run(&mut self, dry_run: bool) -> DevrcResult<()> {
+        self.config.dry_run = dry_run;
         Ok(())
     }
 
@@ -212,52 +221,103 @@ impl Devrcfile {
         (name_width, doc_width)
     }
 
-    pub fn find_task(&self, name: &str) -> DevrcResult<Task> {
-        self.tasks.find_task(name)
+    pub fn find_task(&self, name: &str) -> DevrcResult<&Task> {
+        match name {
+            "before_script" => self.before_script.as_ref().ok_or(DevrcError::TaskNotFound),
+            "after_script" => self.after_script.as_ref().ok_or(DevrcError::TaskNotFound),
+            "before_task" | "before_task_" => {
+                self.before_task.as_ref().ok_or(DevrcError::TaskNotFound)
+            }
+            "after_task" | "after_task_" => {
+                self.after_task.as_ref().ok_or(DevrcError::TaskNotFound)
+            }
+            _ => Ok(self.tasks.find_task(name)?),
+        }
     }
 
-    pub fn run(&mut self, params: &[String]) -> DevrcResult<()> {
-        let mut i = 0;
-
+    // Execute hooks if they exists
+    pub fn run_hook(&self, name: &str, task_name: Option<&str>) -> DevrcResult<()> {
         let scope = self.get_scope()?;
 
-        if let Some(before_script) = &self.before_script {
-            before_script.perform("before_script", &scope, &[], &self.config)?;
+        if let Ok(task) = self.find_task(name) {
+            let hook_display_name = if let Some(task_name) = task_name {
+                format!("{}_{}", name, task_name)
+            } else {
+                name.to_string()
+            };
+
+            task.perform(&hook_display_name, &scope, &[], &self.config)?;
+
+            // self.run_task(&hook_display_name, task, &[])?;
         }
 
-        while i < params.len() {
-            let name = &params[i];
+        Ok(())
+    }
 
-            let task = self.find_task(&params[i])?;
+    pub fn run_task(&self, name: &str, task: &TaskKind, params: &[String]) -> DevrcResult<()> {
+        let scope = self.get_scope()?;
 
-            if let Some(before_task) = &self.before_task {
-                before_task.perform(
-                    &format!("before_task_{:}", &name),
-                    &scope,
-                    &[],
-                    &self.config,
-                )?;
+        if let Some(deps) = task.get_dependencies() {
+            eprintln!("\n===>Running task `{}` dependencies: ...", &name);
+
+            for dependency_task_name in deps {
+                let dependency_task = self.find_task(dependency_task_name)?;
+                self.run_task(dependency_task_name, dependency_task, &[])?;
             }
+        }
 
-            task.perform(&name, &scope, &params, &self.config)?;
+        self.run_hook("before_task", Some(&name))?;
 
-            if let Some(before_task) = &self.before_task {
-                before_task.perform(
-                    &format!("after_task_{:}", &name),
-                    &scope,
-                    &[],
-                    &self.config,
-                )?;
-            }
+        task.perform(name, &scope, params, &self.config)?;
+
+        self.run_hook("after_task", Some(&name))?;
+        Ok(())
+    }
+
+    pub fn run(&self, params: &[String]) -> DevrcResult<()> {
+        let mut i = 0;
+
+        let tasks_names = if params.is_empty() {
+            self.config.default.clone()
+        } else {
+            params.to_vec()
+        };
+
+        let mut tasks: Vec<(&str, &TaskKind, &[String])> = Vec::new();
+
+        while i < tasks_names.len() {
+            let name = &tasks_names[i];
+
+            let task = self.find_task(&tasks_names[i])?;
+
+            tasks.push((name, task, &[]));
 
             i += 1;
         }
 
-        if let Some(after_script) = &self.after_script {
-            after_script.perform("after_script", &scope, &[], &self.config)?;
+        self.detect_circular_dependencies(
+            &tasks
+                .iter()
+                .map(|x| (x.0, x.1))
+                .collect::<Vec<(&str, &TaskKind)>>(),
+        )?;
+
+        self.run_hook("before_script", None)?;
+
+        for (name, task, params) in tasks {
+            self.run_task(name, task, params)?;
         }
 
+        self.run_hook("after_script", None)?;
+
         Ok(())
+    }
+
+    // Try to prepare some base for circular dependencies checker
+    // Checker must run before tasks execution.
+    pub fn detect_circular_dependencies(&self, _tasks: &[(&str, &TaskKind)]) -> DevrcResult<bool> {
+        // Err(DevrcError::CircularDependencies)
+        Ok(false)
     }
 }
 

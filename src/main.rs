@@ -27,12 +27,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         runner.use_global();
     }
 
+    runner.setup_dry_run(opt.dry_run);
+
     if !opt.configs.is_empty() {
         runner.add_files(opt.configs.as_slice().as_ref())?;
-    }
-
-    if opt.dry_run {
-        runner.setup_dry_run();
     }
 
     if opt.read_stdin {

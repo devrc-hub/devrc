@@ -56,6 +56,7 @@ pub struct Config {
     pub interpreter: Interpreter,
     pub log_level: LogLevel,
     pub dry_run: bool,
+    pub default: Vec<String>,
 }
 
 impl Default for Config {
@@ -65,6 +66,7 @@ impl Default for Config {
             dry_run: false,
             interpreter: Interpreter::default(),
             log_level: LogLevel::Error,
+            default: vec![],
         }
     }
 }

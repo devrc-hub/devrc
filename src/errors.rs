@@ -28,6 +28,7 @@ pub enum DevrcError {
     Signal,
     Code { code: i32 },
     RuntimeError,
+    CircularDependencies,
 }
 
 impl Display for DevrcError {

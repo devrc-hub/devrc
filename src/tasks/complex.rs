@@ -29,7 +29,7 @@ pub struct ComplexCommand {
     params: Params,
 
     #[serde(default)]
-    deps: Vec<String>,
+    pub deps: Vec<String>,
 
     // #[serde(deserialize_with = "deserialize_interpreter")]
     shell: Option<Interpreter>,

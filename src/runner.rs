@@ -48,8 +48,8 @@ impl Runner {
         }
     }
 
-    pub fn setup_dry_run(&mut self) {
-        self.dry_run = true;
+    pub fn setup_dry_run(&mut self, dry_run: bool) {
+        self.dry_run = dry_run;
     }
 
     // Try to get devrcfile
@@ -87,7 +87,7 @@ impl Runner {
     {
         if let Ok(devrcfile) = self.get_rawdevrc_file(try_file_func) {
             // Load global file if option is enabled before adding current file
-            if devrcfile.is_global_enabled() == true && self.global_loaded == false {
+            if devrcfile.is_global_enabled() && self.global_loaded {
                 self.load_global()?
             }
             if let Some(path) = devrcfile.path.clone() {
@@ -133,6 +133,7 @@ impl Runner {
             self.load_file(get_local_user_defined_devrc_file)?;
         }
 
+        self.devrc.setup_dry_run(self.dry_run)?;
         Ok(())
     }
 
@@ -148,6 +149,7 @@ impl Runner {
             }
             Err(error) => return Err(error),
         }
+        self.devrc.setup_dry_run(self.dry_run)?;
         Ok(())
     }
 
@@ -262,7 +264,7 @@ impl Runner {
             if let Some(example) = task.get_example() {
                 println!("Examples: \n{}", example);
             }
-            println!("");
+            println!();
         }
         Ok(())
     }

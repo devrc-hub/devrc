@@ -95,6 +95,7 @@ What are the benefits of using YAML for this purpose and why it's choosen:
     * [Variables](#variables)
     * [Environment varibles](#environment-variables)
     * [Dotenv files](#dotenv-files)
+    * [Task dependencies](#task-dependencies)
     * [Writing task in different languages](#writing-task-commands-in-different-languages)
     * [Task parameters and user input](#task-parameters-and-user-input)
     * [Remote command execution](#remote-command-execution)
@@ -161,7 +162,7 @@ If command line option `-f` is used:
 1. Loading `~/.devrc` in home directory if it exists and if command line flag `-g` or option `devrc_config.global` are enabled;
 2. Loading files which are specified by command line option `-f`;
 
-If command line option `-f` is not used:
+If command line option `-f` isn't used:
 1. Loading `~/.devrc` in home directory if it exists and if command line flag `-g` or option `devrc_config.global` in `Devrcfile` are enabled;
 2. Loading `Devrcfile` or file name which is defined by environment variable `DEVRC_FILE` in the current directory;
 3. Loading `Devrcfile.local`.
@@ -320,6 +321,21 @@ variables:
 
 environment:
     ENV_VAR: "env_var {{ var_2 }}"
+```
+
+### Task dependencies
+
+Task may have dependencies from another tasks. Dependencies of a task always run before a task execution and before `before_task` hook.
+This is useful to make some job before given task, like clean cache, remove atrifacts, etc. Dependencies run in series.
+
+```yaml
+
+task_1: echo "Hello world!"
+
+task_2:
+  exec: echo "Hello $USER!"
+  deps: [task_1]
+
 ```
 
 
