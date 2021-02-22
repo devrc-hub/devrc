@@ -6,6 +6,7 @@ use crate::{
     evaluate::Evaluatable,
     interpreter::{Interpreter, ShebangDetector},
     scope::Scope,
+    workshop::Designer,
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -23,6 +24,7 @@ impl ExecKind {
         scope: &mut Scope,
         config: &Config,
         interpreter: &Interpreter,
+        designer: &Designer,
     ) -> DevrcResult<()> {
         match self {
             ExecKind::Empty => {
@@ -30,6 +32,8 @@ impl ExecKind {
             }
             ExecKind::String(value) => {
                 let cmd = value.evaluate("exec", scope)?;
+
+                config.log_level.info(&cmd, &designer.command());
 
                 if !config.dry_run {
                     if let Some(interpreter) = cmd.get_interpreter_from_shebang() {
@@ -45,6 +49,8 @@ impl ExecKind {
                 for (i, item) in value.iter().enumerate() {
                     let cmd = item.evaluate(&format!("multi_exec_{:}", i), &scope)?;
 
+                    config.log_level.info(&cmd, &designer.command());
+
                     if !config.dry_run {
                         if let Some(interpreter) = cmd.get_interpreter_from_shebang() {
                             // Execute script using given shebang
@@ -54,16 +60,6 @@ impl ExecKind {
                             interpreter.execute(&cmd, scope, config)?;
                         }
                     }
-
-                    // match item.evaluate("multi_exec", &scope) {
-                    //     Ok(value) => {
-                    //          cmd.execute(&scope)?
-                    //     println!("{:?}", value)
-                    // }
-                    // Err(error) => {
-                    //     return Err(error)
-                    // }
-                    // }
                 }
             }
         };

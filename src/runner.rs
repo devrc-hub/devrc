@@ -1,6 +1,7 @@
 use std::{env, io::Read, path::PathBuf, str::FromStr};
 
 use crate::{
+    devrc_log::LogLevel,
     devrcfile::Devrcfile,
     docs::DocHelper,
     errors::{DevrcError, DevrcResult},
@@ -12,6 +13,7 @@ use crate::{
         get_absolute_path, get_directory_devrc_file, get_global_devrc_file,
         get_local_user_defined_devrc_file,
     },
+    workshop::Designer,
 };
 
 use std::fmt::Debug;
@@ -31,6 +33,9 @@ pub struct Runner {
     pub global_loaded: bool,
 
     pub loaded_files: Vec<PathBuf>,
+
+    pub log_level: Option<LogLevel>,
+    pub designer: Designer,
 }
 
 impl Runner {
@@ -40,16 +45,27 @@ impl Runner {
         Runner {
             files,
             use_global: false,
-            rest: vec![],
             dry_run: false,
+            rest: vec![],
             devrc: Devrcfile::default(),
             global_loaded: false,
             loaded_files: vec![],
+            log_level: Some(LogLevel::Info),
+            designer: Designer::default(),
         }
     }
 
     pub fn setup_dry_run(&mut self, dry_run: bool) {
         self.dry_run = dry_run;
+    }
+
+    pub fn setup_verbosity(&mut self, level: u8, quiet: bool) -> DevrcResult<()> {
+        match (quiet, level) {
+            (true, _) => self.log_level = Some(LogLevel::Off),
+            (_, 0) => {}
+            (_, x) => self.log_level = Some(LogLevel::from(x)),
+        }
+        Ok(())
     }
 
     // Try to get devrcfile
@@ -134,6 +150,10 @@ impl Runner {
         }
 
         self.devrc.setup_dry_run(self.dry_run)?;
+
+        if let Some(level) = &self.log_level {
+            self.devrc.setup_log_level(level.clone())?;
+        }
         Ok(())
     }
 
@@ -150,6 +170,11 @@ impl Runner {
             Err(error) => return Err(error),
         }
         self.devrc.setup_dry_run(self.dry_run)?;
+
+        if let Some(level) = &self.log_level {
+            self.devrc.setup_log_level(level.clone())?;
+        }
+
         Ok(())
     }
 
@@ -195,9 +220,11 @@ impl Runner {
 
             // TODO: Add colours
             println!(
-                "{:width$}{:max_taskname_width$}  {}",
+                "{:width$}{}{:max_taskname_width$}{}  {}",
                 "",
+                self.designer.task_name().prefix(),
                 name,
+                self.designer.task_name().suffix(),
                 help,
                 width = 2,
                 max_taskname_width = max_taskname_width
@@ -215,9 +242,11 @@ impl Runner {
 
         for (name, value) in self.devrc.get_vars() {
             println!(
-                "{:width$}{:max_variable_name_width$} = {}",
+                "{:width$}{}{:max_variable_name_width$}{} = \"{}\"",
                 "",
+                self.designer.variable().prefix(),
                 name,
+                self.designer.variable().suffix(),
                 value,
                 width = 2,
                 max_variable_name_width = max_variable_name_width
@@ -234,9 +263,11 @@ impl Runner {
 
         for (name, value) in self.devrc.get_environment_vars() {
             println!(
-                "{:width$}{:max_variable_name_width$} = {}",
+                "{:width$}{}{:max_variable_name_width$}{} = \"{}\"",
                 "",
+                self.designer.evariable().prefix(),
                 name,
+                self.designer.evariable().suffix(),
                 value,
                 width = 2,
                 max_variable_name_width = max_variable_name_width
