@@ -18,6 +18,7 @@ pub mod common;
 pub mod config;
 pub mod de;
 pub mod devrcfile;
+pub mod docs;
 pub mod environment;
 pub mod errors;
 pub mod evaluate;

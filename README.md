@@ -86,15 +86,16 @@ What are the benefits of using YAML for this purpose and why it's choosen:
     * [Install from crates](#install-from-crates.io)
     * [Compile from sources](#compile-from-sources)
     * [Binary Releases](#binary-releases)
-
 * [Usage](#usage)
     * [Task definition](#task-definition)
     * [Reserved keywords](#reserved-keywords)
+    * [Config options](#configuration)
     * [Template engine](#template-engine)
     * [Execution and compututation rules](#execution-and-computation-rules)
     * [Variables](#variables)
     * [Environment varibles](#environment-variables)
     * [Dotenv files](#dotenv-files)
+    * [Task dependencies](#task-dependencies)
     * [Writing task in different languages](#writing-task-commands-in-different-languages)
     * [Task parameters and user input](#task-parameters-and-user-input)
     * [Remote command execution](#remote-command-execution)
@@ -157,14 +158,16 @@ Tasks are stored as mappings (hashes/dictionaries/key-value pairs) in YAML file 
 Or you can specify environment variable `DEVRC_FILE` with alternative file name.
 Also you can store global tasks in `~/.devrc` in your home directory or overwrite shared project tasks or varibles by local `Devrcfile.local` file.
 
-The files loading process sequence:
-
-1. Loading `~/.devrc` in home directory if it exists;
+If command line option `-f` is used:
+1. Loading `~/.devrc` in home directory if it exists and if command line flag `-g` or option `devrc_config.global` are enabled;
 2. Loading files which are specified by command line option `-f`;
-3. Loading `Devrcfile` or file name which is defined by environment variable `DEVRC_FILE` in the current directory;
-4. Loading `Devrcfile.local`.
 
-The name of the file is a case sensitive.
+If command line option `-f` isn't used:
+1. Loading `~/.devrc` in home directory if it exists and if command line flag `-g` or option `devrc_config.global` in `Devrcfile` are enabled;
+2. Loading `Devrcfile` or file name which is defined by environment variable `DEVRC_FILE` in the current directory;
+3. Loading `Devrcfile.local`.
+
+The names of the files are a case sensitive.
 
 Task defition is like to definition of job in .gitlab-ci files. Key is used as task name and value is used to create task logic.
 Some key names are reserved and described below.
@@ -248,6 +251,16 @@ There are few reserved keywords that can't be used as task name:
 
 ### Configuration
 
+
+```yaml
+
+devrc_config:
+  global: true
+  interpreter: /bin/bash -c
+  default: [task_1, task_2]
+
+```
+
 ### Variables
 
 Variables are used by template engine to compute commands, another variables (global or local) or environment variables.
@@ -308,6 +321,21 @@ variables:
 
 environment:
     ENV_VAR: "env_var {{ var_2 }}"
+```
+
+### Task dependencies
+
+Task may have dependencies from another tasks. Dependencies of a task always run before a task execution and before `before_task` hook.
+This is useful to make some job before given task, like clean cache, remove atrifacts, etc. Dependencies run in series.
+
+```yaml
+
+task_1: echo "Hello world!"
+
+task_2:
+  exec: echo "Hello $USER!"
+  deps: [task_1]
+
 ```
 
 

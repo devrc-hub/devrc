@@ -1,6 +1,6 @@
 
 variables:
-  name: "my_name_is_world"
+  message: "Hello, $USER!"
 
 
 run-help:
@@ -15,19 +15,22 @@ run:
 hello:
   desc: "Print hello world message"
   exec:
-    - "echo \"Hello {{ name }}!\""
-    - echo "woerwerwe {{ name }}"
+    - echo {{ message }}
+
 
 # specsheet expr.toml -O cmd.target=./my-expr
 xtests: |
    specsheet xtests/*.toml -O cmd.target.devrc="${CARGO_TARGET_DIR:-../target}/debug/devrc
 
 
+clean: cargo clean
+
 lint:
-  desc: "Run code linters and formatters"
+  desc: "Run code linters and formatters after clean"
   exec:
     - cargo clippy --all -- --verbose
     - cargo +nightly fmt --all -- --check
+  deps: [clean]
 
 test:
   desc: "Run tests"
@@ -36,4 +39,4 @@ test:
 
 check:
   desc: "Run checkups"
-  deps: [lint, test]
+  deps: [clean, lint, test]

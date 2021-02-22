@@ -8,11 +8,16 @@ All notable changes to this project will be documented in this file.
 
 ### Changes
 _Changes of existing functionality_
+- Stabilized loading process
 
 ### New Features
 
+- Added task dependencies
+- Added default tasks
+
 ### Bugfixes
 _For any bug fixes_
+- Fixed tasks and variables help
 
 ### Security
 _Security vulnerabilities improvements_

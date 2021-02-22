@@ -1,5 +1,8 @@
 devrc_config:
   shell: bash -c
+  default:
+    - command_2
+    - command_1
 
 
 env_file:
@@ -50,7 +53,8 @@ command_3:
 command_4:
   desc: "Command 4 description"
   exec: "echo \"Sleep\"; sleep 20; echo \"Done\""
-
+  example: |
+    example of usage
 
 command_5:
   desc: "Execute python script"
@@ -66,3 +70,15 @@ command_6:
     #!/usr/bin/env node
 
     console.log("Hello world from node")
+
+command_7:
+  desc: "Task with dependency from comand_5 with exec option"
+  deps: [command_5]
+
+
+command_8:
+  desc: |
+    Task with dependency from command_7 with exec option.
+    It's a multi-line doc string.
+  deps: [command_8]
+  exec: echo "Hello world from command_8"

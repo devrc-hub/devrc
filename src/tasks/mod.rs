@@ -76,10 +76,21 @@ impl Default for TaskKind {
 }
 
 impl TaskKind {
+    pub fn get_example(&self) -> Option<String> {
+        match self {
+            TaskKind::ComplexCommand(ComplexCommand { example, .. }) => example.to_owned(),
+            _ => None,
+        }
+    }
+
+    pub fn get_usage_help(&self, name: &str) -> DevrcResult<String> {
+        Ok(name.to_string())
+    }
+
     pub fn format_help(&self) -> DevrcResult<&str> {
         match self {
-            TaskKind::Empty => Ok("doc string"),
-            TaskKind::Command(_command) => Err(DevrcError::NotImplemented),
+            TaskKind::Empty => Ok(""),
+            TaskKind::Command(_command) => Ok(""),
             TaskKind::ComplexCommand(command) => Ok(command.format_help()),
             TaskKind::Commands(_) => Ok("doc string"),
             TaskKind::Include(_) => Ok("doc string"),
@@ -102,7 +113,7 @@ impl TaskKind {
         params: &[String],
         config: &Config,
     ) -> DevrcResult<()> {
-        println!("\n==> Running task: `{:}` ...", &name);
+        eprintln!("\n==> Running task: `{:}` ...", &name);
         match self {
             TaskKind::Empty => return Err(DevrcError::NotImplemented),
             TaskKind::Command(value) => {
@@ -120,6 +131,17 @@ impl TaskKind {
         }
 
         Ok(())
+    }
+
+    // Get list of task dependencies
+    pub fn get_dependencies(&self) -> Option<&Vec<String>> {
+        if let TaskKind::ComplexCommand(command) = self {
+            if !&command.deps.is_empty() {
+                return Some(&command.deps);
+            }
+        };
+
+        None
     }
 }
 
@@ -142,11 +164,11 @@ impl Tasks {
         self.items.insert(name, task);
     }
 
-    pub fn find_task(&self, name: &str) -> DevrcResult<Task> {
+    pub fn find_task(&self, name: &str) -> DevrcResult<&Task> {
         let task = self.items.get(name);
 
         match task {
-            Some(value) => Ok(value.clone()),
+            Some(value) => Ok(value),
             None => Err(DevrcError::TaskNotFound),
         }
     }

@@ -5,17 +5,19 @@ use crate::{
 
 use serde::Deserialize;
 
-use super::{examples::Examples, exec::ExecKind, params::Params};
+use super::{exec::ExecKind, params::Params};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ComplexCommand {
     name: Option<String>,
 
+    #[serde(default)]
     pub exec: ExecKind,
     //shell: ShellVariants,
     pub desc: Option<String>,
 
-    examples: Option<Examples>,
+    // pub example: Option<Examples>,
+    pub example: Option<String>,
 
     #[serde(default)]
     variables: RawVariables,
@@ -27,7 +29,7 @@ pub struct ComplexCommand {
     params: Params,
 
     #[serde(default)]
-    deps: Vec<String>,
+    pub deps: Vec<String>,
 
     // #[serde(deserialize_with = "deserialize_interpreter")]
     shell: Option<Interpreter>,
@@ -99,7 +101,7 @@ where
             name: None,
             exec: ExecKind::String(v.to_string()),
             desc: None,
-            examples: None,
+            example: None,
             variables: RawVariables::default(),
             environment: RawEnvironment::default(),
             params: Params::default(),
@@ -115,7 +117,7 @@ impl Default for ComplexCommand {
             name: None,
             exec: ExecKind::Empty,
             desc: None,
-            examples: None,
+            example: None,
             variables: RawVariables::default(),
             environment: RawEnvironment::default(),
             params: Params::default(),

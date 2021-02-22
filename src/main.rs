@@ -27,12 +27,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         runner.use_global();
     }
 
+    runner.setup_dry_run(opt.dry_run);
+
     if !opt.configs.is_empty() {
         runner.add_files(opt.configs.as_slice().as_ref())?;
-    }
-
-    if opt.dry_run {
-        runner.dry_run();
     }
 
     if opt.read_stdin {
@@ -45,6 +43,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         runner.list_tasks()?;
     } else if opt.list_vars {
         runner.list_vars()?;
+    } else if opt.list_env_vars {
+        runner.list_env_vars()?;
     } else if opt.describe {
         runner.describe(opt.rest)?;
     } else if opt.dbg {

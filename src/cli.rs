@@ -12,7 +12,8 @@ pub fn get_crate_version() -> &'static str {
 #[structopt(version = get_crate_version())]
 #[structopt(name = "devrc")]
 #[structopt(about = "⚡ task automation tool on steroids ⚡")]
-#[structopt(after_help = "Wish you productive coding!")]
+#[structopt(after_help = "Wish you productive coding!
+Visit https://github.com/devrc-hub/devrc to get more info about devrc.")]
 #[structopt(setting = AppSettings::ColoredHelp)]
 pub struct CommandLine {
     /// Specify an alternate Devrcfile files
@@ -36,9 +37,13 @@ pub struct CommandLine {
     #[structopt(long = "stdin")]
     pub read_stdin: bool,
 
-    /// Show runtime variables
-    #[structopt(long = "vars")]
+    /// Show global variables
+    #[structopt(long = "variables")]
     pub list_vars: bool,
+
+    /// Show global environment variables
+    #[structopt(long = "evariables")]
+    pub list_env_vars: bool,
 
     /// Print shell completion script for <SHELL>
     #[structopt(long, name="SHELL", possible_values = &Shell::variants(), case_insensitive = true)]
@@ -56,7 +61,7 @@ pub struct CommandLine {
     #[structopt(long = "--dry-run")]
     pub dry_run: bool,
 
-    /// Describe task or variable
+    /// Describe task
     #[structopt(short = "d", long = "--describe")]
     pub describe: bool,
 
