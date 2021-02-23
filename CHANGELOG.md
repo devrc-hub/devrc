@@ -8,16 +8,13 @@ All notable changes to this project will be documented in this file.
 
 ### Changes
 _Changes of existing functionality_
-- Stabilized loading process
 
 ### New Features
 
-- Added task dependencies
-- Added default tasks
 
 ### Bugfixes
 _For any bug fixes_
-- Fixed tasks and variables help
+
 
 ### Security
 _Security vulnerabilities improvements_
@@ -30,11 +27,24 @@ _Other cases_
 
 ---
 
-## [v0.0.1](https://github.com/devrc-hub/devrc/releases/tag/v0.0.1) - 2021-XX-XX
+## [v0.1.0](https://github.com/devrc-hub/devrc/releases/tag/v0.1.0) - 2021-02-23
 
 ### Changes
 
 - Added MVP (minimum viable product) with variables, environment variables and code execution.
-- Added shebang support for commands
+- Stabilized loading process
+
+### New Features
+
 - All tasks can be listed from command line
-- Template engine rendering has been added for variables, environment variables and commands
+- Shebang support for commands
+- Task dependencies
+- Default tasks
+- Template engine and variables interpolation are supported
+- Environment variables customization
+- Command line completion scripts
+- devrc supports dotenv files
+- Writing task commands in different languages
+- Read Devrcfile contents from stdin
+- Global and local defined variables and environment variables
+- Override variables by command line option
