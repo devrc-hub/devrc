@@ -10,6 +10,7 @@ use crate::{
     config::Config,
     errors::{DevrcError, DevrcResult},
     scope::Scope,
+    workshop::Designer,
 };
 
 pub mod complex;
@@ -112,16 +113,21 @@ impl TaskKind {
         parent_scope: &Scope,
         params: &[String],
         config: &Config,
+        designer: &Designer,
     ) -> DevrcResult<()> {
-        eprintln!("\n==> Running task: `{:}` ...", &name);
+        config.log_level.debug(
+            &format!("\n==> Running task: `{:}` ...", &name),
+            &designer.banner(),
+        );
+
         match self {
             TaskKind::Empty => return Err(DevrcError::NotImplemented),
             TaskKind::Command(value) => {
                 let complex_command = ComplexCommand::from(value);
-                complex_command.perform(name, parent_scope, params, &config)?;
+                complex_command.perform(name, parent_scope, params, &config, &designer)?;
             }
             TaskKind::ComplexCommand(value) => {
-                value.perform(name, parent_scope, params, &config)?;
+                value.perform(name, parent_scope, params, &config, &designer)?;
             }
             TaskKind::Commands(_value) => return Err(DevrcError::NotImplemented),
             TaskKind::Include(value) => {

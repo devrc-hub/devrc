@@ -2,12 +2,14 @@ use std::{cmp, path::PathBuf};
 
 use crate::{
     config::{Config, DefaultOption, RawConfig},
+    devrc_log::LogLevel,
     environment::{EnvFile, Environment, RawEnvironment},
     errors::{DevrcError, DevrcResult},
     raw_devrcfile::RawDevrcfile,
     scope::Scope,
     tasks::{Task, TaskKind, Tasks},
     variables::{RawVariables, Variables},
+    workshop::Designer,
 };
 
 use unicode_width::UnicodeWidthStr;
@@ -30,6 +32,8 @@ pub struct Devrcfile {
     pub tasks: Tasks,
 
     pub max_taskname_width: u32,
+
+    pub designer: Designer,
 }
 
 impl Devrcfile {
@@ -76,8 +80,11 @@ impl Devrcfile {
             self.config.interpreter = value;
         };
 
-        if let Some(Some(log_level)) = config.log_level {
-            self.config.log_level = log_level;
+        if let Some(log_level) = config.log_level {
+            self.config.log_level = match log_level {
+                Some(log_level) => log_level,
+                None => LogLevel::Info,
+            };
         }
 
         if let Some(dry_run) = config.dry_run {
@@ -100,6 +107,11 @@ impl Devrcfile {
 
     pub fn setup_dry_run(&mut self, dry_run: bool) -> DevrcResult<()> {
         self.config.dry_run = dry_run;
+        Ok(())
+    }
+
+    pub fn setup_log_level(&mut self, level: LogLevel) -> DevrcResult<()> {
+        self.config.log_level = level;
         Ok(())
     }
 
@@ -246,7 +258,13 @@ impl Devrcfile {
                 name.to_string()
             };
 
-            task.perform(&hook_display_name, &scope, &[], &self.config)?;
+            task.perform(
+                &hook_display_name,
+                &scope,
+                &[],
+                &self.config,
+                &self.designer,
+            )?;
 
             // self.run_task(&hook_display_name, task, &[])?;
         }
@@ -258,7 +276,10 @@ impl Devrcfile {
         let scope = self.get_scope()?;
 
         if let Some(deps) = task.get_dependencies() {
-            eprintln!("\n===>Running task `{}` dependencies: ...", &name);
+            self.config.log_level.debug(
+                &format!("\n==> Running task `{}` dependencies: ...", &name),
+                &self.designer.banner(),
+            );
 
             for dependency_task_name in deps {
                 let dependency_task = self.find_task(dependency_task_name)?;
@@ -268,7 +289,7 @@ impl Devrcfile {
 
         self.run_hook("before_task", Some(&name))?;
 
-        task.perform(name, &scope, params, &self.config)?;
+        task.perform(name, &scope, params, &self.config, &self.designer)?;
 
         self.run_hook("after_task", Some(&name))?;
         Ok(())

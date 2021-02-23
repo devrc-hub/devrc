@@ -1,4 +1,4 @@
-use crate::{de::deserialize_some, interpreter::Interpreter};
+use crate::{de::deserialize_some, devrc_log::LogLevel, interpreter::Interpreter};
 use std::{env, fmt::Debug, path::PathBuf};
 
 use serde::Deserialize;
@@ -14,20 +14,6 @@ pub enum DefaultOption {
 impl Default for DefaultOption {
     fn default() -> Self {
         DefaultOption::Empty
-    }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub enum LogLevel {
-    Warn,
-    Debug,
-    Error,
-    Info,
-}
-
-impl Default for LogLevel {
-    fn default() -> Self {
-        LogLevel::Info
     }
 }
 
@@ -65,7 +51,7 @@ impl Default for Config {
             current_dir: env::current_dir().ok(),
             dry_run: false,
             interpreter: Interpreter::default(),
-            log_level: LogLevel::Error,
+            log_level: LogLevel::Info,
             default: vec![],
         }
     }
@@ -85,7 +71,7 @@ impl Default for ExecOptions {
             current_dir: env::current_dir().ok(),
             dry_run: false,
             interpreter: Some(Interpreter::default()),
-            log_level: Some(LogLevel::Error),
+            log_level: Some(LogLevel::Info),
         }
     }
 }

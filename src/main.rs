@@ -23,6 +23,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
+    runner.setup_verbosity(opt.verbose, opt.quiet)?;
+
     if opt.global {
         runner.use_global();
     }

@@ -68,6 +68,15 @@ pub struct CommandLine {
     /// Show debug info
     #[structopt(long = "--dbg-runner", hidden = true)]
     pub dbg: bool,
+
+    // The number of occurrences of the `v/verbose` flag
+    /// Enable verbose mode (-v, -vv, -vvv, etc.)
+    #[structopt(short, long, parse(from_occurrences))]
+    pub verbose: u8,
+
+    /// Suppress all output
+    #[structopt(short, long)]
+    pub quiet: bool,
     // #[structopt(subcommand)]
     // pub sub: Option<Subcommands>, // /// Trailing newline behavior for the password. If "auto",
     //                               // /// a trailing newline will be printed iff stdout is detected to be a tty.
@@ -99,9 +108,3 @@ pub enum Subcommands {
 pub fn parse_args() -> CommandLine {
     CommandLine::from_args()
 }
-
-// pu fn parse_config(file: PathBuf) -> std::io::Result<Value> {
-//     let contents = fs::read_to_string(fs::canonicalize(file)?)?;
-
-//     Ok(contents.parse::<Value>().unwrap())
-// }

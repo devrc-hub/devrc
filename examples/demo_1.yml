@@ -3,6 +3,7 @@ devrc_config:
   default:
     - command_2
     - command_1
+  log_level: debug
 
 
 env_file:

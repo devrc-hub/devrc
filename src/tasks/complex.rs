@@ -1,6 +1,6 @@
 use crate::{
     config::Config, environment::RawEnvironment, errors::DevrcResult, interpreter::Interpreter,
-    scope::Scope, variables::RawVariables,
+    scope::Scope, variables::RawVariables, workshop::Designer,
 };
 
 use serde::Deserialize;
@@ -58,13 +58,15 @@ impl ComplexCommand {
         parent_scope: &Scope,
         params: &[String],
         config: &Config,
+        designer: &Designer,
     ) -> DevrcResult<()> {
         let mut scope = self.get_scope(parent_scope, params)?;
 
         let interpreter = self.get_interpreter(&config);
 
         // TODO: register output as variable
-        self.exec.execute(&mut scope, config, &interpreter)
+        self.exec
+            .execute(&mut scope, config, &interpreter, &designer)
     }
 
     /// Prepare template scope
