@@ -13,6 +13,7 @@ use crate::{
         get_absolute_path, get_directory_devrc_file, get_global_devrc_file,
         get_local_user_defined_devrc_file,
     },
+    variables::RawVariables,
     workshop::Designer,
 };
 
@@ -66,6 +67,10 @@ impl Runner {
             (_, x) => self.log_level = Some(LogLevel::from(x)),
         }
         Ok(())
+    }
+
+    pub fn setup_variables(&mut self, variables: RawVariables) -> DevrcResult<()> {
+        self.devrc.add_variables(variables)
     }
 
     // Try to get devrcfile

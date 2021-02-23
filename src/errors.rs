@@ -29,6 +29,7 @@ pub enum DevrcError {
     Code { code: i32 },
     RuntimeError,
     CircularDependencies,
+    InvalidArgument,
 }
 
 impl Display for DevrcError {

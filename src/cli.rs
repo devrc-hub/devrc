@@ -4,8 +4,30 @@ use structopt::{
     StructOpt,
 };
 
+use std::error::Error;
+
+use crate::errors::{DevrcError, DevrcResult};
+
 pub fn get_crate_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
+}
+
+/// Parse a single key-value pair
+fn parse_key_val<T>(s: &str) -> DevrcResult<(T, T)>
+where
+    T: std::str::FromStr,
+    T::Err: Error + 'static,
+{
+    let pos = s.find('=').ok_or({
+        //format!("invalid KEY=value: no `=` found in `{}`", s)}
+        DevrcError::InvalidArgument
+    })?;
+    Ok((
+        s[..pos].parse().map_err(|_| DevrcError::InvalidArgument)?,
+        s[pos + 1..]
+            .parse()
+            .map_err(|_| DevrcError::InvalidArgument)?,
+    ))
 }
 
 #[derive(StructOpt, Debug)]
@@ -77,11 +99,10 @@ pub struct CommandLine {
     /// Suppress all output
     #[structopt(short, long)]
     pub quiet: bool,
-    // #[structopt(subcommand)]
-    // pub sub: Option<Subcommands>, // /// Trailing newline behavior for the password. If "auto",
-    //                               // /// a trailing newline will be printed iff stdout is detected to be a tty.
-    //                               // #[structopt(long="newline", default_value="auto", raw(possible_values="&NewlineBehavior::variants()"))]
-    //                               // newline: NewlineBehavior
+
+    /// Override <VARIABLE> with <VALUE>
+    #[structopt(long = "--set", parse(try_from_str = parse_key_val), name="VAR=VALUE")]
+    pub set: Vec<(String, String)>,
 }
 
 impl CommandLine {

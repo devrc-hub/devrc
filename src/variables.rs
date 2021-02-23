@@ -82,6 +82,17 @@ impl RawVariables {
     }
 }
 
+impl From<Vec<(String, String)>> for RawVariables {
+    fn from(items: Vec<(String, String)>) -> Self {
+        Self {
+            vars: items
+                .iter()
+                .map(move |x| (x.0.clone(), ValueKind::String(x.1.clone())))
+                .collect::<indexmap::IndexMap<String, ValueKind>>(),
+        }
+    }
+}
+
 impl ValueKind {
     pub fn evaluate(&self, name: &str, scope: &Scope) -> DevrcResult<String> {
         match self {

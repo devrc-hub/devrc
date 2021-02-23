@@ -41,6 +41,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         runner.load()?;
     }
 
+    if !opt.set.is_empty() {
+        runner.setup_variables(opt.set.into())?
+    }
+
     if opt.list {
         runner.list_tasks()?;
     } else if opt.list_vars {
