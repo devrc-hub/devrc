@@ -49,10 +49,8 @@ pub struct CommandLine {
     )]
     pub configs: Vec<PathBuf>,
 
-    // /** Directory where devrc files located */
-    // #[structopt(parse(from_os_str), name = "DIR", short="d", long="dir", verbatim_doc_comment)]
-    // pub dirs: Vec<PathBuf>,
-    #[structopt(short = "l", long = "list", help = "List option help")]
+    /// List available tasks and their arguments
+    #[structopt(short = "l", long = "list")]
     pub list: bool,
 
     /// Read stdin instead of reading default devrcfile

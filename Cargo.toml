@@ -17,33 +17,30 @@ include = ["src/**/*", "Cargo.toml", "LICENSE", "README.md", "CHANGELOG.md"]
 [dependencies]
 env_logger = "0.8.2"
 log = "0.4.11"
-serde = { version = "1.0.121", features = ["derive"] }
+serde = { version = "1.0.123", features = ["derive"] }
 serde_yaml = "0.8.17"
-structopt = "0.3.20"
-yaml-merge-keys = "0.4.1"
-casual = "0.2.0"
-shellexpand = "2.0.0"
-shellwords = "1.1.0"
-dirs = "3.0.1"
-openssl = { version = "0.10.32", features = ["vendored"] }
-reqwest = { version = "0.10.9", features = ["blocking", "json"] }
-indexmap = { version="1.6.0", features = ["serde-1"] }
+structopt = "0.3.21"
+
+# yaml-merge-keys = "0.4.1"
+
+# Simple crate for parsing user input.
+# casual = "0.2.0"
+dirs-next = "2.0.0"
+# openssl = { version = "0.10.32", features = ["vendored"] }
+# Not used yet
+# reqwest = { version = "0.10.9", features = ["blocking", "json"] }
+indexmap = { version="1.6.1", features = ["serde-1"] }
 ansi_term = "0.12.1"
-serde_with = "1.5.1"
-void = "1.0.2"
 dotenv = "0.15.0"
 tera = "1.6.1"
 unicode-width = "0.1.8"
 atty = "0.2.14"
-run_script = "0.6.3"
 tempfile = "3.2.0"
-ctrlc = "3.1.7"
+ctrlc = "3.1.8"
+# For remote command execution
 # ssh2 = "0.9.1"
 
 
-# standard crate data is left out
-[dev-dependencies]
-void = "1.0.2"
 
 [profile.dev]
 opt-level = 0
