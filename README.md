@@ -185,52 +185,55 @@ There are three styles of task definition.
 
 Simple command definition without documentation string:
 
-    ```yaml
-    variables:
-      name: "Alex"
-    task_name: echo "Hello {{ name }}"
-    ```
-    or several commands in one task
-    ```yaml
+```yaml
+variables:
+  name: "Alex"
 
-    variables:
-      first_name: "Alex"
-      second_name: "Alice"
+task_name: echo "Hello {{ name }}"
+```
 
-    environment:
-      ENV_NAME: "{{ second_name }}"
+or several commands in one task
+```yaml
 
-    task_name:
-      - echo "Hello {{ first_name }}!"
-      - echo "Hello $ENV_NAME!"
-    ```
+variables:
+  first_name: "Alex"
+  second_name: "Alice"
+
+environment:
+  ENV_NAME: "{{ second_name }}"
+
+task_name:
+  - echo "Hello {{ first_name }}!"
+  - echo "Hello $ENV_NAME!"
+```
+
 
 This tasks can be rewritten to more complex definition form with documentation string and variables.
 
-    ```yaml
-    variables:
-      name: "Alex"
-    task_name:
-      desc: "Task description"
-      exec: echo "Hello {{ name }}"
-    ```
+```yaml
+variables:
+  name: "Alex"
+  task_name:
+desc: "Task description"
+  exec: echo "Hello {{ name }}"
+```
 
-    or
+or
 
-    ```yaml
-    variables:
-      first_name: "Alex"
-      second_name: "Alice"
+```yaml
+variables:
+  first_name: "Alex"
+  second_name: "Alice"
 
-    environment:
-      ENV_NAME: "{{ second_name }}"
+environment:
+  ENV_NAME: "{{ second_name }}"
 
-    task_name:
-      desc: "Task description"
-      exec:
-        - echo "Hello {{ first_name }}!"
-        - echo "Hello $ENV_NAME!"
-    ```
+task_name:
+  desc: "Task description"
+  exec:
+    - echo "Hello {{ first_name }}!"
+    - echo "Hello $ENV_NAME!"
+```
 
 
 If we write code to `Devrcfile` and type command `devrc task_name` in console it will output to console:
@@ -256,7 +259,7 @@ There are few reserved keywords that can't be used as task name:
 * `after_script` - is a task that are executed after last task;
 * `before_task` - is a task that are executed before each task;
 * `after_task` - is a task that are executed after each task;
-* `env_file` - is used for (dotenv files)[#dotenv-files-support];
+* `env_file` - is used for [dotenv files](#dotenv-files-support);
 
 
 ### Configuration
@@ -355,7 +358,7 @@ task_2:
 
 Tasks may have parameters. Task arguments are passed after task name when devrc is called. Parameters can be required or have default value. Also parameter value is a template string and previously defined variables or parameters can be used:
 
-```
+```bash
 devrc task_name arg1 arg2 "argument with spaces and {{ param1 }}" task_name2
 ```
 
@@ -363,7 +366,7 @@ There are 2 forms of parameters definitions.
 
 Here is a simple form where `param1` and `param2` are required and `param2` is optional with default value:
 
-```
+```yaml
 task_name param1 param2 param3="argument with spaces and {{ param1 }}": |
   echo "Hello {{ param1 }} and {{ param2 }}";
   echo "{{ param3 }}"
@@ -389,11 +392,13 @@ task_name:
 
 ```
 
-Here example usage
+Here usage example:
+
 ```bash
 $ devrc task_name name="Alex"
 Hello Alex and Alice
 ```
+
 or
 
 ```bash
@@ -412,7 +417,6 @@ It's also possible to execute task on remote hosts.
 _Notice:_ This feature has't been implemented yet.
 
 ```yaml
-
 task_name:
   exec: echo "Hello {{ name }} from $(hostname)"
   variables:
@@ -460,6 +464,7 @@ hello_2:
 ```
 
 Command `devrc hello_1 hello_2` output:
+
 ```text
 Hello from python
 Hello from node
