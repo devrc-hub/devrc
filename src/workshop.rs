@@ -33,9 +33,15 @@ impl Designer {
         }
     }
 
-    pub fn parameter(&self) -> Self {
+    pub fn parameter_name(&self) -> Self {
         Self {
-            style: Style::new(),
+            style: Style::new().fg(Color::Green),
+        }
+    }
+
+    pub fn parameter_value(&self) -> Self {
+        Self {
+            style: Style::new().fg(Color::Cyan),
         }
     }
 

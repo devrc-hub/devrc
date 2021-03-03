@@ -30,6 +30,11 @@ pub enum DevrcError {
     RuntimeError,
     CircularDependencies,
     InvalidArgument,
+    InvalidName,
+    InvalidParams,
+    TaskArgumentsParsingError,
+    OverlappingParameters,
+    NotEnouthArguments,
 }
 
 impl Display for DevrcError {

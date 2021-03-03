@@ -5,7 +5,13 @@ use crate::{
 
 use serde::Deserialize;
 
-use super::{exec::ExecKind, params::Params};
+use super::{
+    arguments::TaskArguments,
+    exec::ExecKind,
+    params::{ParamValue, Params},
+};
+
+use crate::evaluate::Evaluatable;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ComplexCommand {
@@ -36,12 +42,26 @@ pub struct ComplexCommand {
 }
 
 impl ComplexCommand {
+    pub fn setup_name(&mut self, value: &str) -> DevrcResult<()> {
+        self.name = Some(value.to_owned());
+
+        Ok(())
+    }
+
+    pub fn setup_params(&mut self, params: Params) -> DevrcResult<()> {
+        self.params.merge(params)
+    }
+
     pub fn format_help(&self) -> &str {
         if let Some(value) = &self.desc {
             value
         } else {
             ""
         }
+    }
+
+    pub fn format_parameters_help(&self, designer: &Designer) -> DevrcResult<String> {
+        self.params.format_help_string(designer)
     }
 
     pub fn get_interpreter(&self, config: &Config) -> Interpreter {
@@ -56,11 +76,11 @@ impl ComplexCommand {
         &self,
         _name: &str,
         parent_scope: &Scope,
-        params: &[String],
+        args: &TaskArguments,
         config: &Config,
         designer: &Designer,
     ) -> DevrcResult<()> {
-        let mut scope = self.get_scope(parent_scope, params)?;
+        let mut scope = self.get_scope(parent_scope, args)?;
 
         let interpreter = self.get_interpreter(&config);
 
@@ -70,11 +90,16 @@ impl ComplexCommand {
     }
 
     /// Prepare template scope
-    pub fn get_scope(&self, parent_scope: &Scope, _params: &[String]) -> DevrcResult<Scope> {
+    pub fn get_scope(&self, parent_scope: &Scope, args: &TaskArguments) -> DevrcResult<Scope> {
         let mut scope = parent_scope.clone();
 
         for (key, value) in &self.variables.evaluate(&parent_scope)? {
             scope.insert_var(key, value);
+        }
+
+        // TODO: here devrc can ask user input
+        for (key, (value, _)) in args {
+            scope.insert_var(key, &value.evaluate(&key, &scope)?);
         }
 
         match &self.environment.evaluate(&scope) {
@@ -92,6 +117,17 @@ impl ComplexCommand {
         // dbg!(&variables);
         Ok(scope)
     }
+
+    pub fn get_parameters(
+        &self,
+        _parts: &[String],
+    ) -> DevrcResult<indexmap::IndexMap<String, ParamValue>> {
+        Ok(self.params.params.clone())
+    }
+
+    pub fn has_parameters(&self) -> bool {
+        !self.params.params.is_empty()
+    }
 }
 
 impl<T> From<T> for ComplexCommand
@@ -102,6 +138,22 @@ where
         ComplexCommand {
             name: None,
             exec: ExecKind::String(v.to_string()),
+            desc: None,
+            example: None,
+            variables: RawVariables::default(),
+            environment: RawEnvironment::default(),
+            params: Params::default(),
+            deps: Vec::new(),
+            shell: None,
+        }
+    }
+}
+
+impl From<ExecKind> for ComplexCommand {
+    fn from(item: ExecKind) -> Self {
+        ComplexCommand {
+            name: None,
+            exec: item,
             desc: None,
             example: None,
             variables: RawVariables::default(),

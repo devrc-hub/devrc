@@ -9,8 +9,11 @@ All notable changes to this project will be documented in this file.
 ### Changes
 _Changes of existing functionality_
 
+- Changed format for tasks listing
+
 ### New Features
 
+- Added task parameters, see #2 (@lispython)
 
 ### Bugfixes
 _For any bug fixes_

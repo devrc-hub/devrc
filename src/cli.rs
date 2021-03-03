@@ -53,6 +53,10 @@ pub struct CommandLine {
     #[structopt(short = "l", long = "list")]
     pub list: bool,
 
+    /// Show detailed tasks list
+    #[structopt(short = "d", long = "detailed")]
+    pub detailed: bool,
+
     /// Read stdin instead of reading default devrcfile
     #[structopt(long = "stdin")]
     pub read_stdin: bool,
@@ -82,7 +86,7 @@ pub struct CommandLine {
     pub dry_run: bool,
 
     /// Describe task
-    #[structopt(short = "d", long = "--describe")]
+    #[structopt(long = "--describe")]
     pub describe: bool,
 
     /// Show debug info
