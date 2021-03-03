@@ -1,10 +1,10 @@
-use std::{fmt, marker::PhantomData};
+use std::{convert::TryFrom, fmt, marker::PhantomData};
 
 use indexmap::IndexMap;
 
 use serde::{Deserialize, Deserializer};
 
-use serde::de::{MapAccess, SeqAccess, Visitor};
+use serde::de::{MapAccess, Visitor};
 
 use crate::{
     config::Config,
@@ -13,26 +13,17 @@ use crate::{
     workshop::Designer,
 };
 
+pub mod arguments;
 pub mod complex;
 pub mod examples;
 pub mod exec;
 pub mod params;
+pub mod params_parser;
 
 pub use crate::tasks::{examples::Examples, exec::ExecKind, params::Params};
 
-use self::complex::ComplexCommand;
-
-#[derive(Debug, Clone, Default)]
-pub struct Commands {
-    pub items: Vec<TaskKind>,
-}
-
-impl Commands {
-    pub fn push(&mut self, value: TaskKind) -> DevrcResult<()> {
-        self.items.push(value);
-        Ok(())
-    }
-}
+use self::{complex::ComplexCommand, params::ParamValue};
+use crate::tasks::arguments::TaskArguments;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct FileInclude {
@@ -66,7 +57,7 @@ pub enum TaskKind {
     Empty,
     Command(String),
     ComplexCommand(ComplexCommand),
-    Commands(Commands),
+    Commands(ExecKind),
     Include(Include),
 }
 
@@ -84,8 +75,14 @@ impl TaskKind {
         }
     }
 
-    pub fn get_usage_help(&self, name: &str) -> DevrcResult<String> {
-        Ok(name.to_string())
+    pub fn get_usage_help(&self, name: &str, designer: &Designer) -> DevrcResult<String> {
+        Ok(format!(
+            "{}{}{} {}",
+            designer.task_name().prefix(),
+            name.to_string(),
+            designer.task_name().suffix(),
+            self.format_parameters_help(&designer)?
+        ))
     }
 
     pub fn format_help(&self) -> DevrcResult<&str> {
@@ -93,8 +90,15 @@ impl TaskKind {
             TaskKind::Empty => Ok(""),
             TaskKind::Command(_command) => Ok(""),
             TaskKind::ComplexCommand(command) => Ok(command.format_help()),
-            TaskKind::Commands(_) => Ok("doc string"),
-            TaskKind::Include(_) => Ok("doc string"),
+            TaskKind::Commands(_) => Ok(""),
+            TaskKind::Include(_) => Ok(""),
+        }
+    }
+
+    pub fn format_parameters_help(&self, designer: &Designer) -> DevrcResult<String> {
+        match self {
+            TaskKind::ComplexCommand(command) => command.format_parameters_help(designer),
+            _ => Ok("".to_owned()),
         }
     }
 
@@ -111,7 +115,7 @@ impl TaskKind {
         &self,
         name: &str,
         parent_scope: &Scope,
-        params: &[String],
+        args: &TaskArguments,
         config: &Config,
         designer: &Designer,
     ) -> DevrcResult<()> {
@@ -124,14 +128,13 @@ impl TaskKind {
             TaskKind::Empty => return Err(DevrcError::NotImplemented),
             TaskKind::Command(value) => {
                 let complex_command = ComplexCommand::from(value);
-                complex_command.perform(name, parent_scope, params, &config, &designer)?;
+                complex_command.perform(name, parent_scope, args, &config, &designer)?;
             }
             TaskKind::ComplexCommand(value) => {
-                value.perform(name, parent_scope, params, &config, &designer)?;
+                value.perform(name, parent_scope, args, &config, &designer)?;
             }
             TaskKind::Commands(_value) => return Err(DevrcError::NotImplemented),
-            TaskKind::Include(value) => {
-                dbg!(value);
+            TaskKind::Include(_value) => {
                 return Err(DevrcError::NotImplemented);
             }
         }
@@ -149,6 +152,23 @@ impl TaskKind {
 
         None
     }
+
+    pub fn get_parameters(
+        &self,
+        parts: &[String],
+    ) -> DevrcResult<indexmap::IndexMap<String, ParamValue>> {
+        match self {
+            TaskKind::ComplexCommand(value) => value.get_parameters(&parts),
+            _ => Ok(indexmap::IndexMap::new()),
+        }
+    }
+
+    pub fn has_parameters(&self) -> bool {
+        match self {
+            TaskKind::ComplexCommand(value) => value.has_parameters(),
+            _ => false,
+        }
+    }
 }
 
 //#[derive(Debug, Deserialize, Clone, Default)]
@@ -165,9 +185,34 @@ pub struct Tasks {
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct TasksFiles {}
 
+pub fn extract_name_and_params(value: String) -> DevrcResult<(String, Params)> {
+    let mut parts = value.splitn(2, ' ');
+
+    let name = parts.next().ok_or(DevrcError::InvalidName)?;
+
+    let mut params: Params = Params::default();
+
+    if let Some(value) = parts.next() {
+        params = Params::try_from(value.to_string())?;
+    }
+
+    Ok((name.to_string(), params))
+}
+
 impl Tasks {
-    pub fn add_task(&mut self, name: TaskName, task: Task) {
-        self.items.insert(name, task);
+    pub fn add_task(&mut self, name: TaskName, task: Task) -> DevrcResult<()> {
+        if let TaskKind::ComplexCommand(mut command) = task {
+            let (name, params) = extract_name_and_params(name)?;
+
+            command.setup_name(&name)?;
+            command.setup_params(params)?;
+
+            self.items.insert(name, TaskKind::ComplexCommand(command));
+        } else {
+            self.items.insert(name, task);
+        }
+
+        Ok(())
     }
 
     pub fn find_task(&self, name: &str) -> DevrcResult<&Task> {
@@ -203,12 +248,20 @@ impl<'de> Deserialize<'de> for Tasks {
             {
                 let mut elements: IndexMap<TaskName, Task> = IndexMap::new();
 
-                while let Some((key, value)) = match access.next_entry() {
+                while let Some((key, value)) = match access.next_entry::<TaskName, Task>() {
                     Ok(value) => value,
                     Err(error) => return Err(error),
                 } {
-                    // TODO: process key with params
-                    elements.insert(key, value);
+                    let command = match value {
+                        TaskKind::Command(value) => {
+                            TaskKind::ComplexCommand(ComplexCommand::from(value))
+                        }
+                        TaskKind::Commands(commands) => {
+                            TaskKind::ComplexCommand(ComplexCommand::from(commands))
+                        }
+                        _ => value,
+                    };
+                    elements.insert(key, command);
                 }
 
                 Ok(Tasks { items: elements })
@@ -222,108 +275,6 @@ impl<'de> Deserialize<'de> for Tasks {
                 lifetime: PhantomData,
             },
         )
-    }
-}
-
-// macro_rules! task_value_result_map {
-
-//     ($var:ident, $from:ty => $to:expr, $value:ident, $return:expr) => {
-
-//         if let Ok($value) = Result::map(
-//             <$from as Deserialize>::deserialize(
-//                 ContentRefDeserializer::<D::Error>::new(&$var)
-//             ),
-//             $to
-//         ){
-//             let value = match $value {
-//                 TaskKind::Command(inner) => {
-//                     TaskKind::ComplexCommand(ComplexCommand::from(inner))
-//                 },
-//                 value => {
-//                     value
-//                 }
-//             };
-
-//             return Ok(value);
-//         }
-//     };
-//     ($var:ident, $from:ty => $to:expr) => {
-//         task_value_result_map!{$var, $from => $to, value, value}
-//     }
-// }
-
-// impl<'de> Deserialize<'de> for TaskKind {
-
-//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-//     where
-//         D: Deserializer<'de> {
-
-//         let content = match <Content as Deserialize>::deserialize(deserializer){
-//             Ok(val) => val,
-//             Err(error) => {
-//                 return Err(error);
-//             }
-
-//         };
-
-//         if let Ok(value) = match Deserializer::deserialize_any(
-//             ContentRefDeserializer::<D::Error>::new(&content),
-//             UntaggedUnitVisitor::new("TaskValue", "Empty")){
-//             Ok(value) => Ok(TaskKind::Empty),
-//             Err(error) => Err(error)
-//         }{
-//             return Ok(value);
-//         }
-
-//         task_value_result_map!{content, String => TaskKind::Command, value, value};
-//         task_value_result_map!{content, Include => TaskKind::Include, value, value};
-//         task_value_result_map!{content, ComplexCommand => TaskKind::ComplexCommand, value, value};
-//         task_value_result_map!{content, Commands => TaskKind::Commands, value, value};
-//         // task_value_result_map!{content, Vec<TaskKind> => TaskKind::Commands, value, value};
-
-//         Ok(TaskKind::Empty)
-//     }
-// }
-
-impl<'de> Deserialize<'de> for Commands {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct StructVisitor<T>(PhantomData<T>);
-
-        impl<'de, T> Visitor<'de> for StructVisitor<T>
-        where
-            T: Deserialize<'de>,
-        {
-            type Value = Commands;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                fmt::Formatter::write_str(formatter, "struct Tasks")
-            }
-
-            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-            where
-                A: SeqAccess<'de>,
-            {
-                let mut commands = Commands::default();
-
-                while let Some(value) = match seq.next_element() {
-                    Ok(value) => value,
-                    Err(error) => return Err(error),
-                } {
-                    let _ = commands.push(value);
-                }
-
-                Ok(commands)
-            }
-        }
-
-        let visitor = StructVisitor(PhantomData::<Commands>);
-
-        deserializer.deserialize_seq(visitor)
-
-        // Ok(Commands::default())
     }
 }
 

@@ -57,7 +57,7 @@ Lets start with an overview of features that exist in devrc:
   * [x] Command line completion scripts
   * [x] devrc supports [dotenv files](#dotenv-files)
   * [x] Writing task commands in different languages
-  * [ ] Task parameters and user input
+  * [x] Task parameters and user input
   * [ ] Remote command execution
   * [x] Read `Devrcfile` contents from stdin
   * [x] Global and local defined variables and environment variables
@@ -181,21 +181,31 @@ There are different types of tasks.
 2. Configuration task (it hasn't been implemented yet).
 
 
-There are three styles of task definition:
+There are three styles of task definition.
 
-1. Simple command definition without documentation string.
+Simple command definition without documentation string:
 
     ```yaml
-    task_name: echo "Hello world"
+    variables:
+      name: "Alex"
+    task_name: echo "Hello {{ name }}"
     ```
     or several commands in one task
     ```yaml
+
+    variables:
+      first_name: "Alex"
+      second_name: "Alice"
+
+    environment:
+      ENV_NAME: "{{ second_name }}"
+
     task_name:
-      - echo "Hello Alex!"
-      - echo "Hello Alice!"
+      - echo "Hello {{ first_name }}!"
+      - echo "Hello $ENV_NAME!"
     ```
 
-2. More complex definition with documentation string and variables.
+This tasks can be rewritten to more complex definition form with documentation string and variables.
 
     ```yaml
     variables:
@@ -343,34 +353,56 @@ task_2:
 
 ### Task parameters and user input
 
-Task may have parameters or user input.
+Tasks may have parameters. Task arguments are passed after task name when devrc is called. Parameters can be required or have default value. Also parameter value is a template string and previously defined variables or parameters can be used:
 
-_Notice:_ This feature has't been implemented yet.
+```
+devrc task_name arg1 arg2 "argument with spaces and {{ param1 }}" task_name2
+```
 
-Here task has a required parameter `name`, an optional parameter `other` with default value of `Alice` and host parameter `host` which is assigned after user input:
+There are 2 forms of parameters definitions.
+
+Here is a simple form where `param1` and `param2` are required and `param2` is optional with default value:
+
+```
+task_name param1 param2 param3="argument with spaces and {{ param1 }}": |
+  echo "Hello {{ param1 }} and {{ param2 }}";
+  echo "{{ param3 }}"
+
+```
+
+Default value must be in double quotes. If you need to use quotes inside default value you can escape it by `\` (backslash) symbol.
+
+
+Here is a more complex form:
+
+Here task has a required parameter `name`, an optional parameter `other` with default value of `Alice` and host parameter `host` which is assigned after user input.
 
 ```yaml
 
 task_name:
   exec:
     - echo "Hello {{ name }} and {{ other}}"
-    - curl -v {{ host }}
 
   params:
-    name: required
+    name: # this is required parameter
     other: "Alice"
-    host:
-      type: input
-      default: https://github.com
 
 ```
+
+Here example usage
+```bash
+$ devrc task_name name="Alex"
+Hello Alex and Alice
+```
+or
 
 ```bash
-
-devrc task_name name="Alex"
-
-Please, enter a value for parameter `host`:
+$ devrc task_name "Alex"
+Hello Alex and Alice
 ```
+
+
+
 
 
 ### Remote command execution

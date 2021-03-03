@@ -32,11 +32,22 @@ environment:
 command_1: "echo \"Hello world\";"
 
 command_2:
-  desc: "Command 2 description"
-  exec: echo "Hello {{ var_1 }}"
+  - echo "Hello world 1"
+  - echo "Hello world 2"
 
 
-command_3:
+command_3 param1 param2="key-{{ var_1 }}":
+  desc: >-
+    Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,
+  exec: echo "Hello {{ param1 }}"
+
+  params:
+    key4: value4
+    key5:
+    key6: "value6"
+
+
+command_4:
   desc: "Command 3 description"
   shell: "sh -cu"
   exec:
@@ -51,13 +62,16 @@ command_3:
     var_3: env_variable_overwrited_3
 
 
-command_4:
+command_5:
   desc: "Command 4 description"
-  exec: "echo \"Sleep\"; sleep 20; echo \"Done\""
+  exec: "echo \"Sleep\"; sleep {{ sleep }}; echo \"Done\""
   example: |
     example of usage
 
-command_5:
+  params:
+    key: "value"
+
+command_6:
   desc: "Execute python script"
   exec: |
     #!/usr/bin/env python
@@ -65,14 +79,14 @@ command_5:
     print("Hello world from python")
 
 
-command_6:
+command_7:
   desc: "Execute javascript by node"
   exec: |
     #!/usr/bin/env node
 
     console.log("Hello world from node")
 
-command_7:
+command_8:
   desc: "Task with dependency from comand_5 with exec option"
   deps: [command_5]
 

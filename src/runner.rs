@@ -212,9 +212,43 @@ impl Runner {
         self.devrc.run(&self.rest)
     }
 
+    /// Show detailed tasks list with short descriptions
+    pub fn list_tasks_detailed(&self) -> DevrcResult<()> {
+        println!("Available tasks:");
+        let offset = 2;
+        let (max_taskname_width, _) = self.devrc.get_max_taskname_width();
+        for (name, task) in self.devrc.get_tasks_docs() {
+            let help = task.format_help()?;
+            let parameters = task.format_parameters_help(&self.designer)?;
+
+            if name.starts_with('_') {
+                continue;
+            }
+
+            // TODO: Add colours
+            if !help.is_empty() {
+                println!("\n{:width$}# {}", "", help.trim_end(), width = offset);
+            }
+
+            println!(
+                "{:width$}{}{:max_taskname_width$}{} {}",
+                "",
+                self.designer.task_name().prefix(),
+                name,
+                self.designer.task_name().suffix(),
+                parameters,
+                // help,
+                width = offset,
+                max_taskname_width = max_taskname_width
+            );
+        }
+
+        Ok(())
+    }
+
     /// Show tasks list with short descriptions
     pub fn list_tasks(&self) -> DevrcResult<()> {
-        println!("Available devrc tasks:");
+        let offset = 2;
         let (max_taskname_width, _) = self.devrc.get_max_taskname_width();
         for (name, task) in self.devrc.get_tasks_docs() {
             let help = task.format_help()?;
@@ -223,15 +257,29 @@ impl Runner {
                 continue;
             }
 
-            // TODO: Add colours
+            let help_string = if help.is_empty() {
+                "".to_string()
+            } else {
+                format!("# {}", help)
+            };
+
+            let parameters_marker = if task.has_parameters() {
+                let color = self.designer.parameter_name();
+                format!("{}*{}", color.prefix(), color.suffix())
+            } else {
+                " ".to_string()
+            };
+
             println!(
-                "{:width$}{}{:max_taskname_width$}{}  {}",
+                "{:width$}{}{:max_taskname_width$}{} {} {}",
                 "",
                 self.designer.task_name().prefix(),
                 name,
                 self.designer.task_name().suffix(),
-                help,
-                width = 2,
+                parameters_marker,
+                help_string,
+                // help,
+                width = offset,
                 max_taskname_width = max_taskname_width
             );
         }
@@ -292,7 +340,7 @@ impl Runner {
             let task = self.devrc.find_task(&name)?;
             println!(
                 "Usage: {}\nDescription: {}",
-                task.get_usage_help(&name)?,
+                task.get_usage_help(&name, &self.designer)?,
                 task.format_help()?,
                 // width = 2,
             );

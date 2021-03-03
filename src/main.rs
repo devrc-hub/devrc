@@ -45,7 +45,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         runner.setup_variables(opt.set.into())?
     }
 
-    if opt.list {
+    if opt.detailed {
+        runner.list_tasks_detailed()?;
+    } else if opt.list {
         runner.list_tasks()?;
     } else if opt.list_vars {
         runner.list_vars()?;

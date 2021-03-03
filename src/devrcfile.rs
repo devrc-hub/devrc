@@ -7,7 +7,10 @@ use crate::{
     errors::{DevrcError, DevrcResult},
     raw_devrcfile::RawDevrcfile,
     scope::Scope,
-    tasks::{Task, TaskKind, Tasks},
+    tasks::{
+        arguments::{extract_task_args, TaskArguments},
+        Task, TaskKind, Tasks,
+    },
     variables::{RawVariables, Variables},
     workshop::Designer,
 };
@@ -38,9 +41,7 @@ pub struct Devrcfile {
 
 impl Devrcfile {
     pub fn add_task(&mut self, name: String, task: Task) -> DevrcResult<()> {
-        self.tasks.add_task(name, task);
-
-        Ok(())
+        self.tasks.add_task(name, task)
     }
 
     pub fn add_before_task(&mut self, new: Option<Task>) -> DevrcResult<()> {
@@ -261,7 +262,7 @@ impl Devrcfile {
             task.perform(
                 &hook_display_name,
                 &scope,
-                &[],
+                &TaskArguments::new(),
                 &self.config,
                 &self.designer,
             )?;
@@ -272,7 +273,7 @@ impl Devrcfile {
         Ok(())
     }
 
-    pub fn run_task(&self, name: &str, task: &TaskKind, params: &[String]) -> DevrcResult<()> {
+    pub fn run_task(&self, name: &str, task: &TaskKind, args: TaskArguments) -> DevrcResult<()> {
         let scope = self.get_scope()?;
 
         if let Some(deps) = task.get_dependencies() {
@@ -283,13 +284,13 @@ impl Devrcfile {
 
             for dependency_task_name in deps {
                 let dependency_task = self.find_task(dependency_task_name)?;
-                self.run_task(dependency_task_name, dependency_task, &[])?;
+                self.run_task(dependency_task_name, dependency_task, TaskArguments::new())?;
             }
         }
 
         self.run_hook("before_task", Some(&name))?;
 
-        task.perform(name, &scope, params, &self.config, &self.designer)?;
+        task.perform(name, &scope, &args, &self.config, &self.designer)?;
 
         self.run_hook("after_task", Some(&name))?;
         Ok(())
@@ -304,16 +305,18 @@ impl Devrcfile {
             params.to_vec()
         };
 
-        let mut tasks: Vec<(&str, &TaskKind, &[String])> = Vec::new();
+        let mut tasks: Vec<(&str, &TaskKind, TaskArguments)> = Vec::new();
 
         while i < tasks_names.len() {
             let name = &tasks_names[i];
 
             let task = self.find_task(&tasks_names[i])?;
 
-            tasks.push((name, task, &[]));
+            let (counter, args) = extract_task_args(&task, &tasks_names[(i + 1)..], &self)?;
 
-            i += 1;
+            tasks.push((name, task, args));
+
+            i += 1 + counter;
         }
 
         self.detect_circular_dependencies(
@@ -325,8 +328,8 @@ impl Devrcfile {
 
         self.run_hook("before_script", None)?;
 
-        for (name, task, params) in tasks {
-            self.run_task(name, task, params)?;
+        for (name, task, args) in tasks {
+            self.run_task(name, task, args)?;
         }
 
         self.run_hook("after_script", None)?;
