@@ -9,11 +9,7 @@ All notable changes to this project will be documented in this file.
 ### Changes
 _Changes of existing functionality_
 
-- Changed format for tasks listing
-
 ### New Features
-
-- Added task parameters, see #2 (@lispython)
 
 ### Bugfixes
 _For any bug fixes_
@@ -29,6 +25,16 @@ _All changes related to github actions, packages_
 _Other cases_
 
 ---
+
+## [v0.2.0](https://github.com/devrc-hub/devrc/releases/tag/v0.2.0) - 2021-03-03
+
+### Changes
+- Changed format for tasks listing
+
+### New Features
+
+- Added task parameters
+
 
 ## [v0.1.0](https://github.com/devrc-hub/devrc/releases/tag/v0.1.0) - 2021-02-23
 
