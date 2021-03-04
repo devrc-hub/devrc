@@ -1,0 +1,25 @@
+variables:
+  var1: "Some text"
+  var2: "Another text"
+  var3: "{% if var2 %}{{ var2 }}{% else %}Nothing{% endif %}"
+
+
+task_1: |
+  echo "{{ var3 }}"
+
+
+task_2 param="": |
+  echo "var3={{ var3 }}";
+  {%- if param -%}
+    echo "Param '{{ param }}' is defined"
+  {%- else -%}
+    echo "Sorry, param isn't defined."
+  {%- endif -%}
+
+
+task_3 hosts="host7,host8": |
+  echo "Try to fetch data from hosts";
+  {%- set list = hosts | split(pat=",") | sort | unique -%}
+  {%- for host in list %}
+  echo "Host #{{ loop.index }}: curl -v https://{{ host }}.com";
+  {%- endfor -%}
