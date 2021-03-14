@@ -597,22 +597,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "deno_doc"
-version = "0.1.23"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91967783675550e9550963c6c0e0309fa2279ad1dd5248cc13380e1f288659e9"
-dependencies = [
- "futures",
- "lazy_static",
- "regex",
- "serde",
- "serde_json",
- "swc_common",
- "swc_ecmascript",
- "termcolor",
-]
-
-[[package]]
 name = "deno_fetch"
 version = "0.22.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -637,8 +621,6 @@ dependencies = [
  "clap",
  "deno_console",
  "deno_core 0.80.2",
- "deno_doc",
- "deno_lint",
  "deno_runtime",
  "deno_url",
  "dissimilar",
@@ -679,24 +661,6 @@ dependencies = [
  "walkdir",
  "winapi",
  "winres",
-]
-
-[[package]]
-name = "deno_lint"
-version = "0.2.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38788fca6127cdf92adb17f3bebee2c33041de45ed4aa685b0a2aa36e463e815"
-dependencies = [
- "anyhow",
- "derive_more",
- "log",
- "once_cell",
- "regex",
- "serde",
- "serde_json",
- "swc_atoms",
- "swc_common",
- "swc_ecmascript",
 ]
 
 [[package]]
@@ -789,17 +753,6 @@ dependencies = [
  "tokio-tungstenite",
  "webpki",
  "webpki-roots",
-]
-
-[[package]]
-name = "derive_more"
-version = "0.99.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41cb0e6161ad61ed084a36ba71fbba9e3ac5aee3606fb607fe08da6acbcf3d8c"
-dependencies = [
- "proc-macro2 1.0.24",
- "quote 1.0.9",
- "syn 1.0.60",
 ]
 
 [[package]]
@@ -3368,7 +3321,6 @@ dependencies = [
  "swc_ecma_dep_graph",
  "swc_ecma_parser",
  "swc_ecma_transforms",
- "swc_ecma_utils",
  "swc_ecma_visit",
 ]
 
