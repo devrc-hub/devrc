@@ -2,9 +2,8 @@ name: Light CI
 
 on:
   push:
-    branches:
-      - "*"
-      - '!master'
+    branches-ignore:
+      - 'master'
 
 
 env:
