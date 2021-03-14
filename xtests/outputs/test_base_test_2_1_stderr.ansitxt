@@ -1,0 +1,2 @@
+[1mecho "task_2 works: \"var_1 value\" \"${ENV_VAR_1}\""
+[0m

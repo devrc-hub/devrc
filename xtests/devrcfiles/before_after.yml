@@ -1,0 +1,16 @@
+before_script: echo "Before script"
+after_script: echo "After script"
+
+before_task: echo "Before task"
+after_task: echo "After task"
+
+
+
+test_1: |
+  echo "Test task_1 works"
+
+
+test_2:
+  desc: "Before and after test task"
+  exec: |
+    echo "Test task_2 works"

@@ -1,0 +1,32 @@
+devrc 0.2.0
+⚡ task automation tool on steroids ⚡
+
+USAGE:
+    devrc [FLAGS] [OPTIONS] [--] [TASKS OR ARGS]...
+
+FLAGS:
+        --describe      Describe task
+    -d, --detailed      Show detailed tasks list
+        --dry-run       Print commands and skip execution
+    -g                  Force to use global .devrc file
+    -h, --help          Prints help information
+    -l, --list          List available tasks and their arguments
+        --evariables    Show global environment variables
+        --variables     Show global variables
+    -q, --quiet         Suppress all output
+        --stdin         Read stdin instead of reading default devrcfile
+    -V, --version       Prints version information
+    -v, --verbose       Enable verbose mode (-v, -vv, -vvv, etc.)
+
+OPTIONS:
+    -f, --f <CONFIG>...          Specify an alternate Devrcfile files
+                                 (default: Devrcfile)
+        --completions <SHELL>    Print shell completion script for <SHELL> [possible values: zsh, bash, fish,
+                                 powershell, elvish]
+        --set <VAR=VALUE>...     Override <VARIABLE> with <VALUE>
+
+ARGS:
+    <TASKS OR ARGS>...    
+
+Wish you productive coding!
+Visit https://github.com/devrc-hub/devrc to get more info about devrc.

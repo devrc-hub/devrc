@@ -1,0 +1,20 @@
+
+variables:
+  var_1: "var_1 value"
+
+environment:
+  ENV_VAR_1: "ENV VAR_1 VALUE"
+
+test_1: |
+  echo  "task_1 works: \"{{ var_1 }}\""
+
+
+test_2: |
+  echo "task_2 works: \"{{ var_1}}\" \"${ENV_VAR_1}\""
+
+
+test_3:
+  variables:
+    var_3: "var_3 value {{ var_1 }}"
+  exec: |
+    echo "task_3 works: \"{{ var_3 }}\""
