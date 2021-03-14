@@ -55,7 +55,7 @@ jobs:
       - run: cargo clippy --all-targets --all-features --workspace -- -D warnings
 
   compile:
-    name: "Compile `stable` on ${{ matrix.os }}"
+    name: "Compile stable toolchain on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -94,7 +94,7 @@ jobs:
           args: --debug --all-features --path ./
 
   tests:
-    name: "Test `stable` on `${{ matrix.os }}`"
+    name: "Test stable toolchain on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
 
     continue-on-error: true
@@ -133,7 +133,7 @@ jobs:
           # RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
 
   xtests:
-    name: "Test xtests with `stable` on `${{ matrix.os }}`"
+    name: "Test xtests with stable toolchain on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
 
     continue-on-error: true
