@@ -131,7 +131,6 @@ mod tests {
 
     #[test]
     fn test_rawdevrcfile() {
-        let devrcfile = RawDevrcfile::default();
-        dbg!(devrcfile);
+        let _devrcfile = RawDevrcfile::default();
     }
 }
