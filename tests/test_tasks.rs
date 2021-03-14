@@ -21,9 +21,7 @@ fn test_simple_string_task() {
 command_name: command value
 "#;
 
-    let container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
-
-    dbg!(container);
+    let _container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 }
 
 #[test]
@@ -35,9 +33,8 @@ simple: |
   echo "Command 2"
 "#;
 
-    let container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
+    let _container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 
-    dbg!(container);
 }
 
 #[test]
@@ -50,9 +47,8 @@ bash:
   exec: echo "Hello world"
 "#;
 
-    let container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
+    let _container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 
-    dbg!(container);
 }
 
 #[test]
@@ -64,9 +60,8 @@ task_3:
     - echo "Output"
 "#;
 
-    let container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
+    let _container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 
-    dbg!(container);
 }
 
 #[test]
@@ -79,9 +74,8 @@ task_with_deps:
     - task2
 "#;
 
-    let container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
+    let _container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 
-    dbg!(container);
 }
 
 #[test]
@@ -94,9 +88,8 @@ bash:
   exec: echo "Hello world"
 "#;
 
-    let container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
+    let _container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 
-    dbg!(container);
 }
 
 #[test]
@@ -109,7 +102,5 @@ task3:
     print("Hello world")
 "#;
 
-    let container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
-
-    dbg!(container);
+    let _container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
 }
