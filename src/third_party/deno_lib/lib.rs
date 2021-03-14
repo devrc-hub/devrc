@@ -42,50 +42,44 @@ pub(crate) mod tsc_config;
 pub mod version;
 pub mod workers;
 
-
+use deno_core::{error::AnyError, serde_json};
 use std::io::Write;
-use deno_core::serde_json;
-use deno_core::error::AnyError;
-
 
 pub fn get_types(unstable: bool) -> String {
-  let mut types = format!(
-    "{}\n{}\n{}\n{}\n{}\n{}\n{}",
-    crate::tsc::DENO_NS_LIB,
-    crate::tsc::DENO_WEB_LIB,
-    crate::tsc::DENO_FETCH_LIB,
-    crate::tsc::DENO_WEBGPU_LIB,
-    crate::tsc::DENO_WEBSOCKET_LIB,
-    crate::tsc::SHARED_GLOBALS_LIB,
-    crate::tsc::WINDOW_LIB,
-  );
+    let mut types = format!(
+        "{}\n{}\n{}\n{}\n{}\n{}\n{}",
+        crate::tsc::DENO_NS_LIB,
+        crate::tsc::DENO_WEB_LIB,
+        crate::tsc::DENO_FETCH_LIB,
+        crate::tsc::DENO_WEBGPU_LIB,
+        crate::tsc::DENO_WEBSOCKET_LIB,
+        crate::tsc::SHARED_GLOBALS_LIB,
+        crate::tsc::WINDOW_LIB,
+    );
 
-  if unstable {
-    types.push_str(&format!("\n{}", crate::tsc::UNSTABLE_NS_LIB,));
-  }
+    if unstable {
+        types.push_str(&format!("\n{}", crate::tsc::UNSTABLE_NS_LIB,));
+    }
 
-  types
+    types
 }
 
+pub fn write_to_stdout_ignore_sigpipe(bytes: &[u8]) -> Result<(), std::io::Error> {
+    use std::io::ErrorKind;
 
-pub fn write_to_stdout_ignore_sigpipe(
-  bytes: &[u8],
-) -> Result<(), std::io::Error> {
-  use std::io::ErrorKind;
-
-  match std::io::stdout().write_all(bytes) {
-    Ok(()) => Ok(()),
-    Err(e) => match e.kind() {
-      ErrorKind::BrokenPipe => Ok(()),
-      _ => Err(e),
-    },
-  }
+    match std::io::stdout().write_all(bytes) {
+        Ok(()) => Ok(()),
+        Err(e) => match e.kind() {
+            ErrorKind::BrokenPipe => Ok(()),
+            _ => Err(e),
+        },
+    }
 }
 
 pub fn write_json_to_stdout<T>(value: &T) -> Result<(), AnyError>
 where
-  T: ?Sized + serde::ser::Serialize,
+    T: ?Sized + serde::ser::Serialize,
 {
-  let writer = std::io::BufWriter::new(std::io::stdout());
-  serde_json::to_writer_pretty(writer, value).map_err(AnyError::from)
+    let writer = std::io::BufWriter::new(std::io::stdout());
+    serde_json::to_writer_pretty(writer, value).map_err(AnyError::from)
 }
