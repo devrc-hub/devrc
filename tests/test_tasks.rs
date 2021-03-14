@@ -34,7 +34,6 @@ simple: |
 "#;
 
     let _container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
-
 }
 
 #[test]
@@ -48,7 +47,6 @@ bash:
 "#;
 
     let _container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
-
 }
 
 #[test]
@@ -61,7 +59,6 @@ task_3:
 "#;
 
     let _container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
-
 }
 
 #[test]
@@ -75,7 +72,6 @@ task_with_deps:
 "#;
 
     let _container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
-
 }
 
 #[test]
@@ -89,7 +85,6 @@ bash:
 "#;
 
     let _container: Tasks = serde_yaml::from_str::<Tasks>(content).unwrap();
-
 }
 
 #[test]
