@@ -133,8 +133,8 @@ jobs:
           command: install
           args: --debug --all-features --path ./
 
-  tests:
-    name: "Test ${{ matrix.rust }} / ${{ matrix.os }}"
+  tests_macos:
+    name: "Test ${{ matrix.rust }} on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
 
     continue-on-error: true
@@ -166,6 +166,74 @@ jobs:
 
       - name: Run tests
         run: cargo test --all-features --no-fail-fast
+        env:
+          RUST_BACKTRACE: full
+          CARGO_INCREMENTAL: 0
+          # RUSTDOCFLAGS: "-Cpanic=abort"
+          # RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
+
+      - name: Install devrc
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --all-features --path ./
+
+      - name: Run xtests
+        run: specsheet xtests/*.toml
+        env:
+          RUST_BACKTRACE: full
+          CARGO_INCREMENTAL: 0
+          # RUSTDOCFLAGS: "-Cpanic=abort"
+          # RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
+
+
+  tests_linux:
+    name: "Test ${{ matrix.rust }} on ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+
+    continue-on-error: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [stable, beta, nightly, 1.47.0]
+        os: [ubuntu-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+
+      - name: Cache cargo directories
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run tests
+        run: cargo test --all-features --no-fail-fast
+        env:
+          RUST_BACKTRACE: full
+          CARGO_INCREMENTAL: 0
+          # RUSTDOCFLAGS: "-Cpanic=abort"
+          # RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
+
+      - name: Install devrc
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --all-features --path ./
+
+      - name: Run xtests
+        run: specsheet xtests/*.toml
         env:
           RUST_BACKTRACE: full
           CARGO_INCREMENTAL: 0
