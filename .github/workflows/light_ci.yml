@@ -1,13 +1,10 @@
-name: CI
+name: Light CI
 
 on:
   push:
-    branches:
-      - master
+    branches-ignore:
+      - 'master'
 
-  pull_request:
-    branches:
-      - master
 
 env:
   CARGO_TERM_COLOR: always
@@ -34,10 +31,12 @@ jobs:
       - run: cargo fmt --all -- --check
 
   clippy:
+    name: "Run clippy on ${{ matrix.os }}"
+
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -55,14 +54,14 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: cargo clippy --all-targets --all-features --workspace -- -D warnings
 
-  compile_linux:
-    name: "Compile ${{ matrix.rust }} on ${{ matrix.os }}"
+  compile:
+    name: "Compile stable toolchain on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.47.0]
-        os: [ubuntu-latest]
+        rust: [stable]
+        os: [ubuntu-latest, macos-latest]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -94,47 +93,8 @@ jobs:
           command: install
           args: --debug --all-features --path ./
 
-  compile_macos:
-    name: "Compile ${{ matrix.rust }} on ${{ matrix.os }}"
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        rust: [stable, beta, nightly, 1.47.0]
-        os: [macos-latest]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-
-      - name: Cache cargo directories
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Build devrc
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --verbose --all-features
-
-      - name: Install devrc
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --debug --all-features --path ./
-
-  tests_macos:
-    name: "Test ${{ matrix.rust }} on ${{ matrix.os }}"
+  tests:
+    name: "Test stable toolchain on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
 
     continue-on-error: true
@@ -142,7 +102,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.47.0]
+        rust: [stable]
         os: [ubuntu-latest, macos-latest]
 
     steps:
@@ -172,26 +132,8 @@ jobs:
           # RUSTDOCFLAGS: "-Cpanic=abort"
           # RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
 
-      - name: Install devrc
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --all-features --path ./
-
-      - name: Run xtests
-        run: |
-          git clone https://github.com/ogham/specsheet.git /tmp/specsheet
-          cargo install --path /tmp/specsheet
-          specsheet xtests/*.toml
-        env:
-          RUST_BACKTRACE: full
-          CARGO_INCREMENTAL: 0
-          # RUSTDOCFLAGS: "-Cpanic=abort"
-          # RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
-
-
-  tests_linux:
-    name: "Test ${{ matrix.rust }} on ${{ matrix.os }}"
+  xtests:
+    name: "Test xtests with stable toolchain on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
 
     continue-on-error: true
@@ -199,8 +141,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.47.0]
-        os: [ubuntu-latest]
+        rust: [stable]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - name: Checkout repository
@@ -221,19 +163,11 @@ jobs:
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Run tests
-        run: cargo test --all-features --no-fail-fast
-        env:
-          RUST_BACKTRACE: full
-          CARGO_INCREMENTAL: 0
-          # RUSTDOCFLAGS: "-Cpanic=abort"
-          # RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
-
       - name: Install devrc
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: --all-features --path ./
+          args: --debug --all-features --path ./
 
       - name: Run xtests
         run: |
