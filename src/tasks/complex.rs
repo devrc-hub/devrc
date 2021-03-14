@@ -1,5 +1,5 @@
 use crate::{
-    config::Config, environment::RawEnvironment, errors::DevrcResult, interpreter::Interpreter,
+    config::Config, environment::RawEnvironment, errors::DevrcResult, interpreter::InterpreterKind,
     scope::Scope, variables::RawVariables, workshop::Designer,
 };
 
@@ -38,7 +38,8 @@ pub struct ComplexCommand {
     pub deps: Vec<String>,
 
     // #[serde(deserialize_with = "deserialize_interpreter")]
-    shell: Option<Interpreter>,
+    #[serde(alias = "shell")]
+    interpreter: Option<InterpreterKind>,
 }
 
 impl ComplexCommand {
@@ -64,8 +65,8 @@ impl ComplexCommand {
         self.params.format_help_string(designer)
     }
 
-    pub fn get_interpreter(&self, config: &Config) -> Interpreter {
-        if let Some(value) = &self.shell {
+    pub fn get_interpreter(&self, config: &Config) -> InterpreterKind {
+        if let Some(value) = &self.interpreter {
             value.clone()
         } else {
             config.interpreter.clone()
@@ -144,7 +145,7 @@ where
             environment: RawEnvironment::default(),
             params: Params::default(),
             deps: Vec::new(),
-            shell: None,
+            interpreter: None,
         }
     }
 }
@@ -160,7 +161,7 @@ impl From<ExecKind> for ComplexCommand {
             environment: RawEnvironment::default(),
             params: Params::default(),
             deps: Vec::new(),
-            shell: None,
+            interpreter: None,
         }
     }
 }
@@ -176,7 +177,7 @@ impl Default for ComplexCommand {
             environment: RawEnvironment::default(),
             params: Params::default(),
             deps: Vec::new(),
-            shell: None,
+            interpreter: None,
         }
     }
 }

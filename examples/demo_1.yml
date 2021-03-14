@@ -97,3 +97,18 @@ command_8:
     It's a multi-line doc string.
   deps: [command_8]
   exec: echo "Hello world from command_8"
+
+
+command_9 name="Alex":
+  desc: "Deno runtime example"
+  shell:
+    runtime: deno
+    permissions:
+      - allow-all
+
+  exec: |
+    let name = "{{ name }}";
+
+    console.log(`Hello ${name} from node`);
+
+    console.log(Deno);

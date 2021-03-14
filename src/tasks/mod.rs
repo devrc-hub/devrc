@@ -104,11 +104,6 @@ impl TaskKind {
 
     pub fn is_private(&self) -> bool {
         false
-        // if let Some(name) = &self.name {
-        //     name.startswith("_")
-        // } else {
-        //     false
-        // }
     }
 
     pub fn perform(

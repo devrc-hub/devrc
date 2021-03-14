@@ -1,4 +1,4 @@
-use crate::{de::deserialize_some, devrc_log::LogLevel, interpreter::Interpreter};
+use crate::{de::deserialize_some, devrc_log::LogLevel, interpreter::InterpreterKind};
 use std::{env, fmt::Debug, path::PathBuf};
 
 use serde::Deserialize;
@@ -23,8 +23,8 @@ pub struct RawConfig {
     pub default: Option<DefaultOption>,
 
     // #[serde(default = "default_shell")]
-    #[serde(default, deserialize_with = "deserialize_some", rename = "shell")]
-    pub interpreter: Option<Option<Interpreter>>,
+    #[serde(default, deserialize_with = "deserialize_some", alias = "shell")]
+    pub interpreter: Option<Option<InterpreterKind>>,
 
     #[serde(default, deserialize_with = "deserialize_some")]
     pub log_level: Option<Option<LogLevel>>,
@@ -39,7 +39,7 @@ pub struct RawConfig {
 #[derive(Debug, Clone)]
 pub struct Config {
     pub current_dir: Option<PathBuf>,
-    pub interpreter: Interpreter,
+    pub interpreter: InterpreterKind,
     pub log_level: LogLevel,
     pub dry_run: bool,
     pub default: Vec<String>,
@@ -50,28 +50,28 @@ impl Default for Config {
         Config {
             current_dir: env::current_dir().ok(),
             dry_run: false,
-            interpreter: Interpreter::default(),
+            interpreter: InterpreterKind::default(),
             log_level: LogLevel::Info,
             default: vec![],
         }
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ExecOptions {
-    pub current_dir: Option<PathBuf>,
-    pub dry_run: bool,
-    pub interpreter: Option<Interpreter>,
-    pub log_level: Option<LogLevel>,
-}
+// #[derive(Debug, Clone)]
+// pub struct ExecOptions {
+//     pub current_dir: Option<PathBuf>,
+//     pub dry_run: bool,
+//     pub interpreter: Option<Interpreter>,
+//     pub log_level: Option<LogLevel>,
+// }
 
-impl Default for ExecOptions {
-    fn default() -> Self {
-        ExecOptions {
-            current_dir: env::current_dir().ok(),
-            dry_run: false,
-            interpreter: Some(Interpreter::default()),
-            log_level: Some(LogLevel::Info),
-        }
-    }
-}
+// impl Default for ExecOptions {
+//     fn default() -> Self {
+//         ExecOptions {
+//             current_dir: env::current_dir().ok(),
+//             dry_run: false,
+//             interpreter: Some(Interpreter::default()),
+//             log_level: Some(LogLevel::Info),
+//         }
+//     }
+// }

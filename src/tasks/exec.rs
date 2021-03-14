@@ -4,7 +4,7 @@ use crate::{
     config::Config,
     errors::DevrcResult,
     evaluate::Evaluatable,
-    interpreter::{Interpreter, ShebangDetector},
+    interpreter::{InterpreterKind, ShebangDetector},
     scope::Scope,
     workshop::Designer,
 };
@@ -23,7 +23,7 @@ impl ExecKind {
         &self,
         scope: &mut Scope,
         config: &Config,
-        interpreter: &Interpreter,
+        interpreter: &InterpreterKind,
         designer: &Designer,
     ) -> DevrcResult<()> {
         match self {
