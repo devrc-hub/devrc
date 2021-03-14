@@ -1,13 +1,11 @@
-name: CI
+name: Light CI
 
 on:
   push:
     branches:
-      - master
+      - "*"
+      - '!master'
 
-  pull_request:
-    branches:
-      - master
 
 env:
   CARGO_TERM_COLOR: always
@@ -34,10 +32,12 @@ jobs:
       - run: cargo fmt --all -- --check
 
   clippy:
+    name: "Run clippy on ${{ matrix.os }}"
+
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -55,53 +55,14 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: cargo clippy --all-targets --all-features --workspace -- -D warnings
 
-  compile_linux:
-    name: "Compile ${{ matrix.rust }} on ${{ matrix.os }}"
+  compile:
+    name: "Compile `stable` on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.47.0]
-        os: [ubuntu-latest]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-
-      - name: Cache cargo directories
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Build devrc
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --verbose --all-features
-
-      - name: Install devrc
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --debug --all-features --path ./
-
-  compile_macos:
-    name: "Compile ${{ matrix.rust }} on ${{ matrix.os }}"
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        rust: [stable, beta, nightly, 1.47.0]
-        os: [macos-latest]
+        rust: [stable]
+        os: [ubuntu-latest, macos-latest]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -134,7 +95,7 @@ jobs:
           args: --debug --all-features --path ./
 
   tests:
-    name: "Test ${{ matrix.rust }} / ${{ matrix.os }}"
+    name: "Test `stable` on `${{ matrix.os }}`"
     runs-on: ${{ matrix.os }}
 
     continue-on-error: true
@@ -142,7 +103,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.47.0]
+        rust: [stable]
         os: [ubuntu-latest, macos-latest]
 
     steps:
@@ -166,6 +127,51 @@ jobs:
 
       - name: Run tests
         run: cargo test --all-features --no-fail-fast
+        env:
+          RUST_BACKTRACE: full
+          CARGO_INCREMENTAL: 0
+          # RUSTDOCFLAGS: "-Cpanic=abort"
+          # RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
+
+  xtests:
+    name: "Test xtests with `stable` on `${{ matrix.os }}`"
+    runs-on: ${{ matrix.os }}
+
+    continue-on-error: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        rust: [stable]
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+
+      - name: Cache cargo directories
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install devrc
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --debug --all-features --path ./
+
+      - name: Run xtests
+        run: specsheet xtests/*.toml
         env:
           RUST_BACKTRACE: full
           CARGO_INCREMENTAL: 0
