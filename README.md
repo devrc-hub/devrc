@@ -61,6 +61,7 @@ Lets start with an overview of features that exist in devrc:
   * [ ] Remote command execution
   * [x] Read `Devrcfile` contents from stdin
   * [x] Global and local defined variables and environment variables
+  * [x] Embedded [deno runtime](#embedded-deno-runtime)
 
 
 ### Why YAML is used?
@@ -100,6 +101,7 @@ What are the benefits of using YAML for this purpose and why it's choosen:
     * [Task parameters and user input](#task-parameters-and-user-input)
     * [Remote command execution](#remote-command-execution)
     * [Read `Devrcfile` from sdtin](#read-devrcfile-from-stdin)
+    * [Embedded deno execution runtime](#embedded-deno-runtime)
 
 
 * [Contributing, feedback and suggestions](#contributing)
@@ -148,6 +150,7 @@ Binary releases are available in the [github releases page](https://github.com/d
 The following binaries are available for each release:
 
 * x86_64-unknown-linux-musl
+* x86_64-unknown-linux-gnu
 * x86_64-apple-darwin
 
 
@@ -408,8 +411,6 @@ Hello Alex and Alice
 
 
 
-
-
 ### Remote command execution
 
 It's also possible to execute task on remote hosts.
@@ -483,6 +484,47 @@ or
 ```bash
 devrc --stdin task_name < ./Devrcfile
 ```
+
+### Embedded deno runtime
+
+Devrc has embedded [deno runtime](https://github.com/denoland/deno). Deno is a simple, modern and secure runtime for JavaScript and TypeScript that uses V8. This runtime can be enabled on a global level or task level. By default all permissions disabled. No file, network, or environment access, unless explicitly enabled.
+
+
+```yaml
+
+devrc_config:
+  interpreter:
+    runtime: deno-runtime
+    permissions:
+      - allow-env
+      - allow-net: [google.com, httpbin.org]
+
+      # - disable-all
+      # - allow-all
+      # - allow-env
+      # - allow-hrtime
+      # - allow-net: [google.com, httpbin.org]
+      # - allow-plugin
+      # - allow-read: ["/tmp"]
+      # - allow-run
+      # - allow-write-all
+      # - allow-write: ["/tmp"]
+
+colors: |
+  import { bgBlue, bold, italic, red } from "https://deno.land/std/fmt/colors.ts";
+
+  const name = prompt("What is your name?");
+
+  confirm(`Are you sure ${name} is your name?`);
+
+  if (import.meta.main) {
+     console.log(bgBlue(italic(red(bold(`Hello ${name} !`)))));
+  }
+
+```
+
+More examples can be found [here](https://github.com/devrc-hub/devrc/blob/master/examples/deno_usage.yml).
+
 
 
 ## Alternatives

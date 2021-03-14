@@ -26,6 +26,19 @@ _Other cases_
 
 ---
 
+
+## [v0.3.0](https://github.com/devrc-hub/devrc/releases/tag/v0.3.0) - 2021-03-15
+
+### Changes
+- Changed CI
+- Added xtests
+- Refactored interpreter option
+
+### New Features
+
+- Added deno execution runtime
+
+
 ## [v0.2.0](https://github.com/devrc-hub/devrc/releases/tag/v0.2.0) - 2021-03-03
 
 ### Changes
