@@ -1,13 +1,17 @@
-use std::{fmt, fmt::Display, marker::PhantomData};
+use std::{convert::TryFrom, fmt, fmt::Display, marker::PhantomData};
 
-use crate::{config::Config, errors::DevrcResult, execute::CommandExt, scope::Scope};
+use crate::{
+    config::Config, denoland::execute_code, errors::DevrcResult, execute::CommandExt, scope::Scope,
+};
 
 use std::os::unix::{fs::PermissionsExt, process::ExitStatusExt};
 
+use deno_runtime::permissions::PermissionsOptions;
 use serde::{
-    de::{self, Visitor},
+    de::{self, MapAccess, Visitor},
     Deserialize, Deserializer,
 };
+use serde_yaml::{self, Mapping, Value};
 use std::{
     fs,
     io::Write,
@@ -26,10 +30,181 @@ pub fn get_default_shell() -> String {
     DEFAULT_SHELL.to_string()
 }
 
+#[derive(Debug, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum DenoPermissionParamValue {
+    All,
+    String(String),
+    List(Vec<String>),
+}
+
+impl Default for DenoPermissionParamValue {
+    fn default() -> Self {
+        Self::All
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+// #[serde(untagged)]
+pub enum DenoPermission {
+    #[serde(rename = "disable-all")]
+    DisableAll,
+    #[serde(rename = "allow-all")]
+    AllowAll,
+    #[serde(rename = "allow-env")]
+    AllowEnv,
+    #[serde(rename = "allow-hrtime")]
+    AllowHrtime,
+    #[serde(rename = "allow-plugin")]
+    AllowPlugin,
+    #[serde(rename = "allow-run")]
+    AllowRun,
+
+    #[serde(rename = "allow-write-all")]
+    AllowWriteAll,
+    #[serde(rename = "allow-read-all")]
+    AllowReadAll,
+    #[serde(rename = "allow-net-all")]
+    AllowNetAll,
+
+    #[serde(rename = "allow-net")]
+    AllowNet(Vec<String>),
+    #[serde(rename = "allow-read")]
+    AllowRead(Vec<String>),
+
+    #[serde(rename = "allow-write")]
+    AllowWrite(Vec<String>),
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub enum RuntimeName {
+    #[serde(rename = "deno-runtime")]
+    Deno,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct DenoRuntime {
+    pub permissions: Option<Vec<DenoPermission>>,
+    pub runtime: RuntimeName,
+    pub args: Option<Vec<String>>,
+}
+
+impl DenoRuntime {
+    pub fn execute(&self, code: &str, _scope: &Scope, _config: &Config) -> DevrcResult<()> {
+        execute_code(code, self.get_deno_permissions())
+    }
+
+    pub fn get_deno_permissions(&self) -> PermissionsOptions {
+        let mut permissions_options = PermissionsOptions::default();
+
+        if let Some(permissions_list) = &self.permissions {
+            for permission in permissions_list {
+                match permission {
+                    DenoPermission::DisableAll => return PermissionsOptions::default(),
+                    DenoPermission::AllowAll => {
+                        permissions_options.allow_env = true;
+                        permissions_options.allow_hrtime = true;
+                        permissions_options.allow_net = Some(Vec::new());
+                        permissions_options.allow_plugin = true;
+                        permissions_options.allow_read = Some(Vec::new());
+                        permissions_options.allow_run = true;
+                        permissions_options.allow_write = Some(Vec::new());
+                        return permissions_options;
+                    }
+                    DenoPermission::AllowEnv => {
+                        permissions_options.allow_env = true;
+                    }
+                    DenoPermission::AllowHrtime => {
+                        permissions_options.allow_hrtime = true;
+                    }
+                    DenoPermission::AllowPlugin => {
+                        permissions_options.allow_plugin = true;
+                    }
+                    DenoPermission::AllowRun => {
+                        permissions_options.allow_run = true;
+                    }
+                    DenoPermission::AllowWriteAll => {
+                        permissions_options.allow_write = Some(Vec::new());
+                    }
+                    DenoPermission::AllowReadAll => {
+                        permissions_options.allow_read = Some(Vec::new());
+                    }
+                    DenoPermission::AllowNetAll => {
+                        permissions_options.allow_read = Some(Vec::new());
+                    }
+                    DenoPermission::AllowNet(values) => {
+                        permissions_options.allow_net =
+                            Some(values.iter().map(|x| x.into()).collect());
+                    }
+                    DenoPermission::AllowRead(values) => {
+                        permissions_options.allow_read =
+                            Some(values.iter().map(|x| x.into()).collect());
+                    }
+                    DenoPermission::AllowWrite(values) => {
+                        permissions_options.allow_write =
+                            Some(values.iter().map(|x| x.into()).collect());
+                    }
+                }
+            }
+        }
+
+        permissions_options
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+pub enum InterpreterKind {
+    DenoRuntime(DenoRuntime),
+    Internal(Interpreter),
+}
+
+impl InterpreterKind {
+    pub fn execute(&self, code: &str, scope: &Scope, config: &Config) -> DevrcResult<()> {
+        match self {
+            InterpreterKind::DenoRuntime(deno_interpreter) => {
+                deno_interpreter.execute(code, scope, config)
+            }
+            InterpreterKind::Internal(internal_shell) => {
+                internal_shell.execute(code, scope, config)
+            }
+        }
+    }
+}
+
+impl Default for InterpreterKind {
+    fn default() -> Self {
+        InterpreterKind::Internal(Interpreter::default())
+    }
+}
+
+impl Display for InterpreterKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            InterpreterKind::DenoRuntime(interpreter) => {
+                write!(f, "{:?}", interpreter)
+            }
+            InterpreterKind::Internal(interpreter) => {
+                write!(f, "{}", interpreter)
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Interpreter {
+    // pub kind: InterpeterKind,
+    // #[serde(alias="shell")]
     pub interpreter: String,
     pub args: Vec<String>,
+}
+
+impl TryFrom<String> for Interpreter {
+    type Error = DevrcError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::get_from_string(&value).ok_or(DevrcError::InvalidInterpreter)
+    }
 }
 
 impl Interpreter {
@@ -183,6 +358,13 @@ impl<'de> Deserialize<'de> for Interpreter {
     {
         struct StructVisitor<T>(PhantomData<T>);
 
+        #[derive(Deserialize, Debug)]
+        pub struct TempInterpreter {
+            #[serde(alias = "shell")]
+            pub interpreter: String,
+            pub args: Vec<String>,
+        }
+
         impl<'de, T> Visitor<'de> for StructVisitor<T>
         where
             T: Deserialize<'de>,
@@ -201,12 +383,34 @@ impl<'de> Deserialize<'de> for Interpreter {
                     Some(value) => Ok(value),
                     None => Err(de::Error::custom("invalid interpreter")),
                 }
-                // Ok(Interpreter::get_from_string(value))
+            }
+
+            fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
+            where
+                M: MapAccess<'de>,
+            {
+                // TODO: we can simplify this code into few lines
+                let mut elements = Mapping::new();
+
+                while let Some((key, value)) = match access.next_entry::<Value, Value>() {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                } {
+                    elements.insert(key, value);
+                }
+
+                let interpreter: TempInterpreter = serde_yaml::from_value(elements.into())
+                    .map_err(|_| de::Error::custom("invalid interpreter"))?;
+
+                Ok(Interpreter {
+                    interpreter: interpreter.interpreter,
+                    args: interpreter.args,
+                })
             }
         }
 
         let visitor = StructVisitor(PhantomData::<Interpreter>);
-        deserializer.deserialize_str(visitor)
+        deserializer.deserialize_any(visitor)
     }
 }
 

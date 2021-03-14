@@ -45,7 +45,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: cargo clippy --all-targets --workspace -- -D warnings
+      - run: cargo clippy --all-targets --all-features --workspace -- -D warnings
 
   compile:
     name: "Compile ${{ matrix.rust }} / ${{ matrix.os }}"
@@ -53,7 +53,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.45.0]
+        rust: [stable, beta, nightly, 1.47.0]
         os: [ubuntu-latest, macos-latest]
     steps:
       - name: Checkout repository
@@ -78,13 +78,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --verbose
+          args: --release --verbose --all-features
 
       - name: Install devrc
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: --debug --path ./
+          args: --debug --all-features --path ./
 
   tests:
     name: "Test ${{ matrix.rust }} / ${{ matrix.os }}"
@@ -95,7 +95,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.45.0]
+        rust: [stable, beta, nightly, 1.47.0]
         os: [ubuntu-latest, macos-latest]
 
     steps:
@@ -118,7 +118,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
-        run: cargo test --no-fail-fast
+        run: cargo test --all-features --no-fail-fast
         env:
           RUST_BACKTRACE: full
           CARGO_INCREMENTAL: 0

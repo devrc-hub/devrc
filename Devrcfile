@@ -20,7 +20,7 @@ hello:
 
 # specsheet expr.toml -O cmd.target=./my-expr
 xtests: |
-   specsheet xtests/*.toml -O cmd.target.devrc="${CARGO_TARGET_DIR:-../target}/debug/devrc
+   specsheet xtests/*.toml -O cmd.target.devrc="${CARGO_TARGET_DIR:-../target}/debug/devrc"
 
 
 clean: cargo clean
@@ -28,13 +28,22 @@ clean: cargo clean
 lint:
   desc: "Run code linters and formatters after clean"
   exec:
-    - cargo clippy --all -- --verbose
+    - cargo clippy --all --all-features -- --verbose
     - cargo +nightly fmt --all -- --check
   deps: [clean]
 
 test:
   desc: "Run tests"
-  exec: cargo test
+  exec: cargo test --all-features
+
+
+testm mod="":
+  desc: "Test single module"
+  environment:
+    RUST_TRACEBACK: "1"
+    RUST_LOG: info
+  exec: |
+     cargo test --all-features -- --nocapture {{ mod }}
 
 
 check:

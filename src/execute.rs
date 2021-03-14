@@ -15,3 +15,5 @@ impl CommandExt for Command {
         Ok(())
     }
 }
+
+pub trait Executor {}

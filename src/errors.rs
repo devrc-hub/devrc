@@ -35,6 +35,8 @@ pub enum DevrcError {
     TaskArgumentsParsingError,
     OverlappingParameters,
     NotEnouthArguments,
+    DenoRuntimeError(anyhow::Error),
+    InvalidInterpreter,
 }
 
 impl Display for DevrcError {
@@ -56,6 +58,9 @@ impl Display for DevrcError {
             }
             DevrcError::Code { code } => {
                 write!(f, "Recipe failed with code {:}", code)?;
+            }
+            DevrcError::DenoRuntimeError(error) => {
+                write!(f, "Deno runtime failed with error {:}", error)?;
             }
             _ => {}
         }
@@ -82,3 +87,9 @@ impl From<IoError> for DevrcError {
 }
 
 impl StdError for DevrcError {}
+
+impl From<anyhow::Error> for DevrcError {
+    fn from(error: anyhow::Error) -> Self {
+        DevrcError::DenoRuntimeError(error)
+    }
+}
