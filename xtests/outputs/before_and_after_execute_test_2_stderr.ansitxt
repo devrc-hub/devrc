@@ -1,0 +1,6 @@
+[1mecho "Before script"[0m
+[1mecho "Before task"[0m
+[1mecho "Test task_2 works"
+[0m
+[1mecho "After task"[0m
+[1mecho "After script"[0m

@@ -1,0 +1,75 @@
+[[cmd]]
+# devrc create_spec "devrc -f xtests/devrcfiles/test_params.yml -- test_1" "test_params_test_1_fail"
+name = "‘devrc -f ./devrcfiles/test_params.yml -- test_1’ produces the correct output"
+shell = "devrc -f ./devrcfiles/test_params.yml -- test_1"
+stdout = { file = "outputs/test_params_test_1_fail_stdout.ansitxt" }
+stderr = { file = "outputs/test_params_test_1_fail_stderr.ansitxt" }
+status = 1
+tags = [ "execute"]
+
+[[cmd]]
+# devrc create_spec "devrc -f xtests/devrcfiles/test_params.yml -- test_1 value1 value2" "test_params_test_1_success"
+name = "‘devrc -f ./devrcfiles/test_params.yml -- test_1 value1 value2’ produces the correct output"
+shell = "devrc -f ./devrcfiles/test_params.yml -- test_1 value1 value2"
+stdout = { file = "outputs/test_params_test_1_success_stdout.ansitxt" }
+stderr = { file = "outputs/test_params_test_1_success_stderr.ansitxt" }
+status = 0
+tags = [ "execute"]
+
+
+[[cmd]]
+# devrc create_spec "devrc -f xtests/devrcfiles/test_params.yml -- test_1 param1=value1 param2=value2" "test_params_test_1_2_success"
+name = "‘devrc -f ./devrcfiles/test_params.yml -- test_1 param1=value1 param2=value2’ produces the correct output"
+shell = "devrc -f ./devrcfiles/test_params.yml -- test_1 param1=value1 param2=value2"
+stdout = { file = "outputs/test_params_test_1_2_success_stdout.ansitxt" }
+stderr = { file = "outputs/test_params_test_1_2_success_stderr.ansitxt" }
+status = 0
+tags = [ "execute"]
+
+
+[[cmd]]
+# devrc create_spec "devrc -f xtests/devrcfiles/test_params.yml -- test_2" "test_params_test_2_1"
+name = "‘devrc -f ./devrcfiles/test_params.yml -- test_2’ produces the correct output"
+shell = "devrc -f ./devrcfiles/test_params.yml -- test_2"
+stdout = { file = "outputs/test_params_test_2_1_stdout.ansitxt" }
+stderr = { file = "outputs/test_params_test_2_1_stderr.ansitxt" }
+status = 0
+tags = [ "execute"]
+
+[[cmd]]
+# devrc create_spec "devrc -f xtests/devrcfiles/test_params.yml -- test_2 my_argument_value" "test_params_test_2_2"
+name = "‘devrc -f ./devrcfiles/test_params.yml -- test_2 my_argument_value’ produces the correct output"
+shell = "devrc -f ./devrcfiles/test_params.yml -- test_2 my_argument_value"
+stdout = { file = "outputs/test_params_test_2_2_stdout.ansitxt" }
+stderr = { file = "outputs/test_params_test_2_2_stderr.ansitxt" }
+status = 0
+tags = [ "execute"]
+
+[[cmd]]
+# devrc create_spec "devrc -f xtests/devrcfiles/test_params.yml -- test_3" "test_params_test_3_1"
+name = "‘devrc -f ./devrcfiles/test_params.yml -- test_3’ produces the correct output"
+shell = "devrc -f ./devrcfiles/test_params.yml -- test_3"
+stdout = { file = "outputs/test_params_test_3_1_stdout.ansitxt" }
+stderr = { file = "outputs/test_params_test_3_1_stderr.ansitxt" }
+status = 0
+tags = [ "execute"]
+
+
+[[cmd]]
+# devrc create_spec "devrc -f xtests/devrcfiles/test_params.yml -- test_3 param1=\"Hello world\"" "test_params_test_3_2"
+name = "‘devrc -f ./devrcfiles/test_params.yml -- test_3 param1=\"Hello world\"’ produces the correct output"
+shell = "devrc -f ./devrcfiles/test_params.yml -- test_3 param1=\"Hello world\""
+stdout = { file = "outputs/test_params_test_3_2_stdout.ansitxt" }
+stderr = { file = "outputs/test_params_test_3_2_stderr.ansitxt" }
+status = 0
+tags = [ "execute"]
+
+
+[[cmd]]
+# devrc create_spec "devrc -f xtests/devrcfiles/test_params.yml -- test_3 param1=\"Wow {{ '{{' }} var_2 {{ '}}' }}\"" "test_params_test_3_3"
+name = "‘devrc -f ./devrcfiles/test_params.yml -- test_3 param1=\"Wow {{ var_2 }}\"’ produces the correct output"
+shell = "devrc -f ./devrcfiles/test_params.yml -- test_3 param1=\"Wow {{ var_2 }}\""
+stdout = { file = "outputs/test_params_test_3_3_stdout.ansitxt" }
+stderr = { file = "outputs/test_params_test_3_3_stderr.ansitxt" }
+status = 0
+tags = [ "execute"]

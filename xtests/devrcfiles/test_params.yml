@@ -1,0 +1,19 @@
+
+variables:
+  var_1: variable value_1
+  var_2: variable value_2
+
+
+test_1 param1 param2:
+  desc: "Test required parameters"
+  exec: echo "test_1 works {{ param1 }} and {{ param2 }}"
+
+
+test_2 param1="default value":
+  desc: "Test default parameters"
+  exec: echo "test_2 works {{ param1 }}"
+
+
+test_3 param1="key-{{ var_1 }}":
+  desc: "Test default value template"
+  exec: echo "test_3 works {{ param1 }}"

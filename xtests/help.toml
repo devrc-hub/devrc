@@ -1,0 +1,27 @@
+[[cmd]]
+# devrc create_spec "devrc --help" "test_help_test_1_1"
+name = "‘devrc --help’ produces the correct help text"
+shell = "devrc --help"
+stdout = { file = "outputs/help.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "help"]
+
+
+[[cmd]]
+# devrc create_spec "devrc -f xtests/devrcfiles/test_base.yml --variables" "test_help_test_2_1"
+name = "‘devrc -f ./devrcfiles/test_base.yml --variables’ produces the correct output"
+shell = "devrc -f ./devrcfiles/test_base.yml --variables"
+stdout = { file = "outputs/test_help_test_2_1_stdout.ansitxt" }
+stderr = { file = "outputs/test_help_test_2_1_stderr.ansitxt" }
+status = 0
+tags = [ "execute"]
+
+[[cmd]]
+# devrc create_spec "devrc -f xtests/devrcfiles/test_base.yml --evariables" "test_help_test_3_1"
+name = "‘devrc -f ./devrcfiles/test_base.yml --evariables’ produces the correct output"
+shell = "devrc -f ./devrcfiles/test_base.yml --evariables"
+stdout = { file = "outputs/test_help_test_3_1_stdout.ansitxt" }
+stderr = { file = "outputs/test_help_test_3_1_stderr.ansitxt" }
+status = 0
+tags = [ "execute"]

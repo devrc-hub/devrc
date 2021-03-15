@@ -1,0 +1,18 @@
+devrc_config:
+  interpreter:
+    runtime: deno-runtime
+    permissions: []
+
+
+variables:
+  var_1: "variable value"
+
+
+test_1 param1="Param1 default value":
+  desc: "Test simple javascript"
+  exec: |
+    console.log("It's work: var_1={{ var_1 }} param1=\"{{ param1 }}\"");
+
+# console.log(Deno);
+
+# console.log(window);
