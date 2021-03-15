@@ -1,7 +1,7 @@
 [package]
 name = "devrc"
-version = "0.2.0"
-authors = ["Alex <github.com/lispython>"]
+version = "0.3.0"
+authors = ["Alex <hey.turbo.driver@gmail.com>"]
 description = "devrc is an easy to use task automation tool on steroids for developers"
 edition = "2018"
 keywords = ["tasks", "automation", "makefile", "command-line"]
