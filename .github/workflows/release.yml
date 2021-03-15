@@ -101,7 +101,7 @@ jobs:
         run: |
           rustup target add x86_64-unknown-linux-musl
 
-          cargo build --release --all-features --target ${{ matrix.target }}
+          cargo build --release --all-features --frozen --target ${{ matrix.target }}
           mv target/${{ matrix.target }}/release/devrc ./devrc
           chmod +x devrc
           tar -czf devrc-${{ matrix.target }}.tar.gz devrc
@@ -159,7 +159,7 @@ jobs:
 
       - name: Create archive ${{ matrix.target }}
         run: |
-          cargo build --release --all-features --target ${{ matrix.target }}
+          cargo build --release --all-features --frozen --target ${{ matrix.target }}
           mv target/${{ matrix.target }}/release/devrc ./devrc
           chmod +x devrc
           tar -czf devrc-${{ matrix.target }}.tar.gz devrc
@@ -198,8 +198,8 @@ jobs:
 
       - name: Show package contents
         run: |
-          cargo package --list
+          cargo package --list --allow-dirty --frozen
 
       - name: Build package and publish the crate to crates.io
         run: |
-          cargo publish --token=${{ secrets.CRATES_TOKEN }}
+          cargo publish --frozen --token=${{ secrets.CRATES_TOKEN }}
