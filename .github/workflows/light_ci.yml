@@ -5,13 +5,14 @@ on:
     branches-ignore:
       - 'master'
 
-
 env:
   CARGO_TERM_COLOR: always
+
 
 jobs:
   rustfmt:
     runs-on: ubuntu-latest
+    # if: github.event != pull_request
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -20,8 +21,10 @@ jobs:
           toolchain: stable
           override: true
           components: rustfmt
+
       - name: Cache cargo directories
         uses: actions/cache@v2
+        continue-on-error: true
         with:
           path: |
             ~/.cargo/registry
@@ -32,11 +35,12 @@ jobs:
 
   clippy:
     name: "Run clippy on ${{ matrix.os }}"
-
+    # if: github.event != pull_request
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
+
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -45,6 +49,7 @@ jobs:
           toolchain: stable
           override: true
           components: clippy
+
       - name: Cache cargo directories
         uses: actions/cache@v2
         with:
@@ -52,59 +57,28 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - run: cargo clippy --all-targets --all-features --workspace -- -D warnings
-
-  compile:
-    name: "Compile stable toolchain on ${{ matrix.os }}"
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        rust: [stable]
-        os: [ubuntu-latest, macos-latest]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-
-      - name: Cache cargo directories
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Build devrc
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --verbose --all-features
-
-      - name: Install devrc
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --debug --all-features --path ./
 
   tests:
     name: "Test stable toolchain on ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
-
+    needs: [xtests]
+    # if: github.event != pull_request
     continue-on-error: true
 
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable]
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - {os: ubuntu-latest, rust: stable, SCCACHE_DIR: /home/runner/.cache/sccache}
+          - {os: macos-latest, rust: stable, SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache}
 
+    env:
+      RUSTC_WRAPPER: sccache
+      SCCACHE_CACHE_SIZE: 2000M
+      SCCACHE_IDLE_TIMEOUT: 0
+      SCCACHE_DIR: ${{ matrix.SCCACHE_DIR }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -116,13 +90,46 @@ jobs:
           profile: minimal
           override: true
 
+      - name: Install sccache via precompiled build
+        if: startsWith(matrix.os, 'ubuntu')
+        env:
+          LINK: https://github.com/mozilla/sccache/releases/download
+          SCCACHE_VERSION: 0.2.15
+        run: |
+          SCCACHE_FILE=sccache-v$SCCACHE_VERSION-x86_64-unknown-linux-musl
+          mkdir -p $HOME/.local/bin
+          curl -L "$LINK/v$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
+          chmod +x $SCCACHE_FILE/sccache
+          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install sccache via homebrew
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          brew install sccache
+
       - name: Cache cargo directories
         uses: actions/cache@v2
+        continue-on-error: true
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache sccache output on ${{ matrix.os }}
+        uses: actions/cache@v2
+        continue-on-error: true
+        with:
+          path: ${{ matrix.SCCACHE_DIR }}
+          key: ${{ runner.os }}-sccache-debug-${{ hashFiles('**/Cargo.*') }}
+          # restore-keys: ${{ runner.os }}-sccache-
+
+      - name: Start sccache server
+        env:
+          SCCACHE_DIR: ${{ matrix.SCCACHE_DIR }}
+        run: |
+          sccache --start-server
 
       - name: Run tests
         run: cargo test --all-features --no-fail-fast
@@ -132,17 +139,32 @@ jobs:
           # RUSTDOCFLAGS: "-Cpanic=abort"
           # RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
 
+      - name: Show sccache stats
+        run: |
+           sccache --show-stats
+
+      - name: Stop sccache server
+        run: |
+          sccache --stop-server
+
   xtests:
     name: "Test xtests with stable toolchain on ${{ matrix.os }}"
+    # if: github.event != pull_request
     runs-on: ${{ matrix.os }}
-
     continue-on-error: true
 
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable]
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - {os: ubuntu-latest, rust: stable, SCCACHE_DIR: /home/runner/.cache/sccache}
+          - {os: macos-latest, rust: stable, SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache}
+
+    env:
+      RUSTC_WRAPPER: sccache
+      SCCACHE_CACHE_SIZE: 2000M
+      SCCACHE_IDLE_TIMEOUT: 0
+      SCCACHE_DIR: ${{ matrix.SCCACHE_DIR }}
 
     steps:
       - name: Checkout repository
@@ -162,6 +184,36 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install sccache via precompiled build
+        if: startsWith(matrix.os, 'ubuntu')
+        env:
+          LINK: https://github.com/mozilla/sccache/releases/download
+          SCCACHE_VERSION: 0.2.15
+        run: |
+          SCCACHE_FILE=sccache-v$SCCACHE_VERSION-x86_64-unknown-linux-musl
+          mkdir -p $HOME/.local/bin
+          curl -L "$LINK/v$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
+          chmod +x $SCCACHE_FILE/sccache
+          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install sccache via homebrew
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          brew install sccache
+
+      - name: Cache sccache output on ${{ matrix.os }}
+        uses: actions/cache@v2
+        continue-on-error: true
+        with:
+          path: ${{ matrix.SCCACHE_DIR }}
+          key: ${{ runner.os }}-sccache-debug-${{ hashFiles('**/Cargo.*') }}
+          # restore-keys: ${{ runner.os }}-sccache-
+
+      - name: Start sccache server
+        run: |
+          sccache --start-server
 
       - name: Install devrc
         uses: actions-rs/cargo@v1
@@ -179,3 +231,11 @@ jobs:
           CARGO_INCREMENTAL: 0
           # RUSTDOCFLAGS: "-Cpanic=abort"
           # RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
+
+      - name: Show sccache stats
+        run: |
+          sccache --show-stats
+
+      - name: Stop sccache server
+        run: |
+          sccache --stop-server
