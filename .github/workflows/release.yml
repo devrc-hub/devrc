@@ -65,12 +65,12 @@ jobs:
             cross: false
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: Install musl tools and dependencies
         run: |
           sudo apt-get install musl-tools libssl-dev
-
-      - name: Checkout repository
-        uses: actions/checkout@v2
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1

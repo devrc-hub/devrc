@@ -61,11 +61,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.47.0]
+        # rust: [stable, beta, nightly, 1.47.0]
+        rust: [stable]
         os: [ubuntu-latest]
+        target: [x86_64-unknown-linux-musl, x86_64-unknown-linux-gnu]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
+      - name: Install musl tools and dependencies
+        run: |
+          sudo apt-get install musl-tools libssl-dev
+
 
       - name: Install rust
         uses: actions-rs/toolchain@v1
@@ -82,17 +89,22 @@ jobs:
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Install target x86_64-unknown-linux-musl
+        run: |
+          rustup target add x86_64-unknown-linux-musl
+
+
       - name: Build devrc
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --verbose --all-features
+          args: --release --verbose --all-features --target ${{ matrix.target }}
 
       - name: Install devrc
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: --debug --all-features --path ./
+          args: --debug --all-features --target ${{ matrix.target }} --path ./
 
   compile_macos:
     name: "Compile ${{ matrix.rust }} on ${{ matrix.os }}"
@@ -100,7 +112,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.47.0]
+        # rust: [stable, beta, nightly, 1.47.0]
+        rust: [stable]
         os: [macos-latest]
     steps:
       - name: Checkout repository
@@ -142,8 +155,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.47.0]
-        os: [ubuntu-latest, macos-latest]
+        # rust: [stable, beta, nightly, 1.47.0]
+        rust: [stable]
+        os: [macos-latest]
 
     steps:
       - name: Checkout repository
@@ -199,7 +213,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, beta, nightly, 1.47.0]
+        # rust: [stable, beta, nightly, 1.47.0]
+        rust: [stable]
         os: [ubuntu-latest]
 
     steps:
