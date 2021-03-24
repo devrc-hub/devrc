@@ -104,8 +104,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: x86_64-unknown-linux-musl
-            cross: false
+          # - target: x86_64-unknown-linux-musl
+          #   cross: false
           - target: x86_64-unknown-linux-gnu
             cross: false
 
@@ -115,7 +115,7 @@ jobs:
 
       - name: Install musl tools and dependencies
         run: |
-          sudo apt-get install musl-tools libssl-dev
+          sudo apt-get install musl-tools libssl-dev musl-dev musl-g++ gcc build-essential
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -146,7 +146,7 @@ jobs:
         run: |
           rustup target add x86_64-unknown-linux-musl
 
-          cargo build --release --all-features --frozen --target ${{ matrix.target }}
+          cargo build --release --all-features --target ${{ matrix.target }}
           mv target/${{ matrix.target }}/release/devrc ./devrc
           chmod +x devrc
           tar -czf devrc-${{ matrix.target }}.tar.gz devrc
@@ -204,7 +204,7 @@ jobs:
 
       - name: Create archive ${{ matrix.target }}
         run: |
-          cargo build --release --all-features --frozen --target ${{ matrix.target }}
+          cargo build --release --all-features --target ${{ matrix.target }}
           mv target/${{ matrix.target }}/release/devrc ./devrc
           chmod +x devrc
           tar -czf devrc-${{ matrix.target }}.tar.gz devrc
@@ -233,18 +233,10 @@ jobs:
           profile: minimal
           override: true
 
-      - name: Cache cargo directories
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
       - name: Show package contents
         run: |
-          cargo package --list --allow-dirty --frozen
+          cargo package --list --allow-dirty
 
       - name: Build package and publish the crate to crates.io
         run: |
-          cargo publish --frozen --token=${{ secrets.CRATES_TOKEN }}
+          cargo publish --token=${{ secrets.CRATES_TOKEN }}
