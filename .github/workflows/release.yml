@@ -115,7 +115,7 @@ jobs:
 
       - name: Install musl tools and dependencies
         run: |
-          sudo apt-get install musl-tools libssl-dev musl-dev musl-g++ gcc build-essential
+          sudo apt-get install musl-tools libssl-dev musl-dev gcc build-essential
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
