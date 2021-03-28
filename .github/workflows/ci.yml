@@ -37,7 +37,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - {os: ubuntu-latest, rust: stable, feature: --all-features, target: x86_64-unknown-linux-gnu}
+          - {os: ubuntu-latest, rust: stable, feature: "", target: x86_64-unknown-linux-gnu}
+          - {os: macos-latest, rust: stable, feature: --all-features, target: x86_64-apple-darwin}
+          - {os: macos-latest, rust: stable, feature: "", target: x86_64-apple-darwin}
+
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -53,7 +58,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: cargo clippy --all-targets --all-features --workspace -- -D warnings
+      - run: cargo clippy --all-targets ${{ matrix.feature }} --workspace -- -D warnings
 
 
   tests_macos:
@@ -104,7 +109,7 @@ jobs:
         continue-on-error: true
         with:
           path: ${{ env.SCCACHE_DIR }}
-          key: ${{ runner.os }}-sccache-debug-1-${{ hashFiles('**/Cargo.*') }}
+          key: ${{ runner.os }}-sccache-debug-${{ hashFiles('**/Cargo.*') }}
           # restore-keys: ${{ runner.os }}-sccache-
 
       - name: Start sccache server
@@ -112,6 +117,12 @@ jobs:
           SCCACHE_DIR: ${{ env.SCCACHE_DIR }}
         run: |
           sccache --start-server
+
+      - name: Run tests
+        run: cargo test --no-fail-fast
+        env:
+          RUST_BACKTRACE: full
+          CARGO_INCREMENTAL: 0
 
       - name: Run tests
         run: cargo test --all-features --no-fail-fast
@@ -203,7 +214,7 @@ jobs:
         continue-on-error: true
         with:
           path: ${{ env.SCCACHE_DIR }}
-          key: ${{ runner.os }}-sccache-debug-1-${{ hashFiles('**/Cargo.*') }}
+          key: ${{ runner.os }}-sccache-debug-${{ hashFiles('**/Cargo.*') }}
           # restore-keys: ${{ runner.os }}-sccache-
 
       - name: Start sccache server
@@ -211,6 +222,14 @@ jobs:
           SCCACHE_DIR: ${{ env.SCCACHE_DIR }}
         run: |
           sccache --start-server
+
+      - name: Run tests
+        run: cargo test --no-fail-fast
+        env:
+          RUST_BACKTRACE: full
+          CARGO_INCREMENTAL: 0
+          # RUSTDOCFLAGS: "-Cpanic=abort"
+          # RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
 
       - name: Run tests
         run: cargo test --all-features --no-fail-fast
