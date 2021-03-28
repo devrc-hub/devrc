@@ -90,6 +90,7 @@ jobs:
 
       - name: Create deb package
         uses: actions-rs/cargo@v1
+        if: matrix.target != "x86_64-unknown-linux-musl"
         with:
           command: deb
           args: --variant deno
@@ -113,7 +114,7 @@ jobs:
           files: |
             ./devrc-*
             ./target/debian/*.deb
-            ./target/release/rpmbuild/RPMs/*/*.rpm
+            ./target/release/rpmbuild/RPMS/x86_64/*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -196,7 +197,12 @@ jobs:
         run: |
           cargo package --list --allow-dirty
 
+      - name: Build package and publish deno_3p_lib the crate to crates.io
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cd src/third_party/deno_lib && cargo publish --token=${{ secrets.CRATES_TOKEN }}
+
       - name: Build package and publish the crate to crates.io
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          cargo publish --token=${{ secrets.CRATES_TOKEN }}
+          cd /home/runner/work/devrc/devrc/ && cargo publish --token=${{ secrets.CRATES_TOKEN }}

@@ -1,9 +1,9 @@
 use crate::{errors::DevrcResult, interpreter::DenoPermission};
-use deno_core::resolve_url_or_path;
-use deno_lib::{
+use deno_3p_lib::{
     file_fetcher::File, flags::Flags, media_type::MediaType,
     program_state::ProgramState as DProgramState,
 };
+use deno_core::resolve_url_or_path;
 use deno_runtime::permissions::{Permissions, PermissionsOptions};
 use workers::create_original_main_worker;
 

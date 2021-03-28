@@ -5,8 +5,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use deno_3p_lib::file_fetcher::File;
 use deno_core::ModuleSpecifier;
-use deno_lib::file_fetcher::File;
 
 /// Simple struct implementing in-process caching to prevent multiple
 /// fs reads/net fetches for same file.
