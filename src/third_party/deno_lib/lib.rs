@@ -1,5 +1,7 @@
 #![deny(warnings)]
 //#![allow(dead_code)]
+#![allow(clippy::upper_case_acronyms)]
+#![allow(clippy::from_over_into)]
 
 #[macro_use]
 extern crate lazy_static;

@@ -28,14 +28,16 @@ clean: cargo clean
 lint:
   desc: "Run code linters and formatters after clean"
   exec:
+    - cargo clippy --all -- --verbose
     - cargo clippy --all --all-features -- --verbose
     - cargo +nightly fmt --all -- --check
   deps: [clean]
 
 test:
   desc: "Run tests"
-  exec: cargo test --all-features
-
+  exec:
+    - cargo test
+    - cargo test --all-features
 
 testm mod="":
   desc: "Test single module"

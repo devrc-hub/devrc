@@ -1,12 +1,12 @@
 use std::{convert::TryFrom, fmt, fmt::Display, marker::PhantomData};
 
-use crate::{
-    config::Config, denoland::execute_code, errors::DevrcResult, execute::CommandExt, scope::Scope,
-};
+use crate::{config::Config, errors::DevrcResult, execute::CommandExt, scope::Scope};
+
+#[cfg(feature = "deno")]
+use crate::denoland::execute_deno_code;
 
 use std::os::unix::{fs::PermissionsExt, process::ExitStatusExt};
 
-use deno_runtime::permissions::PermissionsOptions;
 use serde::{
     de::{self, MapAccess, Visitor},
     Deserialize, Deserializer,
@@ -89,66 +89,17 @@ pub struct DenoRuntime {
     pub args: Option<Vec<String>>,
 }
 
+#[cfg(not(feature = "deno"))]
+pub fn execute_deno_code(
+    _code: &str,
+    _permissions: &Option<Vec<DenoPermission>>,
+) -> DevrcResult<()> {
+    Err(DevrcError::DenoFeatureRequired)
+}
+
 impl DenoRuntime {
     pub fn execute(&self, code: &str, _scope: &Scope, _config: &Config) -> DevrcResult<()> {
-        execute_code(code, self.get_deno_permissions())
-    }
-
-    pub fn get_deno_permissions(&self) -> PermissionsOptions {
-        let mut permissions_options = PermissionsOptions::default();
-
-        if let Some(permissions_list) = &self.permissions {
-            for permission in permissions_list {
-                match permission {
-                    DenoPermission::DisableAll => return PermissionsOptions::default(),
-                    DenoPermission::AllowAll => {
-                        permissions_options.allow_env = true;
-                        permissions_options.allow_hrtime = true;
-                        permissions_options.allow_net = Some(Vec::new());
-                        permissions_options.allow_plugin = true;
-                        permissions_options.allow_read = Some(Vec::new());
-                        permissions_options.allow_run = true;
-                        permissions_options.allow_write = Some(Vec::new());
-                        return permissions_options;
-                    }
-                    DenoPermission::AllowEnv => {
-                        permissions_options.allow_env = true;
-                    }
-                    DenoPermission::AllowHrtime => {
-                        permissions_options.allow_hrtime = true;
-                    }
-                    DenoPermission::AllowPlugin => {
-                        permissions_options.allow_plugin = true;
-                    }
-                    DenoPermission::AllowRun => {
-                        permissions_options.allow_run = true;
-                    }
-                    DenoPermission::AllowWriteAll => {
-                        permissions_options.allow_write = Some(Vec::new());
-                    }
-                    DenoPermission::AllowReadAll => {
-                        permissions_options.allow_read = Some(Vec::new());
-                    }
-                    DenoPermission::AllowNetAll => {
-                        permissions_options.allow_read = Some(Vec::new());
-                    }
-                    DenoPermission::AllowNet(values) => {
-                        permissions_options.allow_net =
-                            Some(values.iter().map(|x| x.into()).collect());
-                    }
-                    DenoPermission::AllowRead(values) => {
-                        permissions_options.allow_read =
-                            Some(values.iter().map(|x| x.into()).collect());
-                    }
-                    DenoPermission::AllowWrite(values) => {
-                        permissions_options.allow_write =
-                            Some(values.iter().map(|x| x.into()).collect());
-                    }
-                }
-            }
-        }
-
-        permissions_options
+        execute_deno_code(code, &self.permissions)
     }
 }
 

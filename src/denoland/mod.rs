@@ -1,4 +1,4 @@
-use crate::errors::DevrcResult;
+use crate::{errors::DevrcResult, interpreter::DenoPermission};
 use deno_core::resolve_url_or_path;
 use deno_lib::{
     file_fetcher::File, flags::Flags, media_type::MediaType,
@@ -66,10 +66,66 @@ async fn get_execute_future(code: &str, permissions: Permissions) -> DevrcResult
 //     Ok(())
 // }
 
-pub fn execute_code(code: &str, permissions_options: PermissionsOptions) -> DevrcResult<()> {
+pub fn get_deno_permissions(permissions: &Option<Vec<DenoPermission>>) -> PermissionsOptions {
+    let mut permissions_options = PermissionsOptions::default();
+
+    if let Some(permissions_list) = &permissions {
+        for permission in permissions_list {
+            match permission {
+                DenoPermission::DisableAll => return PermissionsOptions::default(),
+                DenoPermission::AllowAll => {
+                    permissions_options.allow_env = true;
+                    permissions_options.allow_hrtime = true;
+                    permissions_options.allow_net = Some(Vec::new());
+                    permissions_options.allow_plugin = true;
+                    permissions_options.allow_read = Some(Vec::new());
+                    permissions_options.allow_run = true;
+                    permissions_options.allow_write = Some(Vec::new());
+                    return permissions_options;
+                }
+                DenoPermission::AllowEnv => {
+                    permissions_options.allow_env = true;
+                }
+                DenoPermission::AllowHrtime => {
+                    permissions_options.allow_hrtime = true;
+                }
+                DenoPermission::AllowPlugin => {
+                    permissions_options.allow_plugin = true;
+                }
+                DenoPermission::AllowRun => {
+                    permissions_options.allow_run = true;
+                }
+                DenoPermission::AllowWriteAll => {
+                    permissions_options.allow_write = Some(Vec::new());
+                }
+                DenoPermission::AllowReadAll => {
+                    permissions_options.allow_read = Some(Vec::new());
+                }
+                DenoPermission::AllowNetAll => {
+                    permissions_options.allow_read = Some(Vec::new());
+                }
+                DenoPermission::AllowNet(values) => {
+                    permissions_options.allow_net = Some(values.iter().map(|x| x.into()).collect());
+                }
+                DenoPermission::AllowRead(values) => {
+                    permissions_options.allow_read =
+                        Some(values.iter().map(|x| x.into()).collect());
+                }
+                DenoPermission::AllowWrite(values) => {
+                    permissions_options.allow_write =
+                        Some(values.iter().map(|x| x.into()).collect());
+                }
+            }
+        }
+    }
+
+    permissions_options
+}
+
+pub fn execute_deno_code(code: &str, permissions: &Option<Vec<DenoPermission>>) -> DevrcResult<()> {
     tokio_rt::run(get_execute_future(
         &code,
-        Permissions::from_options(&permissions_options),
+        Permissions::from_options(&get_deno_permissions(&permissions)),
     ))?
 }
 
@@ -79,19 +135,22 @@ mod tests {
     use crate::errors::DevrcError;
 
     #[test]
-    fn test_execute_code() {
+    fn test_execute_deno_code() {
         let code = "console.log(\"It's work!\"); console.log(Deno);";
-        execute_code(code, PermissionsOptions::default()).unwrap();
+        let permissions = Some(vec![DenoPermission::DisableAll]);
+        execute_deno_code(code, &permissions).unwrap();
 
         let code = "type WindowStates = \"open\" | \"closed\" | \"minimized\"; let helloWorld = \"Hello World\"; console.log(`Hello ${helloWorld}`)";
 
-        execute_code(code, PermissionsOptions::default()).unwrap();
+        execute_deno_code(code, &permissions).unwrap();
     }
 
     #[test]
-    fn test_execute_code_fail() {
+    fn test_execute_deno_code_fail() {
         let code = "sdf; console.log(\"It's work!\"); console.log(Deno);";
-        let res = execute_code(code, PermissionsOptions::default());
+        let permissions = Some(vec![DenoPermission::DisableAll]);
+
+        let res = execute_deno_code(code, &permissions);
 
         match res {
             Err(DevrcError::DenoRuntimeError(_err)) => {}
@@ -105,7 +164,7 @@ mod tests {
 
         let code = r#"const res = await fetch("https://httpbin.org/get");"#;
 
-        let res = execute_code(code, PermissionsOptions::default());
+        let res = execute_deno_code(code, &permissions);
 
         match res {
             Err(DevrcError::DenoRuntimeError(_err)) => {}
