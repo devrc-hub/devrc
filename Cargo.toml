@@ -2,7 +2,7 @@
 name = "devrc"
 version = "0.3.0"
 authors = ["Alex <hey.turbo.driver@gmail.com>"]
-description = "devrc is an easy to use task automation tool on steroids for developers"
+description = "devrc is an easy to use task runner tool on steroids for developers"
 edition = "2018"
 keywords = ["tasks", "automation", "makefile", "command-line"]
 categories = ["command-line-utilities",  "development-tools", "config"]
@@ -83,3 +83,28 @@ doc = false
 
 [badges]
 maintenance = { status = "actively-developed" }
+
+
+[package.metadata.deb]
+extended-description = "devrc is an easy to use task runner tool on steroids for developers"
+depends = "$auto"
+section = "utils"
+priority = "optional"
+assets = [
+    # binary
+    ["target/release/devrc", "usr/bin/", "755"],
+]
+changelog = "CHANGELOG.md"
+default-features = false
+
+[package.metadata.deb.variants.deno]
+features = ["deno"]
+
+[package.metadata.rpm]
+package = "devrc"
+
+[package.metadata.rpm.cargo]
+buildflags = ["--release"]
+
+[package.metadata.rpm.targets]
+devrc = { path = "/usr/bin/devrc" }
