@@ -37,6 +37,7 @@ pub enum DevrcError {
     NotEnouthArguments,
     DenoRuntimeError(anyhow::Error),
     InvalidInterpreter,
+    DenoFeatureRequired,
 }
 
 impl Display for DevrcError {

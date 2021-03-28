@@ -6,6 +6,9 @@
 )]
 // List of ignored linters
 #![allow(clippy::large_enum_variant)]
+#![allow(clippy::upper_case_acronyms)]
+#![allow(clippy::from_over_into)]
+#![allow(clippy::ptr_arg)]
 
 // #![feature(custom_inner_attributes)]
 // #![clippy::msrv = "1.48.0"]
@@ -17,6 +20,8 @@ pub mod cli;
 pub mod common;
 pub mod config;
 pub mod de;
+
+#[cfg(feature = "deno")]
 pub mod denoland;
 pub mod devrc_log;
 pub mod devrcfile;

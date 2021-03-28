@@ -1,8 +1,8 @@
 [[cmd]]
-# devrc create_spec "devrc --help" "test_help_test_1_1"
+# devrc create_spec "target/debug/devrc --help" "test_help_test_1_1"
 name = "‘devrc --help’ produces the correct help text"
 shell = "devrc --help"
-stdout = { file = "outputs/help.ansitxt" }
+stdout = { file = "outputs/test_help_test_1_1_stdout.ansitxt" }
 stderr = { empty = true }
 status = 0
 tags = [ "help"]
