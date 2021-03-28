@@ -1,0 +1,171 @@
+name: compile
+
+on:
+  push:
+    branches:
+      - master
+
+  pull_request:
+    branches:
+      - master
+
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTC_WRAPPER: sccache
+  SCCACHE_CACHE_SIZE: 2000M
+  SCCACHE_IDLE_TIMEOUT: 0
+
+
+jobs:
+
+  compile_linux:
+    name: "Compile ${{ matrix.rust }} on ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # rust: [stable, beta, nightly, 1.47.0]
+        # rust: [stable]
+        # os: [ubuntu-latest]
+        # target:
+        #   # - x86_64-unknown-linux-musl
+        #   - x86_64-unknown-linux-gnu
+        # features: ["--all-features"]
+
+        include:
+          - {os: ubuntu-latest, rust: stable, feature: --all-features, target: x86_64-unknown-linux-gnu}
+          - {os: ubuntu-latest, rust: stable, feature: "", target: x86_64-unknown-linux-gnu}
+          - {os: ubuntu-latest, rust: stable, feature: "", target: x86_64-unknown-linux-musl}
+
+
+    env:
+      SCCACHE_DIR: /home/runner/.cache/sccache
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install musl tools and dependencies
+        run: |
+          sudo apt-get install musl-tools libssl-dev musl-dev gcc build-essential
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+
+      - name: Cache cargo directories
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install sccache via precompiled build
+        env:
+          LINK: https://github.com/mozilla/sccache/releases/download
+          SCCACHE_VERSION: 0.2.15
+        run: |
+          SCCACHE_FILE=sccache-v$SCCACHE_VERSION-x86_64-unknown-linux-musl
+          mkdir -p $HOME/.local/bin
+          curl -L "$LINK/v$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
+          chmod +x $SCCACHE_FILE/sccache
+          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Cache sccache output on ${{ matrix.os }}
+        uses: actions/cache@v2
+        continue-on-error: true
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ${{ runner.os }}-sccache-release-${{ matrix.target }}-${{ hashFiles('**/Cargo.*') }}
+
+      - name: Install target x86_64-unknown-linux-musl
+        run: |
+          rustup target add x86_64-unknown-linux-musl
+
+      - name: Start sccache server
+        env:
+          SCCACHE_DIR: ${{ env.SCCACHE_DIR }}
+        run: |
+          sccache --start-server
+
+      - name: Build devrc
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --verbose ${{ matrix.feature }} --target ${{ matrix.target }}
+
+      - name: Show sccache stats
+        run: |
+           sccache --show-stats
+
+      - name: Stop sccache server
+        run: |
+          sccache --stop-server
+
+  compile_macos:
+    name: "Compile ${{ matrix.rust }} on ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # rust: [stable, beta, nightly, 1.47.0]
+        include:
+          - {os: macos-latest, rust: stable, feature: --all-features, target: x86_64-apple-darwin}
+          - {os: macos-latest, rust: stable, feature: "", target: x86_64-apple-darwin}
+    env:
+      SCCACHE_DIR: /Users/runner/Library/Caches/Mozilla.sccache
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+
+      - name: Cache cargo directories
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install sccache via homebrew
+        run: |
+          brew install sccache
+
+      - name: Cache sccache output on ${{ matrix.os }}
+        uses: actions/cache@v2
+        continue-on-error: true
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ${{ runner.os }}-sccache-release-${{ hashFiles('**/Cargo.*') }}
+          # restore-keys: ${{ runner.os }}-sccache-
+
+      - name: Start sccache server
+        env:
+          SCCACHE_DIR: ${{ matrix.SCCACHE_DIR }}
+        run: |
+          sccache --start-server
+
+      - name: Build devrc
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --verbose ${{ matrix.feature }}
+
+      - name: Show sccache stats
+        run: |
+           sccache --show-stats
+
+      - name: Stop sccache server
+        run: |
+          sccache --stop-server
