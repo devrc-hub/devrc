@@ -14,9 +14,9 @@ use deno_runtime::{
 use super::{module_loader::DevrcDenoModuleLoader, program_state::DenoDevrcProgramState};
 use crate::user_agent::get_user_agent;
 
-use deno_lib::program_state::ProgramState as OriginalProgramState;
+use deno_3p_lib::program_state::ProgramState as OriginalProgramState;
 
-use deno_lib::{
+use deno_3p_lib::{
     colors, errors::get_error_class_name, fmt_errors::PrettyJsError,
     module_loader::CliModuleLoader, ops, source_maps::apply_source_map, version,
 };
@@ -95,7 +95,7 @@ fn create_original_web_worker_callback(
             runtime_version: version::deno(),
             ts_version: version::TYPESCRIPT.to_string(),
             no_color: !colors::use_color(),
-            get_error_class_fn: Some(&deno_lib::errors::get_error_class_name),
+            get_error_class_fn: Some(&deno_3p_lib::errors::get_error_class_name),
         };
 
         let mut worker = WebWorker::from_options(
@@ -169,7 +169,7 @@ pub fn create_original_main_worker(
         runtime_version: version::deno(),
         ts_version: version::TYPESCRIPT.to_string(),
         no_color: !colors::use_color(),
-        get_error_class_fn: Some(&deno_lib::errors::get_error_class_name),
+        get_error_class_fn: Some(&deno_3p_lib::errors::get_error_class_name),
         location: program_state.flags.location.clone(),
     };
 
