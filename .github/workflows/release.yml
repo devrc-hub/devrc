@@ -90,7 +90,7 @@ jobs:
 
       - name: Create deb package
         uses: actions-rs/cargo@v1
-        if: matrix.target != "x86_64-unknown-linux-musl"
+        if: ${{ matrix.target != 'x86_64-unknown-linux-musl' }}
         with:
           command: deb
           args: --variant deno
