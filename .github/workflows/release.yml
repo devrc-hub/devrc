@@ -197,12 +197,7 @@ jobs:
         run: |
           cargo package --list --allow-dirty
 
-      - name: Build package and publish deno_3p_lib the crate to crates.io
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          cd src/third_party/deno_lib && cargo publish --token=${{ secrets.CRATES_TOKEN }}
-
       - name: Build package and publish the crate to crates.io
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          cd /home/runner/work/devrc/devrc/ && cargo publish --token=${{ secrets.CRATES_TOKEN }}
+          cargo publish --token=${{ secrets.CRATES_TOKEN }}
