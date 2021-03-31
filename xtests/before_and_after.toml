@@ -8,8 +8,8 @@ tags = [ "help"]
 
 
 [[cmd]]
-name = "‘devrc -f ./devrcfiles/before_after.yml -- test_1’ produces the correct output"
-shell = "devrc -f ./devrcfiles/before_after.yml -- test_1"
+name = "‘devrc -f ./devrcfiles/before_after.yml -v test_1’ produces the correct output"
+shell = "devrc -f ./devrcfiles/before_after.yml -v test_1"
 stdout = { file = "outputs/before_and_after_execute_test_1_stdout.ansitxt" }
 stderr = { file = "outputs/before_and_after_execute_test_1_stderr.ansitxt" }
 status = 0
@@ -17,8 +17,8 @@ tags = [ "execute"]
 
 
 [[cmd]]
-name = "‘devrc -f ./devrcfiles/before_after.yml -- test_2’ produces the correct output"
-shell = "devrc -f ./devrcfiles/before_after.yml -- test_2"
+name = "‘devrc -f ./devrcfiles/before_after.yml -v test_2’ produces the correct output"
+shell = "devrc -f ./devrcfiles/before_after.yml -v test_2"
 stdout = { file = "outputs/before_and_after_execute_test_2_stdout.ansitxt"}
 stderr = { file = "outputs/before_and_after_execute_test_2_stderr.ansitxt" }
 status = 0

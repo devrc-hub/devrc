@@ -19,8 +19,8 @@ hello:
 
 
 # specsheet expr.toml -O cmd.target=./my-expr
-xtests: |
-   specsheet xtests/*.toml -O cmd.target.devrc="${CARGO_TARGET_DIR:-../target}/debug/devrc"
+xtests file="*": |
+   specsheet xtests/{{ file }}.toml -O cmd.target.devrc="${CARGO_TARGET_DIR:-../target}/debug/devrc"
 
 
 clean: cargo clean
