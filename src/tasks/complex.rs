@@ -94,13 +94,13 @@ impl ComplexCommand {
     pub fn get_scope(&self, parent_scope: &Scope, args: &TaskArguments) -> DevrcResult<Scope> {
         let mut scope = parent_scope.clone();
 
-        for (key, value) in &self.variables.evaluate(&parent_scope)? {
-            scope.insert_var(key, value);
-        }
-
         // TODO: here devrc can ask user input
         for (key, (value, _)) in args {
             scope.insert_var(key, &value.evaluate(&key, &scope)?);
+        }
+
+        for (key, value) in &self.variables.evaluate(&scope)? {
+            scope.insert_var(key, value);
         }
 
         match &self.environment.evaluate(&scope) {

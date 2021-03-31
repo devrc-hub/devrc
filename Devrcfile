@@ -7,9 +7,11 @@ run-help:
   desc: "Show envrc tasks descriptions"
   exec: cargo run --bin=devrc -- --help
 
-run:
-  desc: "Execute some task"
-  exec: cargo run --bin=devrc -- some_task
+run cmds="":
+  environment:
+    RUST_TRACEBACK: "1"
+  desc: "Execute given task"
+  exec: cargo run --bin=devrc -- {{ cmds }}
 
 
 hello:
@@ -19,8 +21,8 @@ hello:
 
 
 # specsheet expr.toml -O cmd.target=./my-expr
-xtests: |
-   specsheet xtests/*.toml -O cmd.target.devrc="${CARGO_TARGET_DIR:-../target}/debug/devrc"
+xtests file="*": |
+   specsheet xtests/{{ file }}.toml -O cmd.target.devrc="${CARGO_TARGET_DIR:-../target}/debug/devrc"
 
 
 clean: cargo clean

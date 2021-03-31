@@ -63,7 +63,6 @@ impl Runner {
     pub fn setup_verbosity(&mut self, level: u8, quiet: bool) -> DevrcResult<()> {
         match (quiet, level) {
             (true, _) => self.log_level = Some(LogLevel::Off),
-            (_, 0) => {}
             (_, x) => self.log_level = Some(LogLevel::from(x)),
         }
         Ok(())

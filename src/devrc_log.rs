@@ -26,12 +26,10 @@ impl Default for LogLevel {
 impl From<u8> for LogLevel {
     fn from(level: u8) -> Self {
         match level {
-            0 => LogLevel::Off,
-            1 => LogLevel::Error,
-            2 => LogLevel::Info,
-            3 => LogLevel::Debug,
-            x if x > 3 => LogLevel::Debug,
-            _ => LogLevel::Info,
+            0 => LogLevel::Error,
+            1 => LogLevel::Info,
+            x if x >= 2 => LogLevel::Debug,
+            _ => LogLevel::Debug,
         }
     }
 }

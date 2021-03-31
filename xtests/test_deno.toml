@@ -1,7 +1,7 @@
 [[cmd]]
 # devrc create_spec "target/debug/devrc -f xtests/devrcfiles/test_deno.yml -- test_1" "test_deno_test_1"
-name = "‘devrc -f ./devrcfiles/test_deno.yml -- test_1’ produces the correct output"
-shell = "devrc -f ./devrcfiles/test_deno.yml -- test_1"
+name = "‘devrc -f ./devrcfiles/test_deno.yml -v test_1’ produces the correct output"
+shell = "devrc -f ./devrcfiles/test_deno.yml -v test_1"
 stdout = { file = "outputs/test_deno_test_1_stdout.ansitxt" }
 stderr = { file = "outputs/test_deno_test_1_stderr.ansitxt" }
 status = 0
