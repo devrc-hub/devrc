@@ -9,6 +9,7 @@ use super::{
     arguments::TaskArguments,
     exec::ExecKind,
     params::{ParamValue, Params},
+    result::TaskResult,
 };
 
 use crate::evaluate::Evaluatable;
@@ -19,6 +20,7 @@ pub struct ComplexCommand {
 
     #[serde(default)]
     pub exec: ExecKind,
+
     //shell: ShellVariants,
     pub desc: Option<String>,
 
@@ -80,14 +82,16 @@ impl ComplexCommand {
         args: &TaskArguments,
         config: &Config,
         designer: &Designer,
-    ) -> DevrcResult<()> {
+    ) -> DevrcResult<TaskResult> {
         let mut scope = self.get_scope(parent_scope, args)?;
 
-        let interpreter = self.get_interpreter(&config);
+        let interpreter = self.get_interpreter(config);
 
         // TODO: register output as variable
         self.exec
-            .execute(&mut scope, config, &interpreter, &designer)
+            .execute(&mut scope, config, &interpreter, designer)?;
+
+        Ok(TaskResult::new())
     }
 
     /// Prepare template scope
@@ -96,7 +100,7 @@ impl ComplexCommand {
 
         // TODO: here devrc can ask user input
         for (key, (value, _)) in args {
-            scope.insert_var(key, &value.evaluate(&key, &scope)?);
+            scope.insert_var(key, &value.evaluate(key, &scope)?);
         }
 
         for (key, value) in &self.variables.evaluate(&scope)? {

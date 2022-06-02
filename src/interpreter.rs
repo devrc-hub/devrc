@@ -181,7 +181,7 @@ impl Interpreter {
 
     pub fn execute(&self, code: &str, scope: &Scope, config: &Config) -> DevrcResult<()> {
         let mut command = Command::new(&self.interpreter);
-        command.export_scope(&scope)?;
+        command.export_scope(scope)?;
 
         if let Some(value) = &config.current_dir {
             command.current_dir(value);
@@ -223,7 +223,7 @@ impl Interpreter {
 
         let mut command = Command::new(&script_path);
 
-        command.export_scope(&scope)?;
+        command.export_scope(scope)?;
 
         if let Some(value) = &config.current_dir {
             command.current_dir(value);

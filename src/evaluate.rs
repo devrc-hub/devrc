@@ -8,12 +8,12 @@ pub trait Evaluatable {
 
 impl Evaluatable for String {
     fn evaluate(&self, name: &str, scope: &Scope) -> DevrcResult<String> {
-        render_string(name, &self, scope)
+        render_string(name, self, scope)
     }
 }
 
 impl Evaluatable for &String {
     fn evaluate(&self, name: &str, scope: &Scope) -> DevrcResult<String> {
-        render_string(name, &self, scope)
+        render_string(name, self, scope)
     }
 }

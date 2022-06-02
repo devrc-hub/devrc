@@ -124,8 +124,8 @@ pub fn get_deno_permissions(permissions: &Option<Vec<DenoPermission>>) -> Permis
 
 pub fn execute_deno_code(code: &str, permissions: &Option<Vec<DenoPermission>>) -> DevrcResult<()> {
     tokio_rt::run(get_execute_future(
-        &code,
-        Permissions::from_options(&get_deno_permissions(&permissions)),
+        code,
+        Permissions::from_options(&get_deno_permissions(permissions)),
     ))?
 }
 

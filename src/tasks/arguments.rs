@@ -24,7 +24,7 @@ pub fn strip_arg_name(input: String, param_name: &str) -> DevrcResult<String> {
 
 // Try to guess is value argument or taskname
 pub fn is_argument(devrcfile: &Devrcfile, value: &str) -> bool {
-    match devrcfile.find_task(&value) {
+    match devrcfile.find_task(value) {
         Ok(_) => value.contains(' ') || value.contains('='),
         Err(_) => true,
     }
@@ -48,7 +48,7 @@ pub fn extract_task_args(
                     arguments.insert(
                         key.to_string(),
                         (
-                            strip_arg_name(value.to_string(), &key)?,
+                            strip_arg_name(value.to_string(), key)?,
                             ParamValue::Required,
                         ),
                     )
@@ -58,12 +58,12 @@ pub fn extract_task_args(
             }
             ParamValue::Default(default) => {
                 if let Some(value) = parts.get(idx) {
-                    if is_argument(&devrcfile, &value) {
+                    if is_argument(devrcfile, value) {
                         taken_arguments_counter += 1;
                         arguments.insert(
                             key.to_string(),
                             (
-                                strip_arg_name(value.to_string(), &key)?,
+                                strip_arg_name(value.to_string(), key)?,
                                 ParamValue::Default(default.clone()),
                             ),
                         )

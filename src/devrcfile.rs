@@ -288,11 +288,11 @@ impl Devrcfile {
             }
         }
 
-        self.run_hook("before_task", Some(&name))?;
+        self.run_hook("before_task", Some(name))?;
 
-        task.perform(name, &scope, &args, &self.config, &self.designer)?;
+        let _ = task.perform(name, &scope, &args, &self.config, &self.designer)?;
 
-        self.run_hook("after_task", Some(&name))?;
+        self.run_hook("after_task", Some(name))?;
         Ok(())
     }
 
@@ -312,7 +312,7 @@ impl Devrcfile {
 
             let task = self.find_task(&tasks_names[i])?;
 
-            let (counter, args) = extract_task_args(&task, &tasks_names[(i + 1)..], &self)?;
+            let (counter, args) = extract_task_args(task, &tasks_names[(i + 1)..], self)?;
 
             tasks.push((name, task, args));
 

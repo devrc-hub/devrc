@@ -56,8 +56,9 @@ impl Runner {
         }
     }
 
-    pub fn setup_dry_run(&mut self, dry_run: bool) {
+    pub fn setup_dry_run(&mut self, dry_run: bool) -> DevrcResult<()> {
         self.dry_run = dry_run;
+        Ok(())
     }
 
     pub fn setup_verbosity(&mut self, level: u8, quiet: bool) -> DevrcResult<()> {
@@ -377,7 +378,7 @@ impl Runner {
         }
 
         for file in &self.files {
-            if let Ok(file) = get_absolute_path(&file, None) {
+            if let Ok(file) = get_absolute_path(file, None) {
                 if file.exists() {
                     info!("Given Devrcfile exists: {:?}", file);
                 } else {

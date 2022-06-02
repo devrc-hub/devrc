@@ -66,9 +66,9 @@ impl RawVariables {
         let mut local_scope = parent_scope.clone();
         let mut vars = Variables::default();
         for (key, value) in &self.vars {
-            match value.evaluate(&key, &local_scope) {
+            match value.evaluate(key, &local_scope) {
                 Ok(value) => {
-                    local_scope.insert_var(&key, &value);
+                    local_scope.insert_var(key, &value);
                     vars.insert(key.clone(), value)
                 }
                 Err(error) => return Err(error),
@@ -96,7 +96,7 @@ impl From<Vec<(String, String)>> for RawVariables {
 impl ValueKind {
     pub fn evaluate(&self, name: &str, scope: &Scope) -> DevrcResult<String> {
         match self {
-            Self::String(template) => render_string(name, &template, scope),
+            Self::String(template) => render_string(name, template, scope),
             Self::None => Err(DevrcError::EmptyVariable),
             Self::Http(_) => Ok("TODO: replace me".to_owned()),
             Self::File(_) => Ok("TODO: replace me".to_owned()),

@@ -62,13 +62,13 @@ impl EnvFile {
         match self {
             EnvFile::Empty => {}
             EnvFile::Simple(path) => {
-                let file = get_absolute_path(&path, base_path)?;
+                let file = get_absolute_path(path, base_path)?;
                 self.get_from_file(file, &mut environment)?;
             }
             EnvFile::File(FileInclude {
                 file,
                 ignore_errors,
-            }) => match get_absolute_path(&file, base_path) {
+            }) => match get_absolute_path(file, base_path) {
                 Ok(file) => {
                     if let Err(error) = self.get_from_file(file, &mut environment) {
                         if !ignore_errors {
@@ -131,7 +131,7 @@ where
         let local_scope = parent_scope.clone();
         let mut vars = Environment::default();
         for (key, value) in &self.vars {
-            match value.evaluate(&key, &local_scope) {
+            match value.evaluate(key, &local_scope) {
                 Ok(value) => {
                     // local_scope.insert_var(&key, &value);
                     vars.insert(key.clone(), value)

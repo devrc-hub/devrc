@@ -47,12 +47,12 @@ impl Display for DevrcError {
         match self {
             // TODO: add source context to error
             DevrcError::RenderError(terra_error) => {
-                match TeraError::source(&terra_error) {
+                match TeraError::source(terra_error) {
                     Some(value) => {
                         write!(f, "{:}", &value)?;
                     }
                     _value => {
-                        println!("another value");
+                        writeln!(f, "another value")?;
                     }
                 }
                 // write!(f, "{}: ", terra_error);

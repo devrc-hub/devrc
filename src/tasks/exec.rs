@@ -9,6 +9,8 @@ use crate::{
     workshop::Designer,
 };
 
+use super::result::TaskResult;
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum ExecKind {
@@ -47,7 +49,7 @@ impl ExecKind {
             }
             ExecKind::List(value) => {
                 for (i, item) in value.iter().enumerate() {
-                    let cmd = item.evaluate(&format!("multi_exec_{:}", i), &scope)?;
+                    let cmd = item.evaluate(&format!("multi_exec_{:}", i), scope)?;
 
                     config.log_level.info(&cmd, &designer.command());
 
