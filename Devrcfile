@@ -1,6 +1,7 @@
 
 variables:
   message: "Hello, $USER!"
+  message_1 +template: "Hello, $USER"
 
 
 run-help:
@@ -53,3 +54,8 @@ testm mod="":
 check:
   desc: "Run checkups"
   deps: [clean, lint, test]
+
+
+install:
+  desc: "Install development version"
+  exec: cargo install --all-features --path ./
