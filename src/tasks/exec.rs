@@ -9,8 +9,6 @@ use crate::{
     workshop::Designer,
 };
 
-use super::result::TaskResult;
-
 #[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum ExecKind {

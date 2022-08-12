@@ -4,7 +4,6 @@ use crate::{
     config::RawConfig,
     errors::{DevrcError, DevrcResult},
     include::IncludeFilesWrapper,
-    scope::Scope,
     tasks::Task,
 };
 
@@ -29,6 +28,7 @@ fn default_version() -> String {
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct RawDevrcfile {
+    #[allow(dead_code)]
     #[serde(default = "default_version")]
     version: String,
 
@@ -38,6 +38,7 @@ pub struct RawDevrcfile {
     #[serde(default)]
     pub variables: RawVariables,
 
+    #[allow(dead_code)]
     #[serde(default)]
     #[serde(rename(deserialize = "include"))]
     include: IncludeFilesWrapper,
@@ -85,16 +86,6 @@ impl RawDevrcfile {
 
     pub fn get_tasks(&self) -> &Tasks {
         &self.tasks
-    }
-
-    pub fn get_evolved_scope(&self, parent_scope: Option<Scope>) -> DevrcResult<Scope> {
-        let scope = Scope::default();
-        match parent_scope {
-            Some(parent_scope) => self.variables.evaluate(&parent_scope)?,
-            None => self.variables.evaluate(&Scope::default())?,
-        };
-
-        Ok(scope)
     }
 
     pub fn setup_path(&mut self, path: PathBuf) -> DevrcResult<()> {

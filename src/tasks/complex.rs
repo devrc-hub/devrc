@@ -2,6 +2,7 @@ use crate::{
     config::Config, environment::RawEnvironment, errors::DevrcResult, interpreter::InterpreterKind,
     scope::Scope, variables::RawVariables, workshop::Designer,
 };
+use std::cell::RefCell;
 
 use serde::Deserialize;
 
@@ -11,8 +12,7 @@ use super::{
     params::{ParamValue, Params},
     result::TaskResult,
 };
-
-use crate::evaluate::Evaluatable;
+use std::rc::Rc;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ComplexCommand {
@@ -78,48 +78,41 @@ impl ComplexCommand {
     pub fn perform(
         &self,
         _name: &str,
-        parent_scope: &Scope,
+        parent_scope: Rc<RefCell<Scope>>,
         args: &TaskArguments,
         config: &Config,
         designer: &Designer,
     ) -> DevrcResult<TaskResult> {
-        let mut scope = self.get_scope(parent_scope, args)?;
+        let mut local_scope = self.process_variables(parent_scope, args)?;
 
         let interpreter = self.get_interpreter(config);
 
         // TODO: register output as variable
         self.exec
-            .execute(&mut scope, config, &interpreter, designer)?;
+            .execute(&mut local_scope, config, &interpreter, designer)?;
 
         Ok(TaskResult::new())
     }
 
     /// Prepare template scope
-    pub fn get_scope(&self, parent_scope: &Scope, args: &TaskArguments) -> DevrcResult<Scope> {
-        let mut scope = parent_scope.clone();
+    pub fn process_variables(
+        &self,
+        parent_scope: Rc<RefCell<Scope>>,
+        args: &TaskArguments,
+    ) -> DevrcResult<Scope> {
+        let mut scope = Scope {
+            parent: Some(Rc::clone(&parent_scope)),
+            ..Default::default()
+        };
 
         // TODO: here devrc can ask user input
         for (key, (value, _)) in args {
-            scope.insert_var(key, &value.evaluate(key, &scope)?);
+            scope.process_binding(key, value)?;
         }
 
-        for (key, value) in &self.variables.evaluate(&scope)? {
-            scope.insert_var(key, value);
-        }
+        scope.process_raw_vars(&self.variables)?;
+        scope.process_raw_env_vars(&self.environment)?;
 
-        match &self.environment.evaluate(&scope) {
-            Ok(value) => {
-                for (name, value) in value {
-                    scope.insert_env(name, value);
-                }
-            }
-            Err(_error) => {}
-        }
-        // for (name, value) in self.environment.evaluate(&scope) {
-        //     scope.insert_env(name, value);
-        // }
-        // let variables = self.variables.evaluate(parent_scope)?;
-        // dbg!(&variables);
         Ok(scope)
     }
 

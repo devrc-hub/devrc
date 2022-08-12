@@ -1,3 +1,5 @@
+use std::convert::TryFrom;
+
 use crate::{
     errors::{
         DevrcError::{self},
@@ -5,6 +7,7 @@ use crate::{
     },
     scope::Scope,
     template::render_string,
+    variables_parser::parse_key,
 };
 
 use serde::Deserialize;
@@ -21,6 +24,7 @@ pub struct File {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Computable {
+    #[allow(dead_code)]
     exec: String,
 }
 
@@ -46,7 +50,74 @@ pub struct RawVariables {
     pub vars: indexmap::IndexMap<String, ValueKind>,
 }
 
-pub type Variables<T> = indexmap::IndexMap<T, String>;
+pub type Variables = indexmap::IndexMap<VariableKey, VariableValue>;
+pub trait VariablesTrait {}
+
+impl VariablesTrait for Variables {}
+
+#[derive(Debug, Default, PartialEq, Eq, Hash, Clone)]
+pub struct VariableKey {
+    pub original: String,
+    pub name: String,
+    pub set_global: bool,
+}
+
+// impl From<String> for VariableKey {
+//     fn from(source: String) -> Self {
+//         VariableKey(source)
+//     }
+// }
+
+impl TryFrom<String> for VariableKey {
+    type Error = DevrcError;
+
+    fn try_from(source: String) -> Result<Self, Self::Error> {
+        parse_key(&source)
+    }
+}
+
+impl VariableKey {
+    pub fn get_name(&self) -> String {
+        self.name.to_string()
+    }
+}
+
+#[derive(Debug, Default, PartialEq, Eq, Hash, Clone)]
+pub struct VariableValue {
+    pub name: String,
+    pub raw: String,
+    pub rendered: Option<String>,
+}
+
+impl VariableValue {
+    pub fn new(name: &str, raw: &str) -> Self {
+        Self {
+            name: name.to_owned(),
+            raw: raw.to_owned(),
+            rendered: None,
+        }
+    }
+
+    pub fn get_rendered_value(&self) -> String {
+        self.rendered.clone().unwrap_or_default()
+    }
+
+    pub fn render_value(&mut self, name: &str, scope: &Scope) -> DevrcResult<()> {
+        self.rendered = Some(render_string(name, &self.raw, scope)?);
+        Ok(())
+    }
+
+    pub fn with_render_value(mut self, scope: &Scope) -> DevrcResult<Self> {
+        self.rendered = Some(render_string(&self.name, &self.raw, scope)?);
+        Ok(self)
+    }
+}
+
+impl RawVariables {
+    pub fn add(&mut self, name: &str, value: ValueKind) {
+        self.vars.insert(name.to_owned(), value);
+    }
+}
 
 // #[derive(Debug, Clone, Default, PartialEq)]
 // pub struct EvaludatedVariables{
@@ -58,27 +129,6 @@ impl Default for RawVariables {
     fn default() -> Self {
         let vars = indexmap::IndexMap::new();
         Self { vars }
-    }
-}
-
-impl RawVariables {
-    pub fn evaluate(&self, parent_scope: &Scope) -> DevrcResult<Variables<String>> {
-        let mut local_scope = parent_scope.clone();
-        let mut vars = Variables::default();
-        for (key, value) in &self.vars {
-            match value.evaluate(key, &local_scope) {
-                Ok(value) => {
-                    local_scope.insert_var(key, &value);
-                    vars.insert(key.clone(), value)
-                }
-                Err(error) => return Err(error),
-            };
-        }
-        Ok(vars)
-    }
-
-    pub fn add(&mut self, name: &str, value: ValueKind) {
-        self.vars.insert(name.to_owned(), value);
     }
 }
 
@@ -105,82 +155,22 @@ impl ValueKind {
     }
 }
 
-#[cfg(test)]
-mod tests {
+// #[cfg(test)]
+// mod tests {
 
-    use super::*;
+//     use super::*;
 
-    use crate::errors::DevrcError;
-    use std::error::Error as StdError;
+//     use crate::errors::DevrcError;
+//     use std::error::Error as StdError;
 
-    use tera::Error as TeraError;
+//     use tera::Error as TeraError;
 
-    #[test]
-    fn test_string_evaluation() {
-        let mut variables = RawVariables::default();
+//     #[test]
+//     fn test_file_variable() {}
 
-        variables.add(
-            "key1",
-            ValueKind::String("key1 value \"{{ parent_scope_var }}\"".to_owned()),
-        );
-        variables.add(
-            "key2",
-            ValueKind::String("key2 value \"{{ key1 }}\"".to_owned()),
-        );
+//     #[test]
+//     fn test_http_variable() {}
 
-        // variables.vars.insert("key1".to_owned(), ValueKind::String("key1 value \"{{ parent_scope_var }}\"".to_owned()));
-        // variables.vars.insert("key2".to_owned(), ValueKind::String("key2 value \"{{ key1 }}\"".to_owned()));
-
-        let mut scope = Scope::default();
-
-        scope.insert_var("parent_scope_var", "parent_scope_var_value");
-
-        assert_eq!(variables.evaluate(&scope).unwrap(), {
-            let mut control = Variables::default();
-            control.insert(
-                "key1".to_owned(),
-                "key1 value \"parent_scope_var_value\"".to_owned(),
-            );
-            control.insert(
-                "key2".to_owned(),
-                "key2 value \"key1 value \"parent_scope_var_value\"\"".to_owned(),
-            );
-            control
-        });
-    }
-
-    #[test]
-    fn test_string_evaluation_error() {
-        let mut variables = RawVariables::default();
-
-        variables.add(
-            "key1",
-            ValueKind::String("key1 value \"{{ parent_scope_var }}\"".to_owned()),
-        );
-        variables.add(
-            "key2",
-            ValueKind::String("key2 value \"{{ key1 }}\"".to_owned()),
-        );
-
-        let scope = Scope::default();
-
-        match variables.evaluate(&scope) {
-            Err(DevrcError::RenderError(terra_error)) => {
-                assert_eq!(
-                    "Variable `parent_scope_var` not found in context while rendering \'key1\'",
-                    format!("{:}", TeraError::source(&terra_error).unwrap())
-                );
-            }
-            _ => unreachable!(),
-        }
-    }
-
-    #[test]
-    fn test_file_variable() {}
-
-    #[test]
-    fn test_http_variable() {}
-
-    #[test]
-    fn test_computable_variable() {}
-}
+//     #[test]
+//     fn test_computable_variable() {}
+// }

@@ -147,49 +147,11 @@ where
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
 
-    use crate::errors::DevrcError;
-    use std::error::Error as StdError;
-    use tera::Error as TeraError;
-
-    #[test]
-    fn test_string_evaluation() {
-        let mut variables: RawEnvironment<String> = RawEnvironment::default();
-        variables.add("key1", "key1 value \"{{ parent_scope_var }}\"".to_owned());
-
-        let mut scope = Scope::default();
-        scope.insert_var("parent_scope_var", "parent_scope_var_value");
-
-        assert_eq!(variables.evaluate(&scope).unwrap(), {
-            let mut control = Environment::default();
-            control.insert(
-                "key1".to_owned(),
-                "key1 value \"parent_scope_var_value\"".to_owned(),
-            );
-            control
-        });
-    }
-
-    #[test]
-    fn test_string_evaluation_error() {
-        let mut variables: RawEnvironment<String> = RawEnvironment::default();
-
-        variables.add("key1", "key1 value".to_owned());
-        variables.add("key2", "key2 value \"{{ key1 }}\"".to_owned());
-
-        let scope = Scope::default();
-
-        match variables.evaluate(&scope) {
-            Err(DevrcError::RenderError(terra_error)) => {
-                assert_eq!(
-                    "Variable `key1` not found in context while rendering \'key2\'",
-                    format!("{:}", TeraError::source(&terra_error).unwrap())
-                );
-            }
-            _ => unreachable!(),
-        }
-    }
-}
+//     use crate::errors::DevrcError;
+//     use std::error::Error as StdError;
+//     use tera::Error as TeraError;
+// }

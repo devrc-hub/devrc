@@ -1,9 +1,9 @@
-use std::{cmp, path::PathBuf};
+use std::{cell::RefCell, cmp, path::PathBuf, rc::Rc};
 
 use crate::{
     config::{Config, DefaultOption, RawConfig},
     devrc_log::LogLevel,
-    environment::{EnvFile, Environment, RawEnvironment},
+    environment::{EnvFile, RawEnvironment},
     errors::{DevrcError, DevrcResult},
     raw_devrcfile::RawDevrcfile,
     scope::Scope,
@@ -11,7 +11,7 @@ use crate::{
         arguments::{extract_task_args, TaskArguments},
         Task, TaskKind, Tasks,
     },
-    variables::{RawVariables, Variables},
+    variables::RawVariables,
     workshop::Designer,
 };
 
@@ -19,10 +19,6 @@ use unicode_width::UnicodeWidthStr;
 
 #[derive(Debug, Clone, Default)]
 pub struct Devrcfile {
-    pub environment: Environment<String>,
-
-    pub variables: Variables<String>,
-
     after_script: Option<Task>,
     before_script: Option<Task>,
 
@@ -30,13 +26,13 @@ pub struct Devrcfile {
     after_task: Option<Task>,
     pub config: Config,
 
-    // TODO: evaluate scope only then add devrcfile
-    // pub scope: Scope,
     pub tasks: Tasks,
 
     pub max_taskname_width: u32,
 
     pub designer: Designer,
+
+    pub global_scope: Rc<RefCell<Scope>>,
 }
 
 impl Devrcfile {
@@ -61,18 +57,6 @@ impl Devrcfile {
 
     pub fn add_before_script(&mut self, new: Option<Task>) -> DevrcResult<()> {
         self.before_script = new;
-        Ok(())
-    }
-
-    pub fn add_env(&mut self, name: &str, value: &str) -> DevrcResult<()> {
-        self.environment.insert(name.to_string(), value.to_string());
-        // self.environment.insert_env(&name.to_string(), &value.to_string());
-        Ok(())
-    }
-
-    pub fn add_var(&mut self, name: &str, value: &str) -> DevrcResult<()> {
-        self.variables.insert(name.to_string(), value.to_string());
-        // self.scope.insert_var(&name.to_string(), &value.to_string());
         Ok(())
     }
 
@@ -116,45 +100,38 @@ impl Devrcfile {
         Ok(())
     }
 
-    pub fn add_variables(&mut self, variables: RawVariables) -> DevrcResult<()> {
-        let scope = self.get_scope();
-
-        if let Ok(value) = &scope {
-            match variables.evaluate(value) {
-                Ok(value) => {
-                    for (name, value) in &value {
-                        self.add_var(name, value)?;
-                    }
-                }
-                Err(error) => return Err(error),
-            };
-        }
-        Ok(())
+    // Add variables to global scope
+    pub fn process_variables(&mut self, variables: RawVariables) -> DevrcResult<()> {
+        let mut global_scope = (&*self.global_scope)
+            .try_borrow_mut()
+            .map_err(|_| DevrcError::RuntimeError)?;
+        global_scope.process_raw_vars(&variables)
     }
 
-    pub fn add_env_variables(&mut self, variables: RawEnvironment<String>) -> DevrcResult<()> {
-        let scope = self.get_scope();
-
-        if let Ok(value) = &scope {
-            match variables.evaluate(value) {
-                Ok(value) => {
-                    for (name, value) in &value {
-                        self.add_env(name, value)?;
-                    }
-                }
-                Err(error) => return Err(error),
-            };
-        }
-
-        Ok(())
+    // Add variables to global scope
+    pub fn process_env_variables(&mut self, variables: RawEnvironment<String>) -> DevrcResult<()> {
+        let mut global_scope = (&*self.global_scope)
+            .try_borrow_mut()
+            .map_err(|_| DevrcError::RuntimeError)?;
+        global_scope.process_raw_env_vars(&variables)
     }
 
     pub fn add_env_file(&mut self, files: EnvFile, base_path: Option<&PathBuf>) -> DevrcResult<()> {
         for (key, value) in files.load(base_path)? {
-            self.add_env(&key, &value)?;
+            let mut global_scope = (&*self.global_scope)
+                .try_borrow_mut()
+                .map_err(|_| DevrcError::RuntimeError)?;
+            global_scope.insert_env(&key.to_string(), &value.to_owned());
         }
 
         Ok(())
+    }
+
+    pub fn get_scope_copy(&self) -> DevrcResult<Scope> {
+        Ok(((&*self.global_scope)
+            .try_borrow()
+            .map_err(|_| DevrcError::RuntimeError)?)
+        .clone())
     }
 
     /// Add objects from given `RawDevrcfile` to current object
@@ -188,38 +165,17 @@ impl Devrcfile {
             self.add_env_file(files, file.path.as_ref())?;
         }
 
-        self.add_variables(file.variables)?;
+        self.process_variables(file.variables)?;
 
-        self.add_env_variables(file.environment)?;
+        self.process_env_variables(file.environment)?;
 
         Ok(())
-    }
-
-    pub fn get_scope(&self) -> DevrcResult<Scope> {
-        let mut scope = Scope::default();
-
-        for (name, value) in &self.variables {
-            scope.insert_var(name, value);
-        }
-
-        for (name, value) in &self.environment {
-            scope.insert_env(name, value);
-        }
-        Ok(scope)
     }
 
     /// Get task doct objects
     // pub fn get_tasks_docs(&self) -> std::iter::Map<indexmap::map::Iter<String, crate::tasks::TaskKind>, |(&String, &crate::tasks::TaskKind)| -> ()> {
     pub fn get_tasks_docs(&self) -> impl Iterator<Item = (&String, &TaskKind)> {
         self.tasks.items.iter().map(|(key, value)| (key, value))
-    }
-
-    pub fn get_vars(&self) -> impl Iterator<Item = (&String, &String)> {
-        self.variables.iter().map(|(key, value)| (key, value))
-    }
-
-    pub fn get_environment_vars(&self) -> impl Iterator<Item = (&String, &String)> {
-        self.environment.iter().map(|(key, value)| (key, value))
     }
 
     pub fn get_max_taskname_width(&self) -> (usize, usize) {
@@ -250,8 +206,6 @@ impl Devrcfile {
 
     // Execute hooks if they exists
     pub fn run_hook(&self, name: &str, task_name: Option<&str>) -> DevrcResult<()> {
-        let scope = self.get_scope()?;
-
         if let Ok(task) = self.find_task(name) {
             let hook_display_name = if let Some(task_name) = task_name {
                 format!("{}_{}", name, task_name)
@@ -261,12 +215,11 @@ impl Devrcfile {
 
             task.perform(
                 &hook_display_name,
-                &scope,
+                Rc::clone(&self.global_scope),
                 &TaskArguments::new(),
                 &self.config,
                 &self.designer,
             )?;
-
             // self.run_task(&hook_display_name, task, &[])?;
         }
 
@@ -274,8 +227,6 @@ impl Devrcfile {
     }
 
     pub fn run_task(&self, name: &str, task: &TaskKind, args: TaskArguments) -> DevrcResult<()> {
-        let scope = self.get_scope()?;
-
         if let Some(deps) = task.get_dependencies() {
             self.config.log_level.debug(
                 &format!("\n==> Running task `{}` dependencies: ...", &name),
@@ -290,7 +241,13 @@ impl Devrcfile {
 
         self.run_hook("before_task", Some(name))?;
 
-        let _ = task.perform(name, &scope, &args, &self.config, &self.designer)?;
+        let _ = task.perform(
+            name,
+            Rc::clone(&self.global_scope),
+            &args,
+            &self.config,
+            &self.designer,
+        )?;
 
         self.run_hook("after_task", Some(name))?;
         Ok(())
@@ -350,11 +307,12 @@ mod tests {
     use super::*;
     use crate::{
         tasks::{complex::ComplexCommand, exec::ExecKind, *},
+        template::render_string,
         variables::ValueKind,
     };
 
     #[test]
-    fn test_variables() {
+    fn test_process_variables() {
         let mut raw_variables_1 = RawVariables::default();
 
         raw_variables_1.add("var1", ValueKind::String("value1".to_owned()));
@@ -362,20 +320,19 @@ mod tests {
 
         let mut devrcfile = Devrcfile::default();
 
-        devrcfile.add_variables(raw_variables_1).unwrap();
+        devrcfile.process_variables(raw_variables_1).unwrap();
 
         let mut raw_variables_2 = RawVariables::default();
         raw_variables_2.add("var3", ValueKind::String("value3 {{ var2 }}".to_owned()));
 
-        devrcfile.add_variables(raw_variables_2).unwrap();
+        devrcfile.process_variables(raw_variables_2).unwrap();
 
-        let mut variables: Variables<String> = Variables::default();
+        let mut scope = Scope::default();
+        scope.process_binding("var1", "value1").unwrap();
+        scope.process_binding("var2", "value2 {{ var1 }}").unwrap();
+        scope.process_binding("var3", "value3 {{ var2 }}").unwrap();
 
-        variables.insert("var1".to_string(), "value1".to_string());
-        variables.insert("var2".to_string(), "value2 value1".to_string());
-        variables.insert("var3".to_string(), "value3 value2 value1".to_string());
-
-        assert_eq!(variables, devrcfile.variables);
+        assert_eq!(scope, devrcfile.get_scope_copy().unwrap());
     }
 
     #[test]
@@ -387,45 +344,23 @@ mod tests {
 
         let mut devrcfile = Devrcfile::default();
 
-        devrcfile.add_variables(raw_variables_1).unwrap();
+        devrcfile.process_variables(raw_variables_1).unwrap();
 
         let mut raw_environment = RawEnvironment::default();
         raw_environment.add("env_var1", "value3 {{ var2 }}".to_owned());
 
-        devrcfile.add_env_variables(raw_environment).unwrap();
-
-        let mut env: Environment<String> = Environment::default();
-
-        env.insert("env_var1".to_string(), "value3 value2 value1".to_string());
-
-        assert_eq!(env, devrcfile.environment);
-    }
-
-    #[test]
-    fn test_get_scope() {
-        let mut raw_variables_1 = RawVariables::default();
-
-        raw_variables_1.add("var1", ValueKind::String("value1".to_owned()));
-        raw_variables_1.add("var2", ValueKind::String("value2 {{ var1 }}".to_owned()));
-
-        let mut devrcfile = Devrcfile::default();
-
-        devrcfile.add_variables(raw_variables_1).unwrap();
-
-        let mut raw_environment = RawEnvironment::default();
-        raw_environment.add("env_var1", "value3 {{ var2 }}".to_owned());
-
-        devrcfile.add_env_variables(raw_environment).unwrap();
+        devrcfile.process_env_variables(raw_environment).unwrap();
 
         let mut scope = Scope::default();
 
-        // let scope = Scope { variables: {"var2": "value2 value1", "var1": "value1"}, environment: {"env_var1": "value3 value2 value1"} }
-        scope.insert_var("var1", "value1");
-        scope.insert_var("var2", "value2 value1");
+        scope.process_binding("var1", "value1").unwrap();
+        scope.process_binding("var2", "value2 {{ var1 }}").unwrap();
+        scope.insert_env(
+            "env_var1",
+            &render_string("env_var", "value3 {{ var2 }}", &scope).unwrap(),
+        );
 
-        scope.insert_env("env_var1", "value3 value2 value1");
-
-        assert_eq!(scope, devrcfile.get_scope().unwrap());
+        assert_eq!(scope, devrcfile.get_scope_copy().unwrap());
     }
 
     #[test]

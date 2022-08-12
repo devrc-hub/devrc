@@ -3,6 +3,9 @@ variables:
   message: "Hello, $USER!"
   message_1 +template: "Hello, $USER"
 
+environment:
+  var_1: "env_var_1"
+  var_2: "env_var_2"
 
 run-help:
   desc: "Show envrc tasks descriptions"

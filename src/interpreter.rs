@@ -374,7 +374,6 @@ fn create_script_file(script: &str) -> DevrcResult<(PathBuf, NamedTempFile)> {
 
     f.write_all(script.as_bytes())?;
 
-    // dbg!(&path);
     Ok((path, tmp))
 }
 

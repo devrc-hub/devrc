@@ -1,17 +1,34 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, convert::TryFrom};
 
 use tera::Context;
 
+use crate::{
+    environment::RawEnvironment,
+    errors::{DevrcError, DevrcResult},
+    evaluate::Evaluatable,
+    variables::{self, RawVariables, VariableKey, VariableValue, Variables},
+};
+use std::rc::Rc;
+
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Scope {
-    pub variables: HashMap<String, String>,
-    pub environment: HashMap<String, String>,
+    pub variables: Variables,
+    pub environment: indexmap::IndexMap<String, String>,
+    pub parent: Option<Rc<RefCell<Scope>>>,
 }
 
 impl Scope {
     /// Add variable to scope
-    pub fn insert_var(&mut self, key: &str, value: &str) -> Option<String> {
-        self.variables.insert(key.to_owned(), value.to_owned())
+    pub fn insert_var(&mut self, key: VariableKey, value: VariableValue) -> Option<VariableValue> {
+        self.variables.insert(key, value)
+    }
+
+    pub fn process_binding(&mut self, key: &str, value: &str) -> DevrcResult<()> {
+        self.variables.insert(
+            VariableKey::try_from(key.to_string())?,
+            VariableValue::new(key, value).with_render_value(self)?,
+        );
+        Ok(())
     }
 
     /// Add environment variable to scope
@@ -19,21 +36,60 @@ impl Scope {
         self.environment.insert(key.to_owned(), value.to_owned())
     }
 
-    pub fn get_var(&self, key: &str) -> Option<&String> {
+    pub fn get_var(&self, key: &VariableKey) -> Option<&VariableValue> {
         self.variables.get(key)
     }
 
     pub fn get_env_var(&self, key: &str) -> Option<&String> {
         self.environment.get(key)
     }
+
+    pub fn process_raw_vars(&mut self, variables: &RawVariables) -> DevrcResult<()> {
+        for (original_key, original_value) in &variables.vars {
+            match original_value {
+                variables::ValueKind::None => return Err(DevrcError::EmptyVariable),
+                variables::ValueKind::String(inner) => {
+                    let key = VariableKey::try_from(original_key.clone())?;
+                    let value = VariableValue::new(original_key, inner).with_render_value(self)?;
+                    self.variables.insert(key.clone(), value.clone());
+
+                    if key.set_global && self.parent.is_some() {
+                        let mut parent_scope = (&*self.parent.as_ref().unwrap())
+                            .try_borrow_mut()
+                            .map_err(|_| DevrcError::RuntimeError)?;
+                        parent_scope.insert_var(key, value);
+                    }
+                }
+                _ => return Err(DevrcError::VariableTypeNotImplemented),
+            }
+        }
+        Ok(())
+    }
+
+    pub fn process_raw_env_vars(&mut self, variables: &RawEnvironment<String>) -> DevrcResult<()> {
+        for (key, value) in &variables.vars {
+            let result = value.evaluate(key, self);
+            match result {
+                Ok(rendered_value) => {
+                    self.environment
+                        .insert(key.to_owned(), rendered_value.to_owned());
+                }
+                Err(error) => return Err(error),
+            }
+        }
+        Ok(())
+    }
 }
 
 impl Clone for Scope {
     fn clone(&self) -> Self {
-        let mut scope = Self::default();
+        let mut scope = Scope {
+            parent: self.parent.clone(),
+            ..Default::default()
+        };
 
-        for (name, value) in &self.variables {
-            scope.insert_var(name, value);
+        for (name, value) in self.variables.iter() {
+            scope.insert_var((*name).clone(), (*value).clone());
         }
 
         for (name, value) in &self.environment {
@@ -44,14 +100,25 @@ impl Clone for Scope {
     }
 }
 
-impl From<&Scope> for Context {
-    fn from(source: &Scope) -> Self {
+impl TryFrom<&Scope> for Context {
+    type Error = DevrcError;
+
+    fn try_from(source: &Scope) -> Result<Self, Self::Error> {
         let mut context: Context = Self::new();
 
-        for (key, value) in &source.variables {
-            context.insert(key, value);
+        if source.parent.is_some() {
+            let parent_scope = (&*(source.parent.as_ref().unwrap()))
+                .try_borrow()
+                .map_err(|_| DevrcError::RuntimeError)?;
+            for (key, value) in &parent_scope.variables {
+                context.insert(key.get_name(), &value.get_rendered_value());
+            }
         }
-        context
+
+        for (key, value) in &source.variables {
+            context.insert(key.get_name(), &value.get_rendered_value());
+        }
+        Ok(context)
     }
 }
 
@@ -63,13 +130,25 @@ mod tests {
     fn test_scope() {
         let mut scope = Scope::default();
 
-        scope.insert_var("key1", "value1");
+        scope.insert_var(
+            VariableKey::try_from("key1".to_string()).unwrap(),
+            VariableValue::new(&"key1".to_string(), &"value1".to_string()),
+        );
 
         scope.insert_env("env_var_1", "env_var_2_val");
 
-        assert_eq!(scope.get_var("key"), None);
+        assert_eq!(
+            scope.get_var(&VariableKey::try_from("key".to_string()).unwrap()),
+            None
+        );
 
-        assert_eq!(scope.get_var("key1"), Some(&"value1".to_owned()));
+        assert_eq!(
+            scope.get_var(&VariableKey::try_from("key1".to_string()).unwrap()),
+            Some(&VariableValue::new(
+                &"key1".to_string(),
+                &"value1".to_string()
+            ))
+        );
 
         assert_eq!(
             scope.get_env_var("env_var_1"),

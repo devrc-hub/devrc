@@ -1,4 +1,4 @@
-use std::{convert::TryFrom, fmt, marker::PhantomData};
+use std::{cell::RefCell, convert::TryFrom, fmt, marker::PhantomData};
 
 use indexmap::IndexMap;
 
@@ -12,6 +12,7 @@ use crate::{
     scope::Scope,
     workshop::Designer,
 };
+use std::rc::Rc;
 
 pub mod arguments;
 pub mod complex;
@@ -48,6 +49,7 @@ pub enum IncludeKind {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Include {
+    #[allow(dead_code)]
     include: IncludeKind,
 }
 
@@ -110,7 +112,7 @@ impl TaskKind {
     pub fn perform(
         &self,
         name: &str,
-        parent_scope: &Scope,
+        parent_scope: Rc<RefCell<Scope>>,
         args: &TaskArguments,
         config: &Config,
         designer: &Designer,
@@ -123,12 +125,32 @@ impl TaskKind {
         let result = match self {
             TaskKind::Empty => return Err(DevrcError::NotImplemented),
             TaskKind::Command(value) => {
-                let complex_command = ComplexCommand::from(value);
-                complex_command.perform(name, parent_scope, args, config, designer)?
+                ComplexCommand::from(value).perform(name, parent_scope, args, config, designer)?
             }
             TaskKind::ComplexCommand(value) => {
                 value.perform(name, parent_scope, args, config, designer)?
             }
+            TaskKind::Commands(_value) => return Err(DevrcError::NotImplemented),
+            TaskKind::Include(_value) => {
+                return Err(DevrcError::NotImplemented);
+            }
+        };
+
+        Ok(result)
+    }
+
+    pub fn get_scope(
+        &self,
+        _name: &str,
+        parent_scope: Rc<RefCell<Scope>>,
+        args: &TaskArguments,
+    ) -> DevrcResult<Scope> {
+        let result = match self {
+            TaskKind::Empty => return Err(DevrcError::NotImplemented),
+            TaskKind::Command(value) => {
+                ComplexCommand::from(value).process_variables(parent_scope, args)?
+            }
+            TaskKind::ComplexCommand(value) => value.process_variables(parent_scope, args)?,
             TaskKind::Commands(_value) => return Err(DevrcError::NotImplemented),
             TaskKind::Include(_value) => {
                 return Err(DevrcError::NotImplemented);

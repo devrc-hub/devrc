@@ -8,6 +8,7 @@ use crate::{
     interrupt::setup_interrupt_handler,
     raw_devrcfile::RawDevrcfile,
     scope::Scope,
+    tasks::arguments::TaskArguments,
     utils,
     utils::{
         get_absolute_path, get_directory_devrc_file, get_global_devrc_file,
@@ -17,7 +18,7 @@ use crate::{
     workshop::Designer,
 };
 
-use std::fmt::Debug;
+use std::{fmt::Debug, rc::Rc};
 
 use std::io;
 
@@ -70,7 +71,7 @@ impl Runner {
     }
 
     pub fn setup_variables(&mut self, variables: RawVariables) -> DevrcResult<()> {
-        self.devrc.add_variables(variables)
+        self.devrc.process_variables(variables)
     }
 
     // Try to get devrcfile
@@ -288,19 +289,36 @@ impl Runner {
     }
 
     /// Show global variables and their computed values
-    pub fn list_vars(&self) -> DevrcResult<()> {
+    pub fn list_global_vars(&self) -> DevrcResult<()> {
         println!("List global devrc variables:");
+        let scope = ((&*self.devrc.global_scope)
+            .try_borrow()
+            .map_err(|_| DevrcError::RuntimeError)?)
+        .clone();
+        self.list_vars(&scope)
+    }
 
-        let max_variable_name_width = self.devrc.variables.get_max_key_width();
+    /// Show global environment variables and their computed values
+    pub fn list_global_env_vars(&self) -> DevrcResult<()> {
+        println!("List global devrc environment variables:");
+        let scope = ((&*self.devrc.global_scope)
+            .try_borrow()
+            .map_err(|_| DevrcError::RuntimeError)?)
+        .clone();
+        self.list_env_vars(&scope)
+    }
 
-        for (name, value) in self.devrc.get_vars() {
+    pub fn list_vars(&self, scope: &Scope) -> DevrcResult<()> {
+        let max_variable_name_width = scope.variables.get_max_key_width();
+
+        for (name, value) in &scope.variables {
             println!(
                 "{:width$}{}{:max_variable_name_width$}{} = \"{}\"",
                 "",
                 self.designer.variable().prefix(),
-                name,
+                name.get_name(),
                 self.designer.variable().suffix(),
-                value,
+                value.get_rendered_value(),
                 width = 2,
                 max_variable_name_width = max_variable_name_width
             );
@@ -308,13 +326,10 @@ impl Runner {
         Ok(())
     }
 
-    /// Show global environment variables and their computed values
-    pub fn list_env_vars(&self) -> DevrcResult<()> {
-        println!("List global devrc environment variables:");
+    pub fn list_env_vars(&self, scope: &Scope) -> DevrcResult<()> {
+        let max_variable_name_width = scope.environment.get_max_key_width();
 
-        let max_variable_name_width = self.devrc.environment.get_max_key_width();
-
-        for (name, value) in self.devrc.get_environment_vars() {
+        for (name, value) in &scope.environment {
             println!(
                 "{:width$}{}{:max_variable_name_width$}{} = \"{}\"",
                 "",
@@ -349,6 +364,20 @@ impl Runner {
                 println!("Examples: \n{}", example);
             }
             println!();
+
+            if self.log_level == Some(LogLevel::Debug) {
+                println!("Task variables:");
+                let scope = task.get_scope(
+                    &name,
+                    Rc::clone(&self.devrc.global_scope),
+                    &TaskArguments::default(),
+                )?;
+                self.list_vars(&scope)?;
+                println!();
+
+                println!("Task environment variables:\n");
+                self.list_env_vars(&scope)?;
+            }
         }
         Ok(())
     }
