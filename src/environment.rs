@@ -9,7 +9,7 @@ use crate::{
     utils::get_absolute_path,
 };
 
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq)]
 pub struct RawEnvironment<T> {
     #[serde(flatten)]
     pub vars: indexmap::IndexMap<String, T>,

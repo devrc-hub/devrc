@@ -5,14 +5,25 @@ devrc_config:
     permissions:
       # - disable-all
       # - allow-all
-      - allow-env
+      - allow-env: []
       - allow-hrtime
       - allow-net: [google.com, httpbin.org]
-      - allow-plugin
+      - allow-ffi: []
       - allow-read: ["/tmp"]
-      - allow-run
+      - allow-run: []
       - allow-write-all
       - allow-write: ["/tmp"]
+    # permissions:
+    #   # - disable-all
+    #   # - allow-all
+    #   - allow-env
+    #   - allow-hrtime
+    #   - allow-net: [google.com, httpbin.org]
+    #   - allow-ffi
+    #   - allow-read: ["/tmp"]
+    #   - allow-run
+    #   - allow-write-all
+    #   - allow-write: ["/tmp"]
 
 # Variant 2
 # devrc_config:

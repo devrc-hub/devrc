@@ -54,7 +54,7 @@ impl Scope {
                     self.variables.insert(key.clone(), value.clone());
 
                     if key.set_global && self.parent.is_some() {
-                        let mut parent_scope = (&*self.parent.as_ref().unwrap())
+                        let mut parent_scope = (&**(self.parent.as_ref().unwrap()))
                             .try_borrow_mut()
                             .map_err(|_| DevrcError::RuntimeError)?;
                         parent_scope.insert_var(key, value);
@@ -107,7 +107,7 @@ impl TryFrom<&Scope> for Context {
         let mut context: Context = Self::new();
 
         if source.parent.is_some() {
-            let parent_scope = (&*(source.parent.as_ref().unwrap()))
+            let parent_scope = (&**(source.parent.as_ref().unwrap()))
                 .try_borrow()
                 .map_err(|_| DevrcError::RuntimeError)?;
             for (key, value) in &parent_scope.variables {

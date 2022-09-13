@@ -12,12 +12,12 @@ use crate::{
 
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq)]
 pub struct Http {
     fetch: String,
 }
 
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq)]
 pub struct File {
     file: String,
 }
