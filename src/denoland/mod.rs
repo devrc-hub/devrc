@@ -2,22 +2,20 @@ use std::path::PathBuf;
 
 use crate::{errors::DevrcResult, interpreter::DenoPermission};
 use deno_3p_lib::{
-    file_fetcher::File,
-    args::flags::Flags,
-    proc_state::ProcState,
-    worker::create_main_worker,
+    args::flags::Flags, file_fetcher::File, proc_state::ProcState, worker::create_main_worker,
 };
 use deno_ast::MediaType;
 
-use deno_runtime::tokio_util::run_local;
 use deno_core::resolve_url_or_path;
-use deno_runtime::permissions::{Permissions, PermissionsOptions};
+use deno_runtime::{
+    permissions::{Permissions, PermissionsOptions},
+    tokio_util::run_local,
+};
 // use workers::create_original_main_worker;
 
 // pub mod module_loader;
 pub mod program_state;
 pub mod tokio_rt;
-
 
 async fn get_execute_future(code: &str, permissions: Permissions) -> DevrcResult<i32> {
     let ps = ProcState::build(Flags::default()).await?;
@@ -36,12 +34,18 @@ async fn get_execute_future(code: &str, permissions: Permissions) -> DevrcResult
 
     ps.file_fetcher.insert_cached(source_file);
 
-    let mut worker = create_main_worker(&ps, main_module.clone(), permissions, vec![], Default::default()).await?;
+    let mut worker = create_main_worker(
+        &ps,
+        main_module.clone(),
+        permissions,
+        vec![],
+        Default::default(),
+    )
+    .await?;
 
     let exit_code = worker.run().await?;
     Ok(exit_code)
 }
-
 
 pub fn get_deno_permissions(permissions: &Option<Vec<DenoPermission>>) -> PermissionsOptions {
     let mut permissions_options = PermissionsOptions::default();
@@ -55,14 +59,14 @@ pub fn get_deno_permissions(permissions: &Option<Vec<DenoPermission>>) -> Permis
                     permissions_options.allow_hrtime = true;
                     permissions_options.allow_net = Some(Vec::new());
                     permissions_options.allow_ffi = Some(Vec::new());
-                    permissions_options.allow_read = Some(vec!(PathBuf::from("/")));
+                    permissions_options.allow_read = Some(vec![PathBuf::from("/")]);
                     permissions_options.allow_run = Some(Vec::new());
-                    permissions_options.allow_write = Some(vec!(PathBuf::from("/")));
+                    permissions_options.allow_write = Some(vec![PathBuf::from("/")]);
 
                     return permissions_options;
                 }
                 DenoPermission::AllowEnv(values) => {
-                    permissions_options.allow_env =  Some(values.iter().map(|x| x.into()).collect());
+                    permissions_options.allow_env = Some(values.iter().map(|x| x.into()).collect());
                 }
                 DenoPermission::AllowHrtime => {
                     permissions_options.allow_hrtime = true;
@@ -106,7 +110,10 @@ pub fn get_deno_permissions(permissions: &Option<Vec<DenoPermission>>) -> Permis
     permissions_options
 }
 
-pub fn execute_deno_code(code: &str, permissions: &Option<Vec<DenoPermission>>) -> DevrcResult<i32> {
+pub fn execute_deno_code(
+    code: &str,
+    permissions: &Option<Vec<DenoPermission>>,
+) -> DevrcResult<i32> {
     run_local(get_execute_future(
         code,
         Permissions::from_options(&get_deno_permissions(permissions))?,

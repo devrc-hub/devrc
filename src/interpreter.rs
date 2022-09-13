@@ -104,18 +104,15 @@ pub fn execute_deno_code(
 impl DenoRuntime {
     pub fn execute(&self, code: &str, _scope: &Scope, _config: &Config) -> DevrcResult<i32> {
         match execute_deno_code(code, &self.permissions) {
-            Ok(exit_status) =>{
-
+            Ok(exit_status) => {
                 if exit_status != 0 {
                     // Raise runtime error
                     Err(DevrcError::Code { code: exit_status })
                 } else {
                     Ok(0)
                 }
-            },
-            Err(error) => {
-                Err(error)
-            },
+            }
+            Err(error) => Err(error),
         }
     }
 }
