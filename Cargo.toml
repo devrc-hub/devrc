@@ -1,6 +1,6 @@
 [package]
 name = "devrc"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Alex <hey.turbo.driver@gmail.com>"]
 description = "devrc is an easy to use task runner tool on steroids for developers"
 edition = "2018"
