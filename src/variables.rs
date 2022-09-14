@@ -60,6 +60,7 @@ pub struct VariableKey {
     pub original: String,
     pub name: String,
     pub set_global: bool,
+    pub raw: bool,
 }
 
 // impl From<String> for VariableKey {
@@ -85,30 +86,40 @@ impl VariableKey {
 #[derive(Debug, Default, PartialEq, Eq, Hash, Clone)]
 pub struct VariableValue {
     pub name: String,
-    pub raw: String,
+    pub original: String,
     pub rendered: Option<String>,
+    pub raw: bool,
 }
 
 impl VariableValue {
     pub fn new(name: &str, raw: &str) -> Self {
         Self {
             name: name.to_owned(),
-            raw: raw.to_owned(),
+            original: raw.to_owned(),
             rendered: None,
+            raw: false,
         }
     }
 
     pub fn get_rendered_value(&self) -> String {
+        if self.raw {
+            return self.original.clone();
+        }
         self.rendered.clone().unwrap_or_default()
     }
 
     pub fn render_value(&mut self, name: &str, scope: &Scope) -> DevrcResult<()> {
-        self.rendered = Some(render_string(name, &self.raw, scope)?);
+        self.rendered = Some(render_string(name, &self.original, scope)?);
         Ok(())
     }
 
     pub fn with_render_value(mut self, scope: &Scope) -> DevrcResult<Self> {
-        self.rendered = Some(render_string(&self.name, &self.raw, scope)?);
+        self.rendered = Some(render_string(&self.name, &self.original, scope)?);
+        Ok(self)
+    }
+
+    pub fn as_raw(mut self) -> DevrcResult<Self> {
+        self.raw = true;
         Ok(self)
     }
 }

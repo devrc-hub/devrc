@@ -1,7 +1,7 @@
 
 variables:
   message: "Hello, $USER!"
-  message_1 +template: "Hello, $USER"
+  message_1 +raw: "Hello, $USER"
 
 environment:
   var_1: "env_var_1"
