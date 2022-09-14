@@ -50,7 +50,13 @@ impl Scope {
                 variables::ValueKind::None => return Err(DevrcError::EmptyVariable),
                 variables::ValueKind::String(inner) => {
                     let key = VariableKey::try_from(original_key.clone())?;
-                    let value = VariableValue::new(original_key, inner).with_render_value(self)?;
+
+                    let value: VariableValue = if key.raw {
+                        VariableValue::new(original_key, inner).as_raw()?
+                    } else {
+                        VariableValue::new(original_key, inner).with_render_value(self)?
+                    };
+
                     self.variables.insert(key.clone(), value.clone());
 
                     if key.set_global && self.parent.is_some() {

@@ -1,11 +1,12 @@
 variables:
   first_name: "Alex"
   second_name: "Alice"
+  raw_var +raw: "Raw variable {{ task_variable_global }}"
 
 environment:
   ENV_NAME: "{{ second_name }}"
 
-task_name:
+first_task:
   desc: "Task description"
   variables:
     task_variable: "Task variable value"
@@ -23,3 +24,11 @@ second_task:
     var: "simple var"
   exec: |
     echo "Second task:  {{ task_variable_global }} "
+
+
+third_task:
+  desc: "Third task description"
+  variables:
+    local_var: "{{ raw_var }}"
+  exec: |
+    echo "Third task:  {{ raw_var }} "
