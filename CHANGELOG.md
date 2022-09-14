@@ -26,6 +26,16 @@ _Other cases_
 
 ---
 
+## [v0.4.0](https://github.com/devrc-hub/devrc/releases/tag/vX.X.X) - 2022-09-14
+
+### Changes
+- Deno updated to v1.25.2
+
+### New Features
+- Added variables modifiers
+
+---
+
 
 ## [v0.3.0](https://github.com/devrc-hub/devrc/releases/tag/v0.3.0) - 2021-03-15
 

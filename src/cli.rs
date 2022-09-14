@@ -120,7 +120,7 @@ impl CommandLine {
     }
 }
 
-#[derive(Debug, PartialEq, StructOpt)]
+#[derive(Debug, Eq, PartialEq, StructOpt)]
 pub enum Subcommands {
     // `external_subcommand` tells structopt to put
     // all the extra arguments into this Vec

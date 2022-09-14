@@ -58,6 +58,7 @@ Lets start with an overview of features that exist in devrc:
   * [x] devrc supports [dotenv files](#dotenv-files)
   * [x] Writing task commands in different languages
   * [x] Task parameters and user input
+  * [x] Set global variables and environment variables from tasks
   * [ ] Remote command execution
   * [x] Read `Devrcfile` contents from stdin
   * [x] Global and local defined variables and environment variables
@@ -281,6 +282,12 @@ devrc_config:
 
 Variables are used by template engine to compute commands, another variables (global or local) or environment variables.
 If there exists global and local variables with the same name, then local will overwrite it's value.
+
+### Variable modifiers
+
+There exists special keywords in variable binding definition:
+
+ - `+global` - if this keywords specified, then variable saved to global scope.
 
 ### Environment variables
 

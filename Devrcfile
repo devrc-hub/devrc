@@ -1,7 +1,11 @@
 
 variables:
   message: "Hello, $USER!"
+  message_1 +template: "Hello, $USER"
 
+environment:
+  var_1: "env_var_1"
+  var_2: "env_var_2"
 
 run-help:
   desc: "Show envrc tasks descriptions"
@@ -53,3 +57,8 @@ testm mod="":
 check:
   desc: "Run checkups"
   deps: [clean, lint, test]
+
+
+install:
+  desc: "Install development version"
+  exec: cargo install --all-features --path ./

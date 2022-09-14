@@ -4,8 +4,7 @@
 edition = "2018"
 # indent_style = "Block"
 reorder_imports = true
-merge_imports = true
-
+imports_granularity="Crate"
 
 
 # comment_width                = 80

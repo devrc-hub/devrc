@@ -52,13 +52,13 @@ pub enum DenoPermission {
     #[serde(rename = "allow-all")]
     AllowAll,
     #[serde(rename = "allow-env")]
-    AllowEnv,
+    AllowEnv(Vec<String>),
     #[serde(rename = "allow-hrtime")]
     AllowHrtime,
-    #[serde(rename = "allow-plugin")]
-    AllowPlugin,
+    #[serde(rename = "allow-ffi")]
+    AllowFFI(Vec<String>),
     #[serde(rename = "allow-run")]
-    AllowRun,
+    AllowRun(Vec<String>),
 
     #[serde(rename = "allow-write-all")]
     AllowWriteAll,
@@ -67,11 +67,15 @@ pub enum DenoPermission {
     #[serde(rename = "allow-net-all")]
     AllowNetAll,
 
+    #[serde(rename = "allow-run-all")]
+    AllowRunAll,
+    #[serde(rename = "allow-ffi-all")]
+    AllowFFIAll,
+
     #[serde(rename = "allow-net")]
     AllowNet(Vec<String>),
     #[serde(rename = "allow-read")]
     AllowRead(Vec<String>),
-
     #[serde(rename = "allow-write")]
     AllowWrite(Vec<String>),
 }
@@ -93,13 +97,23 @@ pub struct DenoRuntime {
 pub fn execute_deno_code(
     _code: &str,
     _permissions: &Option<Vec<DenoPermission>>,
-) -> DevrcResult<()> {
+) -> DevrcResult<i32> {
     Err(DevrcError::DenoFeatureRequired)
 }
 
 impl DenoRuntime {
-    pub fn execute(&self, code: &str, _scope: &Scope, _config: &Config) -> DevrcResult<()> {
-        execute_deno_code(code, &self.permissions)
+    pub fn execute(&self, code: &str, _scope: &Scope, _config: &Config) -> DevrcResult<i32> {
+        match execute_deno_code(code, &self.permissions) {
+            Ok(exit_status) => {
+                if exit_status != 0 {
+                    // Raise runtime error
+                    Err(DevrcError::Code { code: exit_status })
+                } else {
+                    Ok(0)
+                }
+            }
+            Err(error) => Err(error),
+        }
     }
 }
 
@@ -107,11 +121,11 @@ impl DenoRuntime {
 #[serde(untagged)]
 pub enum InterpreterKind {
     DenoRuntime(DenoRuntime),
-    Internal(Interpreter),
+    Internal(SystemShell),
 }
 
 impl InterpreterKind {
-    pub fn execute(&self, code: &str, scope: &Scope, config: &Config) -> DevrcResult<()> {
+    pub fn execute(&self, code: &str, scope: &Scope, config: &Config) -> DevrcResult<i32> {
         match self {
             InterpreterKind::DenoRuntime(deno_interpreter) => {
                 deno_interpreter.execute(code, scope, config)
@@ -125,7 +139,7 @@ impl InterpreterKind {
 
 impl Default for InterpreterKind {
     fn default() -> Self {
-        InterpreterKind::Internal(Interpreter::default())
+        InterpreterKind::Internal(SystemShell::default())
     }
 }
 
@@ -143,14 +157,14 @@ impl Display for InterpreterKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct Interpreter {
+pub struct SystemShell {
     // pub kind: InterpeterKind,
     // #[serde(alias="shell")]
     pub interpreter: String,
     pub args: Vec<String>,
 }
 
-impl TryFrom<String> for Interpreter {
+impl TryFrom<String> for SystemShell {
     type Error = DevrcError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
@@ -158,9 +172,9 @@ impl TryFrom<String> for Interpreter {
     }
 }
 
-impl Interpreter {
+impl SystemShell {
     /// Parse shell string to `Interpreter` struct
-    pub fn get_from_string(input: &str) -> Option<Interpreter> {
+    pub fn get_from_string(input: &str) -> Option<SystemShell> {
         let mut parts = input.split(' ');
         let mut args: Vec<String> = Vec::new();
 
@@ -170,7 +184,7 @@ impl Interpreter {
                 args.push(arg.to_owned())
             }
 
-            Some(Interpreter {
+            Some(SystemShell {
                 interpreter: value.to_string(),
                 args,
             })
@@ -179,9 +193,9 @@ impl Interpreter {
         }
     }
 
-    pub fn execute(&self, code: &str, scope: &Scope, config: &Config) -> DevrcResult<()> {
+    pub fn execute(&self, code: &str, scope: &Scope, config: &Config) -> DevrcResult<i32> {
         let mut command = Command::new(&self.interpreter);
-        command.export_scope(&scope)?;
+        command.export_scope(scope)?;
 
         if let Some(value) = &config.current_dir {
             command.current_dir(value);
@@ -214,16 +228,16 @@ impl Interpreter {
                 return Err(DevrcError::IoError(io_error));
             }
         }
-        Ok(())
+        Ok(0)
     }
 
-    pub fn execute_script(&self, code: &str, scope: &Scope, config: &Config) -> DevrcResult<()> {
+    pub fn execute_script(&self, code: &str, scope: &Scope, config: &Config) -> DevrcResult<i32> {
         let (script_path, _tmp) = create_script_file(code)?;
         set_execute_permission(&script_path)?;
 
         let mut command = Command::new(&script_path);
 
-        command.export_scope(&scope)?;
+        command.export_scope(scope)?;
 
         if let Some(value) = &config.current_dir {
             command.current_dir(value);
@@ -252,31 +266,31 @@ impl Interpreter {
                 return Err(DevrcError::IoError(io_error));
             }
         }
-        Ok(())
+        Ok(0)
     }
 }
 
-impl Default for Interpreter {
+impl Default for SystemShell {
     fn default() -> Self {
-        Interpreter {
+        SystemShell {
             interpreter: DEFAULT_SHELL.to_owned(),
             args: vec![DEFAULT_SHELL_ARG.to_owned()],
         }
     }
 }
 
-impl Display for Interpreter {
+impl Display for SystemShell {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} {}", &self.interpreter, &self.args.join(" "))
     }
 }
 
 pub trait ShebangDetector {
-    fn get_interpreter_from_shebang(&self) -> Option<Interpreter>;
+    fn get_interpreter_from_shebang(&self) -> Option<SystemShell>;
 }
 
 impl ShebangDetector for String {
-    fn get_interpreter_from_shebang(&self) -> Option<Interpreter> {
+    fn get_interpreter_from_shebang(&self) -> Option<SystemShell> {
         let first_line = self.lines().next().unwrap_or("");
 
         if !first_line.starts_with("#!") {
@@ -292,7 +306,7 @@ impl ShebangDetector for String {
                 args.push(value)
             };
 
-            Some(Interpreter {
+            Some(SystemShell {
                 interpreter: value.to_owned(),
                 args,
             })
@@ -302,7 +316,7 @@ impl ShebangDetector for String {
     }
 }
 
-impl<'de> Deserialize<'de> for Interpreter {
+impl<'de> Deserialize<'de> for SystemShell {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -320,7 +334,7 @@ impl<'de> Deserialize<'de> for Interpreter {
         where
             T: Deserialize<'de>,
         {
-            type Value = Interpreter;
+            type Value = SystemShell;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 fmt::Formatter::write_str(formatter, "struct Interpreter")
@@ -330,7 +344,7 @@ impl<'de> Deserialize<'de> for Interpreter {
             where
                 E: de::Error,
             {
-                match Interpreter::get_from_string(value) {
+                match SystemShell::get_from_string(value) {
                     Some(value) => Ok(value),
                     None => Err(de::Error::custom("invalid interpreter")),
                 }
@@ -353,14 +367,14 @@ impl<'de> Deserialize<'de> for Interpreter {
                 let interpreter: TempInterpreter = serde_yaml::from_value(elements.into())
                     .map_err(|_| de::Error::custom("invalid interpreter"))?;
 
-                Ok(Interpreter {
+                Ok(SystemShell {
                     interpreter: interpreter.interpreter,
                     args: interpreter.args,
                 })
             }
         }
 
-        let visitor = StructVisitor(PhantomData::<Interpreter>);
+        let visitor = StructVisitor(PhantomData::<SystemShell>);
         deserializer.deserialize_any(visitor)
     }
 }
@@ -374,7 +388,6 @@ fn create_script_file(script: &str) -> DevrcResult<(PathBuf, NamedTempFile)> {
 
     f.write_all(script.as_bytes())?;
 
-    // dbg!(&path);
     Ok((path, tmp))
 }
 

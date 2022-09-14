@@ -65,10 +65,7 @@ pub fn get_directory_devrc_file() -> Option<PathBuf> {
 }
 
 pub fn get_global_devrc_file() -> Option<PathBuf> {
-    match dirs_next::home_dir() {
-        Some(path) => Some(Path::new(&path).join(HOME_DEVRC_FILE_NAME)),
-        _ => None,
-    }
+    dirs_next::home_dir().map(|path| Path::new(&path).join(HOME_DEVRC_FILE_NAME))
 }
 
 pub fn get_local_user_defined_devrc_file() -> Option<PathBuf> {

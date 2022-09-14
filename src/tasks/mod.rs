@@ -1,4 +1,4 @@
-use std::{convert::TryFrom, fmt, marker::PhantomData};
+use std::{cell::RefCell, convert::TryFrom, fmt, marker::PhantomData};
 
 use indexmap::IndexMap;
 
@@ -12,6 +12,7 @@ use crate::{
     scope::Scope,
     workshop::Designer,
 };
+use std::rc::Rc;
 
 pub mod arguments;
 pub mod complex;
@@ -19,10 +20,11 @@ pub mod examples;
 pub mod exec;
 pub mod params;
 pub mod params_parser;
+pub mod result;
 
 pub use crate::tasks::{examples::Examples, exec::ExecKind, params::Params};
 
-use self::{complex::ComplexCommand, params::ParamValue};
+use self::{complex::ComplexCommand, params::ParamValue, result::TaskResult};
 use crate::tasks::arguments::TaskArguments;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -47,6 +49,7 @@ pub enum IncludeKind {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Include {
+    #[allow(dead_code)]
     include: IncludeKind,
 }
 
@@ -79,9 +82,9 @@ impl TaskKind {
         Ok(format!(
             "{}{}{} {}",
             designer.task_name().prefix(),
-            name.to_string(),
+            name,
             designer.task_name().suffix(),
-            self.format_parameters_help(&designer)?
+            self.format_parameters_help(designer)?
         ))
     }
 
@@ -109,32 +112,52 @@ impl TaskKind {
     pub fn perform(
         &self,
         name: &str,
-        parent_scope: &Scope,
+        parent_scope: Rc<RefCell<Scope>>,
         args: &TaskArguments,
         config: &Config,
         designer: &Designer,
-    ) -> DevrcResult<()> {
+    ) -> DevrcResult<TaskResult> {
         config.log_level.debug(
             &format!("\n==> Running task: `{:}` ...", &name),
             &designer.banner(),
         );
 
-        match self {
+        let result = match self {
             TaskKind::Empty => return Err(DevrcError::NotImplemented),
             TaskKind::Command(value) => {
-                let complex_command = ComplexCommand::from(value);
-                complex_command.perform(name, parent_scope, args, &config, &designer)?;
+                ComplexCommand::from(value).perform(name, parent_scope, args, config, designer)?
             }
             TaskKind::ComplexCommand(value) => {
-                value.perform(name, parent_scope, args, &config, &designer)?;
+                value.perform(name, parent_scope, args, config, designer)?
             }
             TaskKind::Commands(_value) => return Err(DevrcError::NotImplemented),
             TaskKind::Include(_value) => {
                 return Err(DevrcError::NotImplemented);
             }
-        }
+        };
 
-        Ok(())
+        Ok(result)
+    }
+
+    pub fn get_scope(
+        &self,
+        _name: &str,
+        parent_scope: Rc<RefCell<Scope>>,
+        args: &TaskArguments,
+    ) -> DevrcResult<Scope> {
+        let result = match self {
+            TaskKind::Empty => return Err(DevrcError::NotImplemented),
+            TaskKind::Command(value) => {
+                ComplexCommand::from(value).process_variables(parent_scope, args)?
+            }
+            TaskKind::ComplexCommand(value) => value.process_variables(parent_scope, args)?,
+            TaskKind::Commands(_value) => return Err(DevrcError::NotImplemented),
+            TaskKind::Include(_value) => {
+                return Err(DevrcError::NotImplemented);
+            }
+        };
+
+        Ok(result)
     }
 
     // Get list of task dependencies
@@ -153,7 +176,7 @@ impl TaskKind {
         parts: &[String],
     ) -> DevrcResult<indexmap::IndexMap<String, ParamValue>> {
         match self {
-            TaskKind::ComplexCommand(value) => value.get_parameters(&parts),
+            TaskKind::ComplexCommand(value) => value.get_parameters(parts),
             _ => Ok(indexmap::IndexMap::new()),
         }
     }

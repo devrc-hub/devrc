@@ -41,5 +41,6 @@ pub mod template;
 pub mod user_agent;
 pub mod utils;
 pub mod variables;
+pub mod variables_parser;
 pub mod version;
 pub mod workshop;

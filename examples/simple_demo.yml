@@ -7,6 +7,19 @@ environment:
 
 task_name:
   desc: "Task description"
+  variables:
+    task_variable: "Task variable value"
+    task_variable_global +global: "Set global task variable"
+  environment:
+    ENV_NAME2: "ENV_NAME2 value"
   exec:
     - echo "Hello {{ first_name }}!"
-    - echo "Hello $ENV_NAME!"
+    - echo "Hello $ENV_NAME! $ENV_NAME2!"
+
+
+second_task:
+  desc: "Second task description"
+  variables:
+    var: "simple var"
+  exec: |
+    echo "Second task:  {{ task_variable_global }} "

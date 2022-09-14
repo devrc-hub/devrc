@@ -25,10 +25,11 @@ impl ExecKind {
         config: &Config,
         interpreter: &InterpreterKind,
         designer: &Designer,
-    ) -> DevrcResult<()> {
+    ) -> DevrcResult<i32> {
         match self {
             ExecKind::Empty => {
                 // Nothing to do
+                Ok(0)
             }
             ExecKind::String(value) => {
                 let cmd = value.evaluate("exec", scope)?;
@@ -38,16 +39,18 @@ impl ExecKind {
                 if !config.dry_run {
                     if let Some(interpreter) = cmd.get_interpreter_from_shebang() {
                         // Execute script using given shebang
-                        interpreter.execute_script(&cmd, scope, config)?
+                        interpreter.execute_script(&cmd, scope, config)
                     } else {
                         // Execute command or complex script
-                        interpreter.execute(&cmd, scope, config)?
+                        interpreter.execute(&cmd, scope, config)
                     }
+                } else {
+                    Ok(0)
                 }
             }
             ExecKind::List(value) => {
                 for (i, item) in value.iter().enumerate() {
-                    let cmd = item.evaluate(&format!("multi_exec_{:}", i), &scope)?;
+                    let cmd = item.evaluate(&format!("multi_exec_{:}", i), scope)?;
 
                     config.log_level.info(&cmd, &designer.command());
 
@@ -61,9 +64,9 @@ impl ExecKind {
                         }
                     }
                 }
+                Ok(0)
             }
-        };
-        Ok(())
+        }
     }
 }
 
