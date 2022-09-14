@@ -132,7 +132,7 @@ mod tests {
 
         scope.insert_var(
             VariableKey::try_from("key1".to_string()).unwrap(),
-            VariableValue::new(&"key1".to_string(), &"value1".to_string()),
+            VariableValue::new("key1", "value1"),
         );
 
         scope.insert_env("env_var_1", "env_var_2_val");
@@ -144,10 +144,7 @@ mod tests {
 
         assert_eq!(
             scope.get_var(&VariableKey::try_from("key1".to_string()).unwrap()),
-            Some(&VariableValue::new(
-                &"key1".to_string(),
-                &"value1".to_string()
-            ))
+            Some(&VariableValue::new("key1", "value1"))
         );
 
         assert_eq!(

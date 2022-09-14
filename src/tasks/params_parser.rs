@@ -136,7 +136,7 @@ mod tests {
     fn test_default_values() {
         let input = r#"param1 param2=" value2" param3=  "value3  "  "#;
 
-        let params: Params = parse_params_string(&input).unwrap();
+        let params: Params = parse_params_string(input).unwrap();
 
         let mut control_params = Params::default();
         control_params.add("param1", &ParamValue::Required).unwrap();
@@ -151,7 +151,7 @@ mod tests {
 
         let input = r#"param1 param2="value2" param3 param4"#;
 
-        match parse_params_string(&input).unwrap_err() {
+        match parse_params_string(input).unwrap_err() {
             DevrcError::TaskArgumentsParsingError => {}
             _ => unreachable!(),
         }
@@ -161,7 +161,7 @@ mod tests {
     fn test_default_values_with_quotes_inside() {
         let input = r#"param1 param2="string with \" quotes \' inside and simple \\ " "#;
 
-        let params = parse_params_string(&input).unwrap();
+        let params = parse_params_string(input).unwrap();
 
         let mut control_params = Params::default();
         control_params.add("param1", &ParamValue::Required).unwrap();
@@ -179,7 +179,7 @@ mod tests {
     fn test_required() {
         let input = r#"  param1   param2  param_3  +param_4 *param_5"#;
 
-        let params: Params = parse_params_string(&input).unwrap();
+        let params: Params = parse_params_string(input).unwrap();
 
         let mut control_params = Params::default();
         control_params.add("param1", &ParamValue::Required).unwrap();
@@ -201,7 +201,7 @@ mod tests {
     fn test_invalid_parameter_name() {
         let input = r#"  pa±ram1   param2  "#;
 
-        match parse_params_string(&input).unwrap_err() {
+        match parse_params_string(input).unwrap_err() {
             DevrcError::TaskArgumentsParsingError => {}
             _ => unreachable!(),
         }
@@ -211,14 +211,14 @@ mod tests {
     fn test_invalid_default() {
         let input = r#"param1=  "#;
 
-        match parse_params_string(&input).unwrap_err() {
+        match parse_params_string(input).unwrap_err() {
             DevrcError::TaskArgumentsParsingError => {}
             _ => unreachable!(),
         }
 
         let input = r#"param1="sdfsdfsdf  "#;
 
-        match parse_params_string(&input).unwrap_err() {
+        match parse_params_string(input).unwrap_err() {
             DevrcError::TaskArgumentsParsingError => {}
             _ => unreachable!(),
         }

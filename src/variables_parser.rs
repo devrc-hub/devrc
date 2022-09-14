@@ -58,27 +58,11 @@ mod tests {
 
     #[test]
     fn test_invalid_key() {
-        let result = parse_key("name +invalid").unwrap_err();
+        let result = parse_key("name +invalid");
 
-        //     assert_eq!(result, DevrcError::InvalidVariableModifier);
-
-        //     match devrcfile.find_task("task_3").unwrap() {
-        //         TaskKind::ComplexCommand(ComplexCommand {
-        //             exec: ExecKind::String(exec),
-        //             ..
-        //         }) => {
-        //             assert_eq!(exec, "echo \"Hello 3\"");
-        //         }
-        //         _ => {
-        //             unreachable!();
-        //         }
-        //     }
-
-        //     assert_eq!(Config::new(&args).err(), Some("not enough arguments"))
-
-        //          .unwrap_err()
-        //     .kind();
-        // let expected_error_kind = ErrorKind::PermissionDenied;
-        // assert_eq!(actual_error_kind, expected_error_kind);
+        match result {
+            Err(DevrcError::InvalidVariableModifier) => {}
+            _ => unreachable!(),
+        }
     }
 }

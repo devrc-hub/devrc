@@ -77,7 +77,7 @@ mod tests {
         let mut scope = Scope::default();
         scope.insert_var(
             VariableKey::try_from("name".to_string()).unwrap(),
-            VariableValue::new(&"name".to_string(), &"username".to_string())
+            VariableValue::new("name", "username")
                 .with_render_value(&scope)
                 .unwrap(),
         );
