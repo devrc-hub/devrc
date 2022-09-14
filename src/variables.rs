@@ -119,12 +119,6 @@ impl RawVariables {
     }
 }
 
-// #[derive(Debug, Clone, Default, PartialEq)]
-// pub struct EvaludatedVariables{
-
-//     pub vars: indexmap::IndexMap<String, String>
-// }
-
 impl Default for RawVariables {
     fn default() -> Self {
         let vars = indexmap::IndexMap::new();
