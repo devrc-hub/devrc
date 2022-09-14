@@ -51,8 +51,8 @@ deno_runtime = { version = "0.76.0", optional = true, default_features = false }
 deno_3p_lib = {version = "1.25.2", optional = true, default_features = false}
 deno_ast = { version = "0.19.0"}
 
-tokio = { version = "1.4.0", features = ["full"]}
-tokio-rustls = {version = "0.22.0"}
+tokio = { version = "1.19.2", features = ["full"]}
+tokio-rustls = {version = "0.23.4"}
 
 
 [build-dependencies]
