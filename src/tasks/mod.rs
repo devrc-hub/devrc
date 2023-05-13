@@ -21,9 +21,11 @@ pub mod exec;
 pub mod params;
 pub mod params_parser;
 pub mod result;
+pub mod subtask_call;
 
 pub use crate::tasks::{examples::Examples, exec::ExecKind, params::Params};
 
+use self::subtask_call::SubtaskCall;
 use self::{complex::ComplexCommand, params::ParamValue, result::TaskResult};
 use crate::tasks::arguments::TaskArguments;
 
@@ -124,11 +126,11 @@ impl TaskKind {
 
         let result = match self {
             TaskKind::Empty => return Err(DevrcError::NotImplemented),
-            TaskKind::Command(value) => {
-                ComplexCommand::from(value).perform(name, parent_scope, args, config, designer)?
+            TaskKind::Command(command) => {
+                ComplexCommand::from(command).perform(name, parent_scope, args, config, designer)?
             }
-            TaskKind::ComplexCommand(value) => {
-                value.perform(name, parent_scope, args, config, designer)?
+            TaskKind::ComplexCommand(complex_command) => {
+                complex_command.perform(name, parent_scope, args, config, designer)?
             }
             TaskKind::Commands(_value) => return Err(DevrcError::NotImplemented),
             TaskKind::Include(_value) => {
@@ -168,6 +170,16 @@ impl TaskKind {
             }
         };
 
+        None
+    }
+
+    // Get list of command subtasks
+    pub fn get_subtasks(&self) -> Option<&Vec<SubtaskCall>> {
+        if let TaskKind::ComplexCommand(command) = self {
+            if !&command.subtasks.is_empty() {
+                return Some(&command.subtasks)
+            }
+        }
         None
     }
 

@@ -15,6 +15,7 @@ pub struct Scope {
     pub variables: Variables,
     pub environment: indexmap::IndexMap<String, String>,
     pub parent: Option<Rc<RefCell<Scope>>>,
+    pub root: Option<Rc<RefCell<Scope>>>,
 }
 
 impl Scope {
@@ -85,6 +86,7 @@ impl Scope {
         }
         Ok(())
     }
+
 }
 
 impl Clone for Scope {
@@ -112,14 +114,40 @@ impl TryFrom<&Scope> for Context {
     fn try_from(source: &Scope) -> Result<Self, Self::Error> {
         let mut context: Context = Self::new();
 
-        if source.parent.is_some() {
-            let parent_scope = (&**(source.parent.as_ref().unwrap()))
-                .try_borrow()
-                .map_err(|_| DevrcError::RuntimeError)?;
-            for (key, value) in &parent_scope.variables {
-                context.insert(key.get_name(), &value.get_rendered_value());
+        let mut ancestors = Vec::new();
+
+        let mut parent_link = source.parent.clone();
+
+        loop {
+            if parent_link.is_none() {
+                break
+
+            }
+            ancestors.push(Rc::clone(&parent_link.clone().unwrap()));
+
+            parent_link = {
+                let parent_scope = (&**(parent_link.as_ref().unwrap())).try_borrow().map_err(|_| DevrcError::RuntimeError)?;
+
+                if parent_scope.parent.is_none() {
+                    break
+                }
+                parent_scope.parent.clone()
             }
         }
+
+        ancestors.reverse();
+
+        for ancestor in ancestors {
+
+            let scope = ancestor.try_borrow()
+                .map_err(|_| DevrcError::RuntimeError)?;
+
+            for (key, value) in &scope.variables {
+                 context.insert(key.get_name(), &value.get_rendered_value());
+            }
+        }
+
+
 
         for (key, value) in &source.variables {
             context.insert(key.get_name(), &value.get_rendered_value());

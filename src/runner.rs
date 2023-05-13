@@ -1,4 +1,4 @@
-use std::{env, io::Read, path::PathBuf, str::FromStr};
+use std::{env, io::Read, path::PathBuf, str::FromStr, cell::RefCell};
 
 use crate::{
     devrc_log::LogLevel,
@@ -38,22 +38,27 @@ pub struct Runner {
 
     pub log_level: Option<LogLevel>,
     pub designer: Designer,
+
+    pub global_scope: Rc<RefCell<Scope>>,
+
+
 }
 
 impl Runner {
     pub fn new() -> Self {
         let files: Vec<PathBuf> = Vec::new();
-
+        let scope = Rc::new(RefCell::new(Scope::default()));
         Runner {
             files,
             use_global: false,
             dry_run: false,
             rest: vec![],
-            devrc: Devrcfile::default(),
+            devrc: Devrcfile::with_parent_scope(Rc::clone(&scope)),
             global_loaded: false,
             loaded_files: vec![],
             log_level: Some(LogLevel::Info),
             designer: Designer::default(),
+            global_scope: scope,
         }
     }
 
@@ -213,6 +218,7 @@ impl Runner {
         self.devrc.run(&self.rest)
     }
 
+
     /// Show detailed tasks list with short descriptions
     pub fn list_tasks_detailed(&self) -> DevrcResult<()> {
         println!("Available tasks:");
@@ -291,7 +297,7 @@ impl Runner {
     /// Show global variables and their computed values
     pub fn list_global_vars(&self) -> DevrcResult<()> {
         println!("List global devrc variables:");
-        let scope = ((&*self.devrc.global_scope)
+        let scope = ((&*self.devrc.scope)
             .try_borrow()
             .map_err(|_| DevrcError::RuntimeError)?)
         .clone();
@@ -301,7 +307,7 @@ impl Runner {
     /// Show global environment variables and their computed values
     pub fn list_global_env_vars(&self) -> DevrcResult<()> {
         println!("List global devrc environment variables:");
-        let scope = ((&*self.devrc.global_scope)
+        let scope = ((&*self.devrc.scope)
             .try_borrow()
             .map_err(|_| DevrcError::RuntimeError)?)
         .clone();
@@ -369,7 +375,7 @@ impl Runner {
                 println!("Task variables:");
                 let scope = task.get_scope(
                     &name,
-                    Rc::clone(&self.devrc.global_scope),
+                    Rc::clone(&self.devrc.scope),
                     &TaskArguments::default(),
                 )?;
                 self.list_vars(&scope)?;
@@ -389,29 +395,29 @@ impl Runner {
 
         self.rest = params;
 
-        info!(
+        println!(
             "Global defined interpreter: `{:}`",
             &self.devrc.config.interpreter
         );
 
         if let Some(value) = get_global_devrc_file() {
-            info!("Global .devrc exists: {:?}", value);
+            println!("Global .devrc exists: {:?}", value);
         }
 
         if let Some(value) = get_directory_devrc_file() {
-            info!("Local directory Devrcfile exists: {:?}", value);
+            println!("Local directory Devrcfile exists: {:?}", value);
         }
 
         if let Some(value) = get_local_user_defined_devrc_file() {
-            info!("Local user defined Devrcfile.local exists: {:?}", value);
+            println!("Local user defined Devrcfile.local exists: {:?}", value);
         }
 
         for file in &self.files {
             if let Ok(file) = get_absolute_path(file, None) {
                 if file.exists() {
-                    info!("Given Devrcfile exists: {:?}", file);
+                    println!("Given Devrcfile exists: {:?}", file);
                 } else {
-                    info!("Given Devrcfile not exists: {:?}", file);
+                    println!("Given Devrcfile not exists: {:?}", file);
                 }
             } else {
                 error!("Given Devrcfile with broken path: {:?}", &file);
@@ -419,7 +425,7 @@ impl Runner {
         }
 
         for file in &self.loaded_files {
-            info!("Loaded file: {:?}", file);
+            println!("Loaded file: {:?}", file);
         }
 
         dbg!(self);

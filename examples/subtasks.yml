@@ -1,0 +1,27 @@
+devrc_config:
+  shell: bash -c
+  log_level: debug
+
+variables:
+  var1: "Variable 1 value"
+  var2: "Variable 2 value"
+
+
+subtask_name:
+  exec: |
+    echo "Subtask called: {{ var3 }}"
+
+
+task1:
+  subtasks:
+    - name: subtask_name
+      variables:
+        var3: "Variable 3 value"
+
+  exec: |
+    echo "Task1 called: {{ var1 }}"
+
+
+task2:
+  exec: |
+    echo "Task2 called: {{ var1 }}"

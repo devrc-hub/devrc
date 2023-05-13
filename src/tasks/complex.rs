@@ -10,7 +10,7 @@ use super::{
     arguments::TaskArguments,
     exec::ExecKind,
     params::{ParamValue, Params},
-    result::TaskResult,
+    result::TaskResult, subtask_call::SubtaskCall,
 };
 use std::rc::Rc;
 
@@ -42,6 +42,9 @@ pub struct ComplexCommand {
     // #[serde(deserialize_with = "deserialize_interpreter")]
     #[serde(alias = "shell")]
     interpreter: Option<InterpreterKind>,
+
+    #[serde(default)]
+    pub subtasks: Vec<SubtaskCall>,
 }
 
 impl ComplexCommand {
@@ -88,8 +91,7 @@ impl ComplexCommand {
         let interpreter = self.get_interpreter(config);
 
         // TODO: register output as variable
-        self.exec
-            .execute(&mut local_scope, config, &interpreter, designer)?;
+        self.exec.execute(&mut local_scope, config, &interpreter, designer)?;
 
         Ok(TaskResult::new())
     }
@@ -143,6 +145,7 @@ where
             params: Params::default(),
             deps: Vec::new(),
             interpreter: None,
+            subtasks: Vec::new(),
         }
     }
 }
@@ -159,6 +162,7 @@ impl From<ExecKind> for ComplexCommand {
             params: Params::default(),
             deps: Vec::new(),
             interpreter: None,
+            subtasks: Vec::new(),
         }
     }
 }
@@ -175,6 +179,7 @@ impl Default for ComplexCommand {
             params: Params::default(),
             deps: Vec::new(),
             interpreter: None,
+            subtasks: Vec::new(),
         }
     }
 }
