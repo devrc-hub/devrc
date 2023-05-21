@@ -2,8 +2,9 @@ use serde::Deserialize;
 
 use crate::workshop::Designer;
 
-#[derive(Debug, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum LogLevel {
+    #[default]
     #[serde(rename = "off")]
     Off = 0, // Quiet mode
 
@@ -15,12 +16,6 @@ pub enum LogLevel {
 
     #[serde(rename = "debug")]
     Debug = 3, // Show info messages such `==> Running task`
-}
-
-impl Default for LogLevel {
-    fn default() -> Self {
-        LogLevel::Off
-    }
 }
 
 impl From<u8> for LogLevel {

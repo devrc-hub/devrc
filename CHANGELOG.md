@@ -26,6 +26,19 @@ _Other cases_
 
 ---
 
+## [v0.5.0](https://github.com/devrc-hub/devrc/releases/tag/v0.5.0) - XXXX-XX-XX
+
+### Changes
+Refactored the logic of loading devrc files.
+
+### New Features
+
+Added the ability to load devrc files from local and remote files.
+Added the ability to load environment variables from remote files.
+Added a mechanism for running subtasks.
+
+---
+
 ## [v0.4.0](https://github.com/devrc-hub/devrc/releases/tag/vX.X.X) - 2022-09-14
 
 ### Changes

@@ -3,7 +3,7 @@ fn git_hash() -> String {
 
     String::from_utf8_lossy(
         &Command::new("git")
-            .args(&["rev-parse", "--short", "HEAD"])
+            .args(["rev-parse", "--short", "HEAD"])
             .output()
             .unwrap()
             .stdout,

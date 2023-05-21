@@ -3,25 +3,41 @@ devrc_config:
   log_level: debug
 
 variables:
-  var1: "Variable 1 value"
-  var2: "Variable 2 value"
+  var1: "Global defined var1 value"
+  var2: "Global defined var2 value"
+  var4: "Global defined var4 value"
 
 
-subtask_name:
+subtasks:subtask_name:
   exec: |
     echo "Subtask called: {{ var3 }}"
 
 
-task1:
+subtasks:task1:
   subtasks:
-    - name: subtask_name
+    - name: subtasks:subtask_name
       variables:
-        var3: "Variable 3 value"
+        var3: "var3 rewrited by subtasks:task3"
 
   exec: |
     echo "Task1 called: {{ var1 }}"
 
 
-task2:
+subtasks:task2:
   exec: |
-    echo "Task2 called: {{ var1 }}"
+    echo "Task2 called: var1={{ var1 }}"
+    echo "Task2 called: var2={{ var2 }}"
+
+  # variables:
+  #   var1: "rewrited by subtasks:task2"
+
+
+subtasks:task3:
+  subtasks:
+    - name: subtasks:task2
+      variables:
+        var1: "var1 rewrited by subtasks:task3"
+    - name: subtasks:task1
+
+  variables:
+    var2: "var2 rewrited by subtasks:task3"

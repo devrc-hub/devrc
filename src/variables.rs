@@ -1,10 +1,8 @@
+use core::fmt::Debug;
 use std::convert::TryFrom;
 
 use crate::{
-    errors::{
-        DevrcError::{self},
-        DevrcResult,
-    },
+    errors::{DevrcError, DevrcResult},
     scope::Scope,
     template::render_string,
     variables_parser::parse_key,
@@ -28,20 +26,15 @@ pub struct Computable {
     exec: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 #[serde(untagged)]
 pub enum ValueKind {
+    #[default]
     None,
     String(String),
     Http(Http),
     File(File),
     Computable(Computable),
-}
-
-impl Default for ValueKind {
-    fn default() -> Self {
-        ValueKind::None
-    }
 }
 
 #[derive(Debug, Deserialize, Clone)]

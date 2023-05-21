@@ -31,9 +31,9 @@ environment:
 
 command_1: "echo \"Hello world\";"
 
-command_2:
-  - echo "Hello world 1"
-  - echo "Hello world 2"
+# command_2:
+#   - echo "Hello world 1"
+#   - echo "Hello world 2"
 
 
 command_3 param1 param2="key-{{ var_1 }}":
@@ -56,7 +56,7 @@ command_4:
     - echo "Hello status"; exit 113;
 
   variables:
-    var_3: variable value_3
+    var_3: variable valux11e_3
 
   environment:
     var_3: env_variable_overwrited_3
@@ -112,3 +112,13 @@ command_9 name="Alex":
     console.log(`Hello ${name} from node`);
 
     console.log(Deno);
+
+
+command_10:
+  desc: "Command 10"
+
+  exec:
+    - task: first_task
+      variables:
+        var1: value1
+        var2: value2

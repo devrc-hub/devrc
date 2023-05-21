@@ -11,11 +11,14 @@ run-help:
   desc: "Show envrc tasks descriptions"
   exec: cargo run --bin=devrc -- --help
 
+
 run cmds="":
   environment:
     RUST_TRACEBACK: "1"
   desc: "Execute given task"
   exec: cargo run --bin=devrc -- {{ cmds }}
+  subtasks:
+    - name: hello
 
 
 hello:

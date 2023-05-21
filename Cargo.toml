@@ -32,10 +32,10 @@ chrono = "0.4.19"
 dirs-next = "2.0.0"
 # openssl = { version = "0.10.32", features = ["vendored"] }
 # Not used yet
-# reqwest = { version = "0.10.9", features = ["blocking", "json"] }
+reqwest = { version = "0.11.17", features = ["blocking", "json"] }
 indexmap = { version="1.9.1", features = ["serde-1"] }
 ansi_term = "0.12.1"
-dotenv = "0.15.0"
+dotenvy = "0.15.7"
 tera = "1.17.0"
 unicode-width = "0.1.9"
 atty = "0.2.14"
@@ -43,6 +43,9 @@ tempfile = "3.3.0"
 ctrlc = "3.2.3"
 # For remote command execution
 # ssh2 = "0.9.1"
+
+sha256 = "1.1.3"
+url = "2.3.1"
 
 anyhow = "1.0.62"
 

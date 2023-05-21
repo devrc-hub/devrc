@@ -63,6 +63,8 @@ Lets start with an overview of features that exist in devrc:
   * [x] Read `Devrcfile` contents from stdin
   * [x] Global and local defined variables and environment variables
   * [x] Embedded [deno runtime](#embedded-deno-runtime)
+  * [x] Include devrcfile from local and remote files
+  * [x] Load environment variables from local and remote files
 
 
 ### Why YAML is used?
@@ -103,6 +105,7 @@ What are the benefits of using YAML for this purpose and why it's choosen:
     * [Remote command execution](#remote-command-execution)
     * [Read `Devrcfile` from sdtin](#read-devrcfile-from-stdin)
     * [Embedded deno execution runtime](#embedded-deno-runtime)
+    * [Relative path resolving](#relative-path-resolving)
 
 
 * [Contributing, feedback and suggestions](#contributing)
@@ -531,6 +534,50 @@ colors: |
 ```
 
 More examples can be found [here](https://github.com/devrc-hub/devrc/blob/master/examples/deno_usage.yml).
+
+
+### Relative path resolving
+
+devrc allows you to load tasks, variables, and environment variables using the import mechanism. Files can be included by specifying an absolute path, URL address, or relative path. In turn, imported devrc files can include other files using relative paths. There are several strategies for resolving relative paths. By default, the strategy is to use the directory of the loaded file as the base path. The connection strategy for a specific file can be specified using the `path_resolve` option.
+
+Let's assume that we are in the directory `/projects/awesome_project` and we execute the command `devrc -f devrcfiles/local_1.yml --list`. In the file `/project/awesome_project/devrcfiles/local_1.yml`, we include other files as follows:
+
+```yaml
+include:
+  - url: "https://raw.githubusercontent.com/devrc-hub/devrc/master/examples/remote/entry.yml"
+    checksum: 1234
+
+  # /projects/awesome_project/devrcfiles/local_2.yml
+  - file: ./local_2.yml
+    path_resolve: relative
+
+  # /projects/awesome_project/local_3.yml
+  - file: ./local_3.yml
+    path_resolve: pwd
+
+```
+
+In the file `/project/awesome_project/devrcfiles/local_1.yml`, we load tasks from the remotely located file `https://raw.githubusercontent.com/devrc-hub/devrc/master/examples/remote/entry.yml`. In this file, other files are included as follows:
+
+```yaml
+include:
+  # https://raw.githubusercontent.com/devrc-hub/devrc/master/examples/remote/remote_1.yml
+  - file: ./remote_1.yml
+
+  # /projects/awesome_project/devrcfile/local_4.yml
+  - file: ./devrcfiles/local_4.yml
+    path_resolve: pwd
+"
+
+```
+
+1. First, the file `/projects/awesome_project/devrcfiles/local_1.yml` will be loaded;
+2. Then, the `entry.yml` file will be loaded from the remote source `https://raw.githubusercontent.com/devrc-hub/devrc/master/examples/remote/entry.yml`;
+3. Then, the `remote_1.yml` file will be loaded from the remote source `https://raw.githubusercontent.com/devrc-hub/devrc/master/examples/remote/remote_1.yml`;
+4. Then, the `local_4.yml` file will be loaded from the local source `/projects/awesome_project/devrcfile/local_4.yml`;
+5. Then, the `local_2.yml` file will be loaded from the local source `/projects/awesome_project/devrcfiles/local_2.yml`;
+6. Finally, the `local_3.yml` file will be loaded from the local source `/projects/awesome_project/local_3.yml`.
+
 
 
 

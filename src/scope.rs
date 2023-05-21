@@ -3,7 +3,7 @@ use std::{cell::RefCell, convert::TryFrom};
 use tera::Context;
 
 use crate::{
-    environment::RawEnvironment,
+    environment::{Environment, RawEnvironment},
     errors::{DevrcError, DevrcResult},
     evaluate::Evaluatable,
     variables::{self, RawVariables, VariableKey, VariableValue, Variables},
@@ -12,6 +12,7 @@ use std::rc::Rc;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Scope {
+    pub name: String,
     pub variables: Variables,
     pub environment: indexmap::IndexMap<String, String>,
     pub parent: Option<Rc<RefCell<Scope>>>,
@@ -60,11 +61,11 @@ impl Scope {
 
                     self.variables.insert(key.clone(), value.clone());
 
-                    if key.set_global && self.parent.is_some() {
-                        let mut parent_scope = (&**(self.parent.as_ref().unwrap()))
+                    if key.set_global && self.root.is_some() {
+                        let mut root_scope = (**(self.root.as_ref().unwrap()))
                             .try_borrow_mut()
                             .map_err(|_| DevrcError::RuntimeError)?;
-                        parent_scope.insert_var(key, value);
+                        root_scope.insert_var(key, value);
                     }
                 }
                 _ => return Err(DevrcError::VariableTypeNotImplemented),
@@ -87,6 +88,93 @@ impl Scope {
         Ok(())
     }
 
+    pub fn process_rendered_env_vars(
+        &mut self,
+        variables: &Environment<String>,
+    ) -> DevrcResult<()> {
+        for (key, value) in variables.into_iter() {
+            self.environment.insert(key.to_owned(), value.to_owned());
+        }
+        Ok(())
+    }
+
+    pub fn compute_execution_scope(&self) -> DevrcResult<Scope> {
+        let mut scope = Scope {
+            name: format!("execution_scope: {:}", &self.name),
+            ..Default::default()
+        };
+
+        let mut ancestors = Vec::new();
+
+        let mut parent_link = self.parent.clone();
+
+        loop {
+            if parent_link.is_none() {
+                break;
+            }
+
+            ancestors.push(Rc::clone(&parent_link.clone().unwrap()));
+
+            parent_link = {
+                let parent_scope = (**(parent_link.as_ref().unwrap()))
+                    .try_borrow()
+                    .map_err(|_| DevrcError::RuntimeError)?;
+
+                if parent_scope.parent.is_none() {
+                    break;
+                }
+                parent_scope.parent.clone()
+            }
+        }
+
+        ancestors.reverse();
+
+        for ancestor in ancestors {
+            let ancestor_scope = ancestor
+                .try_borrow()
+                .map_err(|_| DevrcError::RuntimeError)?;
+
+            for (key, value) in &ancestor_scope.variables {
+                scope.insert_var(key.clone(), value.clone());
+            }
+
+            for (key, value) in &ancestor_scope.environment {
+                scope.insert_env(key, value);
+            }
+        }
+
+        for (key, value) in &self.variables {
+            scope.insert_var(key.clone(), value.clone());
+        }
+
+        for (key, value) in &self.environment {
+            scope.insert_env(key, value);
+        }
+
+        Ok(scope)
+    }
+}
+
+pub fn child_scope(scope_ref: Rc<RefCell<Scope>>, name: &str) -> Scope {
+    let binding = (*scope_ref).borrow();
+    let scope = &binding;
+
+    let root = if scope.root.is_some() {
+        scope.root.clone()
+    } else {
+        Some(Rc::clone(&scope_ref))
+    };
+
+    Scope {
+        name: name.to_string(),
+        parent: Some(Rc::clone(&scope_ref)),
+        root,
+        ..Default::default()
+    }
+}
+
+pub fn child_scope_link(scope_ref: Rc<RefCell<Scope>>, name: &str) -> Rc<RefCell<Scope>> {
+    Rc::new(RefCell::new(child_scope(scope_ref, name)))
 }
 
 impl Clone for Scope {
@@ -120,16 +208,17 @@ impl TryFrom<&Scope> for Context {
 
         loop {
             if parent_link.is_none() {
-                break
-
+                break;
             }
             ancestors.push(Rc::clone(&parent_link.clone().unwrap()));
 
             parent_link = {
-                let parent_scope = (&**(parent_link.as_ref().unwrap())).try_borrow().map_err(|_| DevrcError::RuntimeError)?;
+                let parent_scope = (**(parent_link.as_ref().unwrap()))
+                    .try_borrow()
+                    .map_err(|_| DevrcError::RuntimeError)?;
 
                 if parent_scope.parent.is_none() {
-                    break
+                    break;
                 }
                 parent_scope.parent.clone()
             }
@@ -138,16 +227,14 @@ impl TryFrom<&Scope> for Context {
         ancestors.reverse();
 
         for ancestor in ancestors {
-
-            let scope = ancestor.try_borrow()
+            let scope = ancestor
+                .try_borrow()
                 .map_err(|_| DevrcError::RuntimeError)?;
 
             for (key, value) in &scope.variables {
-                 context.insert(key.get_name(), &value.get_rendered_value());
+                context.insert(key.get_name(), &value.get_rendered_value());
             }
         }
-
-
 
         for (key, value) in &source.variables {
             context.insert(key.get_name(), &value.get_rendered_value());

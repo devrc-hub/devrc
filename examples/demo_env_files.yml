@@ -1,0 +1,21 @@
+devrc_config:
+  shell: bash -c
+  default:
+    - task-1
+  log_level: debug
+
+
+env_file:
+  - ./.env
+  - file: ./.env_3
+    ignore_errors: true
+  - ./.env_2
+  - file: ./.env_2
+
+
+task-1:
+  desc: "Print env variables"
+  exec: |
+    echo "ENV_VARIABLE_FROM_FILE_1 => $ENV_VARIABLE_FROM_FILE_1"
+    echo "ENV_VARIABLE_FROM_FILE_2 => $ENV_VARIABLE_FROM_FILE_2"
+    echo "ENV_VARIABLE_OVERWIRITE => $ENV_VARIABLE_OVERWIRITE"

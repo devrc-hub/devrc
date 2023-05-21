@@ -1,4 +1,5 @@
 variables:
+  var: "Bob"
   first_name: "Alex"
   second_name: "Alice"
   raw_var +raw: "Raw variable {{ task_variable_global }}"
@@ -6,28 +7,30 @@ variables:
 environment:
   ENV_NAME: "{{ second_name }}"
 
-first_task:
-  desc: "Task description"
+example-1:task-1:
+  desc: "example-1 task-1 description"
   variables:
     task_variable: "Task variable value"
-    task_variable_global +global: "Set global task variable"
+    task_variable_global +global: "task_variable_global value wrote by example-1:task-1"
   environment:
     ENV_NAME2: "ENV_NAME2 value"
   exec:
     - echo "Hello {{ first_name }}!"
     - echo "Hello $ENV_NAME! $ENV_NAME2!"
+    - echo "task_variable=\"{{ task_variable }}\""
+    - echo "task_variable_global=\"{{ task_variable_global }}\""
 
 
-second_task:
-  desc: "Second task description"
+example-1:task-2:
+  desc: "example-1 task-2 description"
   variables:
     var: "simple var"
   exec: |
-    echo "Second task:  {{ task_variable_global }} "
+    echo "Second task: {{ task_variable_global }} "
 
 
-third_task:
-  desc: "Third task description"
+example-1:task-3:
+  desc: "example-1 task-3 descrption"
   variables:
     local_var: "{{ raw_var }}"
   exec: |

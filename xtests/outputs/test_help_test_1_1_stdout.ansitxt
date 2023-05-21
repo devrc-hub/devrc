@@ -1,4 +1,4 @@
-devrc 0.3.0
+devrc 0.4.0
 ⚡ task automation tool on steroids ⚡
 
 USAGE:
@@ -26,7 +26,7 @@ OPTIONS:
         --set <VAR=VALUE>...     Override <VARIABLE> with <VALUE>
 
 ARGS:
-    <TASKS OR ARGS>...    
+    <TASKS OR ARGS>...
 
 Wish you productive coding!
 Visit https://github.com/devrc-hub/devrc to get more info about devrc.
