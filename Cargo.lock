@@ -1368,6 +1368,7 @@ dependencies = [
  "lazy_static",
  "log",
  "reqwest",
+ "rsa",
  "serde",
  "serde_yaml",
  "sha256",

@@ -53,6 +53,8 @@ deno_core = { version = "0.150.0", optional = true, default_features = false }
 deno_runtime = { version = "0.76.0", optional = true, default_features = false }
 deno_3p_lib = {version = "1.25.2", optional = true, default_features = false}
 deno_ast = { version = "0.19.0"}
+rsa = { version = "=0.7.0-pre", optional = true, default-features = false, features = ["std"] }
+
 
 tokio = { version = "1.19.2", features = ["full"]}
 tokio-rustls = {version = "0.23.4"}
@@ -62,8 +64,7 @@ tokio-rustls = {version = "0.23.4"}
 datetime = { version = "0.5.2", default_features = false }
 
 [features]
-
-deno = ["deno_core", "deno_runtime", "deno_3p_lib"]
+deno = ["deno_core", "deno_runtime", "deno_3p_lib", "rsa"]
 
 
 [profile.dev]
