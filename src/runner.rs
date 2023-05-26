@@ -1,12 +1,18 @@
-use std::{env, io::Read, path::PathBuf, str::FromStr};
+use std::{cell::RefCell, env, fs, io::Read, path::PathBuf};
+
+use url::Url;
 
 use crate::{
     devrc_log::LogLevel,
     devrcfile::Devrcfile,
     docs::DocHelper,
     errors::{DevrcError, DevrcResult},
+    include::{FileInclude, Include, UrlInclude},
     interrupt::setup_interrupt_handler,
-    raw_devrcfile::RawDevrcfile,
+    loader::LoadingConfig,
+    raw_devrcfile::{Kind, RawDevrcfile},
+    registry::Registry,
+    resolver::{Location, PathResolve},
     scope::Scope,
     tasks::arguments::TaskArguments,
     utils,
@@ -18,9 +24,13 @@ use crate::{
     workshop::Designer,
 };
 
+use sha256::digest;
+
 use std::{fmt::Debug, rc::Rc};
 
 use std::io;
+
+const DEFAULT_MAX_NESTING_LEVEL: u32 = 10;
 
 #[derive(Debug, Clone)]
 pub struct Runner {
@@ -34,26 +44,38 @@ pub struct Runner {
 
     pub global_loaded: bool,
 
-    pub loaded_files: Vec<PathBuf>,
+    pub loaded_locations: Vec<Location>,
 
     pub log_level: Option<LogLevel>,
     pub designer: Designer,
+
+    pub global_scope: Rc<RefCell<Scope>>,
+
+    pub registry: Registry,
+
+    pub max_nesting_level: u32,
 }
 
 impl Runner {
     pub fn new() -> Self {
         let files: Vec<PathBuf> = Vec::new();
-
+        let scope = Rc::new(RefCell::new(Scope {
+            name: "devrcfile".to_string(),
+            ..Default::default()
+        }));
         Runner {
             files,
             use_global: false,
             dry_run: false,
             rest: vec![],
-            devrc: Devrcfile::default(),
+            devrc: Devrcfile::with_scope(Rc::clone(&scope)),
             global_loaded: false,
-            loaded_files: vec![],
+            loaded_locations: vec![],
             log_level: Some(LogLevel::Info),
             designer: Designer::default(),
+            global_scope: scope,
+            registry: Registry::default(),
+            max_nesting_level: DEFAULT_MAX_NESTING_LEVEL,
         }
     }
 
@@ -74,85 +96,46 @@ impl Runner {
         self.devrc.process_variables(variables)
     }
 
-    // Try to get devrcfile
-    pub fn get_rawdevrc_file<F>(&self, try_file_func: F) -> DevrcResult<RawDevrcfile>
-    where
-        F: Fn() -> Option<PathBuf>,
-    {
-        if let Some(value) = try_file_func() {
-            match RawDevrcfile::from_file(&value) {
-                Ok(mut parsed_file) => {
-                    parsed_file.setup_path(value)?;
-                    return Ok(parsed_file);
-                }
-                Err(error) => return Err(error),
-            }
+    pub fn get_logger(&self) -> LogLevel {
+        if let Some(level) = self.log_level.clone() {
+            return level;
         }
-        Err(DevrcError::NotExists)
-    }
-
-    pub fn load_global(&mut self) -> DevrcResult<()> {
-        if let Ok(devrcfile) = self.get_rawdevrc_file(get_global_devrc_file) {
-            if let Some(path) = devrcfile.path.clone() {
-                self.add_loaded_file(path)?;
-            }
-            self.devrc.add_raw_devrcfile(devrcfile)?;
-        }
-        self.global_loaded = true;
-
-        Ok(())
-    }
-
-    pub fn load_file<F>(&mut self, try_file_func: F) -> DevrcResult<()>
-    where
-        F: Fn() -> Option<PathBuf>,
-    {
-        if let Ok(devrcfile) = self.get_rawdevrc_file(try_file_func) {
-            // Load global file if option is enabled before adding current file
-            if devrcfile.is_global_enabled() && self.global_loaded {
-                self.load_global()?
-            }
-            if let Some(path) = devrcfile.path.clone() {
-                self.add_loaded_file(path)?;
-            }
-            self.devrc.add_raw_devrcfile(devrcfile)?;
-        }
-
-        Ok(())
+        self.devrc.config.log_level.clone()
     }
 
     pub fn load(&mut self) -> DevrcResult<()> {
+        if let Some(level) = &self.log_level {
+            self.devrc.setup_log_level(level.clone())?;
+        }
+
         // Try to load global devrcfile if flag is enabled
         if self.use_global {
             self.load_global()?;
         }
 
+        let loading_config = LoadingConfig::default().with_log_level(self.get_logger());
+
         // Load files only if option specified
         if !self.files.is_empty() {
-            let mut loaded_files: Vec<PathBuf> = Vec::new();
+            let files = self.files.clone();
 
-            for file in &self.files {
-                match self.get_rawdevrc_file(|| Some(file.to_path_buf())) {
-                    Ok(devrcfile) => {
-                        if let Some(path) = devrcfile.path.clone() {
-                            loaded_files.push(path);
-                        }
-                        self.devrc.add_raw_devrcfile(devrcfile)?;
-                    }
-                    Err(error) => return Err(error),
+            for file in files {
+                self.load_file(file.to_path_buf(), loading_config.clone(), Kind::Args)?;
+            }
+        } else {
+            if let Some(file) = get_directory_devrc_file() {
+                if file.exists() {
+                    // Try to load Devrcfile from current directory
+                    self.load_file(file, loading_config.clone(), Kind::Directory)?;
                 }
             }
 
-            for file in loaded_files {
-                self.add_loaded_file(file)?;
+            if let Some(file) = get_local_user_defined_devrc_file() {
+                if file.exists() {
+                    // Try to load Devrcfile.local
+                    self.load_file(file, loading_config, Kind::DirectoryLocal)?;
+                }
             }
-        } else {
-            // Try to load Devrcfile from current directory
-
-            self.load_file(get_directory_devrc_file)?;
-
-            // Try to load Devrcfile.local
-            self.load_file(get_local_user_defined_devrc_file)?;
         }
 
         self.devrc.setup_dry_run(self.dry_run)?;
@@ -163,15 +146,85 @@ impl Runner {
         Ok(())
     }
 
+    pub fn load_global(&mut self) -> DevrcResult<()> {
+        if let Some(file) = get_global_devrc_file() {
+            self.devrc.config.log_level.debug(
+                &format!("\n==> Loading GLOBAL: `{}` ...", &file.display()),
+                &self.designer.banner(),
+            );
+
+            if file.exists() {
+                let content = fs::read_to_string(&file).map_err(DevrcError::IoError)?;
+                let location = Location::LocalFile(file);
+                let loading_config = LoadingConfig::default().with_log_level(self.get_logger());
+
+                self.load_from_str(&content, location, Kind::Global, loading_config)?;
+                self.global_loaded = true;
+            } else {
+                return Err(DevrcError::FileNotExists(file));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn load_file(
+        &mut self,
+        file: PathBuf,
+        loading_config: LoadingConfig,
+        kind: Kind,
+    ) -> DevrcResult<()> {
+        self.devrc.config.log_level.debug(
+            &format!("\n==> Loading FILE: `{}` ...", &file.display()),
+            &self.designer.banner(),
+        );
+
+        if loading_config.level > self.max_nesting_level {
+            return Err(DevrcError::NestingLevelExceed);
+        }
+
+        if file.exists() {
+            let content = fs::read_to_string(&file).map_err(DevrcError::IoError)?;
+            let location = Location::LocalFile(file);
+            self.load_from_str(&content, location, kind, loading_config)?;
+        } else {
+            return Err(DevrcError::FileNotExists(file));
+        }
+
+        Ok(())
+    }
+
     pub fn load_stdin(&mut self) -> DevrcResult<()> {
         let mut buffer = String::new();
         io::stdin().read_to_string(&mut buffer)?;
+        let loading_config = LoadingConfig::default().with_log_level(self.get_logger());
+        self.load_from_str(&buffer, Location::StdIn, Kind::StdIn, loading_config)
+    }
 
-        match RawDevrcfile::from_str(&buffer) {
-            Ok(parsed_file) => {
-                let mut parsed_file: RawDevrcfile = parsed_file;
-                parsed_file.setup_path(PathBuf::from("/dev/stdin"))?;
-                self.devrc.add_raw_devrcfile(parsed_file)?;
+    pub fn load_from_str(
+        &mut self,
+        input: &str,
+        location: Location,
+        kind: Kind,
+        loading_config: LoadingConfig,
+    ) -> DevrcResult<()> {
+        match RawDevrcfile::prepared_from_str(
+            input,
+            location.clone(),
+            kind.clone(),
+            loading_config.clone(),
+        ) {
+            Ok(raw_devrcfile) => {
+                if matches!(&kind, Kind::Directory | Kind::DirectoryLocal | Kind::StdIn)
+                    && raw_devrcfile.is_global_enabled()
+                    && !self.global_loaded
+                {
+                    self.load_global()?
+                }
+
+                self.load_include(raw_devrcfile.clone(), location, loading_config)?;
+
+                self.devrc.add_raw_devrcfile(raw_devrcfile.clone(), &kind)?;
+                self.registry.add(raw_devrcfile)?;
             }
             Err(error) => return Err(error),
         }
@@ -180,12 +233,155 @@ impl Runner {
         if let Some(level) = &self.log_level {
             self.devrc.setup_log_level(level.clone())?;
         }
+        Ok(())
+    }
+
+    pub fn load_url(
+        &mut self,
+        url: Url,
+        loading_config: LoadingConfig,
+        checksum: Option<&str>,
+    ) -> DevrcResult<()> {
+        self.devrc.config.log_level.debug(
+            &format!("\n==> Loading URL: `{}` ...", &url),
+            &self.designer.banner(),
+        );
+        let location = Location::Url(url.clone());
+        match reqwest::blocking::get(url.as_str()) {
+            Ok(response) if response.status() == 200 => {
+                let content = response.text().map_err(|_| DevrcError::RuntimeError)?;
+                if let Some(control_checksum) = checksum {
+                    let content_checksum = digest(content.as_str());
+
+                    if control_checksum != content_checksum {
+                        return Err(DevrcError::UrlImportChecksumError {
+                            url: url.as_str().to_string(),
+                            control_checksum: control_checksum.to_string(),
+                            content_checksum,
+                        });
+                    }
+                }
+                self.load_from_str(&content, location, Kind::Include, loading_config)
+            }
+            Ok(response) => {
+                loading_config.log_level.debug(
+                    &format!(
+                        "Loading FILE error: invalid status code `{:}` ...",
+                        response.status()
+                    ),
+                    &loading_config.designer.banner(),
+                );
+                Err(DevrcError::UrlImportStatusError {
+                    url: url.as_str().to_string(),
+                    status: response.status(),
+                })
+            }
+            Err(error) => {
+                return Err(DevrcError::UrlImportError {
+                    url: url.as_str().to_string(),
+                    inner: error,
+                })
+            }
+        }
+    }
+
+    pub fn load_include(
+        &mut self,
+        raw_devrcfile: RawDevrcfile,
+        source: Location,
+        config: LoadingConfig,
+    ) -> DevrcResult<()> {
+        for include in raw_devrcfile.include {
+            match include {
+                Include::Empty => {}
+                Include::File(FileInclude {
+                    file,
+                    path_resolve,
+                    checksum,
+                }) => {
+                    match source.clone() {
+                        Location::None => {
+                            let path = utils::get_absolute_path(&file.clone(), None)?;
+                            self.load_file(
+                                path.to_path_buf(),
+                                config.clone().child(),
+                                Kind::Include,
+                            )?;
+                        }
+                        Location::LocalFile(ref base) => {
+                            let path =
+                                utils::get_absolute_path(&file.clone(), Some(&base.clone()))?;
+                            self.load_file(
+                                path.to_path_buf(),
+                                config.clone().child(),
+                                Kind::Include,
+                            )?;
+                        }
+                        Location::Url(ref url) => {
+                            if file.is_absolute() {
+                                let loading_config =
+                                    config.clone().with_log_level(self.get_logger());
+                                self.load_file(file.to_path_buf(), loading_config, Kind::Include)?;
+                            } else {
+                                match path_resolve {
+                                    PathResolve::Relative => {
+                                        let path = file
+                                            .clone()
+                                            .into_os_string()
+                                            .into_string()
+                                            .map_err(|_| DevrcError::RuntimeError)?;
+                                        let include_url = url
+                                            .clone()
+                                            .join(&path)
+                                            .map_err(|_| DevrcError::RuntimeError)?;
+
+                                        let loading_config = config
+                                            .clone()
+                                            .child()
+                                            .with_log_level(self.get_logger());
+                                        self.load_url(
+                                            include_url,
+                                            loading_config,
+                                            checksum.as_deref(),
+                                        )?;
+                                    }
+                                    PathResolve::Pwd => {
+                                        let path = utils::get_absolute_path(
+                                            &file.clone(),
+                                            env::current_dir().ok().as_ref(),
+                                        )?;
+                                        self.load_file(
+                                            path.to_path_buf(),
+                                            config.clone().child(),
+                                            Kind::Include,
+                                        )?;
+                                    }
+                                }
+                            }
+                        }
+                        Location::StdIn => {
+                            let path = utils::get_absolute_path(&file.clone(), None)?;
+                            self.load_file(
+                                path.to_path_buf(),
+                                config.clone().child(),
+                                Kind::Include,
+                            )?;
+                        }
+                    };
+                }
+                Include::Url(UrlInclude { url, checksum }) => {
+                    let parsed_url =
+                        Url::parse(&url).map_err(|_| DevrcError::InvalidIncludeUrl(url))?;
+                    self.load_url(parsed_url, config.clone().child(), Some(&checksum))?;
+                }
+            }
+        }
 
         Ok(())
     }
 
-    pub fn add_loaded_file(&mut self, file: PathBuf) -> DevrcResult<()> {
-        self.loaded_files.push(file);
+    pub fn add_loaded_file(&mut self, location: Location) -> DevrcResult<()> {
+        self.loaded_locations.push(location);
         Ok(())
     }
 
@@ -291,7 +487,7 @@ impl Runner {
     /// Show global variables and their computed values
     pub fn list_global_vars(&self) -> DevrcResult<()> {
         println!("List global devrc variables:");
-        let scope = ((&*self.devrc.global_scope)
+        let scope = ((*self.devrc.scope)
             .try_borrow()
             .map_err(|_| DevrcError::RuntimeError)?)
         .clone();
@@ -301,7 +497,7 @@ impl Runner {
     /// Show global environment variables and their computed values
     pub fn list_global_env_vars(&self) -> DevrcResult<()> {
         println!("List global devrc environment variables:");
-        let scope = ((&*self.devrc.global_scope)
+        let scope = ((*self.devrc.scope)
             .try_borrow()
             .map_err(|_| DevrcError::RuntimeError)?)
         .clone();
@@ -369,14 +565,15 @@ impl Runner {
                 println!("Task variables:");
                 let scope = task.get_scope(
                     &name,
-                    Rc::clone(&self.devrc.global_scope),
+                    Rc::clone(&self.devrc.scope),
                     &TaskArguments::default(),
                 )?;
                 self.list_vars(&scope)?;
                 println!();
 
-                println!("Task environment variables:\n");
+                println!("Task environment variables:");
                 self.list_env_vars(&scope)?;
+                println!("\n");
             }
         }
         Ok(())
@@ -389,37 +586,43 @@ impl Runner {
 
         self.rest = params;
 
-        info!(
+        println!(
             "Global defined interpreter: `{:}`",
             &self.devrc.config.interpreter
         );
 
         if let Some(value) = get_global_devrc_file() {
-            info!("Global .devrc exists: {:?}", value);
+            if value.exists() {
+                println!("Global .devrc exists: {:?}", value);
+            }
         }
 
         if let Some(value) = get_directory_devrc_file() {
-            info!("Local directory Devrcfile exists: {:?}", value);
+            if value.exists() {
+                println!("Local directory Devrcfile exists: {:?}", value);
+            }
         }
 
         if let Some(value) = get_local_user_defined_devrc_file() {
-            info!("Local user defined Devrcfile.local exists: {:?}", value);
+            if value.exists() {
+                println!("Local user defined Devrcfile.local exists: {:?}", value);
+            }
         }
 
         for file in &self.files {
             if let Ok(file) = get_absolute_path(file, None) {
                 if file.exists() {
-                    info!("Given Devrcfile exists: {:?}", file);
+                    println!("Given Devrcfile exists: {:?}", file);
                 } else {
-                    info!("Given Devrcfile not exists: {:?}", file);
+                    println!("Given Devrcfile not exists: {:?}", file);
                 }
             } else {
                 error!("Given Devrcfile with broken path: {:?}", &file);
             }
         }
 
-        for file in &self.loaded_files {
-            info!("Loaded file: {:?}", file);
+        for file in &self.registry.files {
+            println!("Loaded locations: {:?}", file.location);
         }
 
         dbg!(self);

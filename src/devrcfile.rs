@@ -1,12 +1,12 @@
-use std::{cell::RefCell, cmp, path::PathBuf, rc::Rc};
+use std::{cell::RefCell, cmp, rc::Rc};
 
 use crate::{
     config::{Config, DefaultOption, RawConfig},
     devrc_log::LogLevel,
-    environment::{EnvFile, RawEnvironment},
+    environment::{Environment, RawEnvironment},
     errors::{DevrcError, DevrcResult},
-    raw_devrcfile::RawDevrcfile,
-    scope::Scope,
+    raw_devrcfile::{Kind, RawDevrcfile},
+    scope::{child_scope, Scope},
     tasks::{
         arguments::{extract_task_args, TaskArguments},
         Task, TaskKind, Tasks,
@@ -32,10 +32,17 @@ pub struct Devrcfile {
 
     pub designer: Designer,
 
-    pub global_scope: Rc<RefCell<Scope>>,
+    pub scope: Rc<RefCell<Scope>>,
 }
 
 impl Devrcfile {
+    pub fn with_scope(scope: Rc<RefCell<Scope>>) -> Self {
+        Devrcfile {
+            scope: Rc::clone(&scope),
+            ..Default::default()
+        }
+    }
+
     pub fn add_task(&mut self, name: String, task: Task) -> DevrcResult<()> {
         self.tasks.add_task(name, task)
     }
@@ -60,31 +67,36 @@ impl Devrcfile {
         Ok(())
     }
 
-    pub fn add_config(&mut self, config: RawConfig) -> DevrcResult<()> {
-        if let Some(Some(value)) = config.interpreter {
-            self.config.interpreter = value;
-        };
-
-        if let Some(log_level) = config.log_level {
-            self.config.log_level = match log_level {
-                Some(log_level) => log_level,
-                None => LogLevel::Info,
+    pub fn add_config(&mut self, config: RawConfig, kind: &Kind) -> DevrcResult<()> {
+        if matches!(
+            kind,
+            Kind::Directory | Kind::DirectoryLocal | Kind::Args | Kind::Global | Kind::StdIn
+        ) {
+            if let Some(Some(value)) = config.interpreter {
+                self.config.interpreter = value;
             };
-        }
 
-        if let Some(dry_run) = config.dry_run {
-            match dry_run {
-                Some(dry_run) => {
-                    self.config.dry_run = dry_run;
-                }
-                None => {
-                    self.config.dry_run = false;
+            if let Some(log_level) = config.log_level {
+                self.config.log_level = match log_level {
+                    Some(log_level) => log_level,
+                    None => LogLevel::Info,
+                };
+            }
+
+            if let Some(DefaultOption::List(values)) = config.default {
+                self.config.default = values;
+            }
+
+            if let Some(dry_run) = config.dry_run {
+                match dry_run {
+                    Some(dry_run) => {
+                        self.config.dry_run = dry_run;
+                    }
+                    None => {
+                        self.config.dry_run = false;
+                    }
                 }
             }
-        }
-
-        if let Some(DefaultOption::List(values)) = config.default {
-            self.config.default = values;
         }
 
         Ok(())
@@ -102,7 +114,7 @@ impl Devrcfile {
 
     // Add variables to global scope
     pub fn process_variables(&mut self, variables: RawVariables) -> DevrcResult<()> {
-        let mut global_scope = (&*self.global_scope)
+        let mut global_scope = (*self.scope)
             .try_borrow_mut()
             .map_err(|_| DevrcError::RuntimeError)?;
         global_scope.process_raw_vars(&variables)
@@ -110,25 +122,35 @@ impl Devrcfile {
 
     // Add variables to global scope
     pub fn process_env_variables(&mut self, variables: RawEnvironment<String>) -> DevrcResult<()> {
-        let mut global_scope = (&*self.global_scope)
+        let mut global_scope = (*self.scope)
             .try_borrow_mut()
             .map_err(|_| DevrcError::RuntimeError)?;
         global_scope.process_raw_env_vars(&variables)
     }
 
-    pub fn add_env_file(&mut self, files: EnvFile, base_path: Option<&PathBuf>) -> DevrcResult<()> {
-        for (key, value) in files.load(base_path)? {
-            let mut global_scope = (&*self.global_scope)
-                .try_borrow_mut()
-                .map_err(|_| DevrcError::RuntimeError)?;
-            global_scope.insert_env(&key.to_string(), &value.to_owned());
-        }
-
-        Ok(())
+    pub fn process_env_files_variables(
+        &mut self,
+        variables: Environment<String>,
+    ) -> DevrcResult<()> {
+        let mut global_scope = (*self.scope)
+            .try_borrow_mut()
+            .map_err(|_| DevrcError::RuntimeError)?;
+        global_scope.process_rendered_env_vars(&variables)
     }
 
+    // pub fn add_env_file(&mut self, files: EnvFile, base_path: Option<&PathBuf>) -> DevrcResult<()> {
+    //     for (key, value) in files.load(base_path)? {
+    //         let mut global_scope = (&*self.scope)
+    //             .try_borrow_mut()
+    //             .map_err(|_| DevrcError::RuntimeError)?;
+    //         global_scope.insert_env(&key.to_string(), &value.to_owned());
+    //     }
+
+    //     Ok(())
+    // }
+
     pub fn get_scope_copy(&self) -> DevrcResult<Scope> {
-        Ok(((&*self.global_scope)
+        Ok(((*self.scope)
             .try_borrow()
             .map_err(|_| DevrcError::RuntimeError)?)
         .clone())
@@ -137,8 +159,8 @@ impl Devrcfile {
     /// Add objects from given `RawDevrcfile` to current object
     ///
     /// this method implement merge stategy
-    pub fn add_raw_devrcfile(&mut self, file: RawDevrcfile) -> DevrcResult<()> {
-        self.add_config(file.config)?;
+    pub fn add_raw_devrcfile(&mut self, file: RawDevrcfile, kind: &Kind) -> DevrcResult<()> {
+        self.add_config(file.config, kind)?;
 
         // Field value present or null
         if let Some(value) = file.after_script {
@@ -161,9 +183,7 @@ impl Devrcfile {
             self.add_task(name, task)?;
         }
 
-        if let Some(files) = file.envs_files {
-            self.add_env_file(files, file.path.as_ref())?;
-        }
+        self.process_env_files_variables(file.files_environment)?;
 
         self.process_variables(file.variables)?;
 
@@ -215,7 +235,7 @@ impl Devrcfile {
 
             task.perform(
                 &hook_display_name,
-                Rc::clone(&self.global_scope),
+                Rc::clone(&self.scope),
                 &TaskArguments::new(),
                 &self.config,
                 &self.designer,
@@ -226,7 +246,14 @@ impl Devrcfile {
         Ok(())
     }
 
-    pub fn run_task(&self, name: &str, task: &TaskKind, args: TaskArguments) -> DevrcResult<()> {
+    pub fn run_task(
+        &self,
+        name: &str,
+        task: &TaskKind,
+        args: TaskArguments,
+        parent_scope: Rc<RefCell<Scope>>,
+    ) -> DevrcResult<()> {
+        // Execute dependencies tasks
         if let Some(deps) = task.get_dependencies() {
             self.config.log_level.debug(
                 &format!("\n==> Running task `{}` dependencies: ...", &name),
@@ -235,19 +262,51 @@ impl Devrcfile {
 
             for dependency_task_name in deps {
                 let dependency_task = self.find_task(dependency_task_name)?;
-                self.run_task(dependency_task_name, dependency_task, TaskArguments::new())?;
+                self.run_task(
+                    dependency_task_name,
+                    dependency_task,
+                    args.clone(),
+                    Rc::clone(&parent_scope),
+                )?;
+            }
+        }
+
+        // Execute subtasks before main task
+        let scope = Rc::new(RefCell::new(task.get_scope(
+            name,
+            Rc::clone(&parent_scope),
+            &args,
+        )?));
+
+        if let Some(subtasks) = task.get_subtasks() {
+            self.config.log_level.debug(
+                &format!("\n==> Running subtasks `{}`: ...", &name),
+                &self.designer.banner(),
+            );
+
+            for subtask_call in subtasks {
+                let subtask = self.find_task(&subtask_call.name)?;
+
+                let mut subtask_scope = child_scope(
+                    Rc::clone(&scope),
+                    &format!("\"{:}\" subtasks scope", &subtask_call.name),
+                );
+
+                subtask_scope.process_raw_vars(&subtask_call.variables)?;
+                subtask_scope.process_raw_env_vars(&subtask_call.environment)?;
+
+                self.run_task(
+                    &subtask_call.name,
+                    subtask,
+                    args.clone(),
+                    Rc::new(RefCell::new(subtask_scope)),
+                )?;
             }
         }
 
         self.run_hook("before_task", Some(name))?;
 
-        let _ = task.perform(
-            name,
-            Rc::clone(&self.global_scope),
-            &args,
-            &self.config,
-            &self.designer,
-        )?;
+        let _ = task.perform(name, Rc::clone(&scope), &args, &self.config, &self.designer)?;
 
         self.run_hook("after_task", Some(name))?;
         Ok(())
@@ -285,8 +344,10 @@ impl Devrcfile {
 
         self.run_hook("before_script", None)?;
 
+        let scope = &self.scope;
+
         for (name, task, args) in tasks {
-            self.run_task(name, task, args)?;
+            self.run_task(name, task, args, Rc::clone(scope))?;
         }
 
         self.run_hook("after_script", None)?;

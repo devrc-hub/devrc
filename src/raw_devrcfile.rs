@@ -1,29 +1,39 @@
-use std::{fs, path::PathBuf, str::FromStr};
-
 use crate::{
     config::RawConfig,
+    environment::Environment,
     errors::{DevrcError, DevrcResult},
-    include::IncludeFilesWrapper,
+    include::Include,
+    loader::LoadingConfig,
+    resolver::Location,
     tasks::Task,
 };
 
-use std::fmt::Debug;
+use std::{fmt::Debug, str::FromStr};
 
 use serde::Deserialize;
 
 use crate::{
-    environment::{EnvFile, RawEnvironment},
-    tasks::Tasks,
+    de::deserialize_some, env_file::EnvFilesInclude, environment::RawEnvironment, tasks::Tasks,
+    variables::RawVariables,
 };
 
-use crate::variables::RawVariables;
-
-use crate::de::deserialize_some;
 #[derive(Debug, Deserialize, Clone)]
 pub struct GitlabCIConfig {}
 
 fn default_version() -> String {
     "1.0".to_string()
+}
+
+#[derive(Debug, Clone, Default)]
+pub enum Kind {
+    #[default]
+    None,
+    Directory,
+    DirectoryLocal,
+    Args,
+    Global,
+    Include,
+    StdIn,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
@@ -35,17 +45,20 @@ pub struct RawDevrcfile {
     #[serde(default)]
     pub environment: RawEnvironment<String>,
 
+    // Environment variables from files
+    #[serde(skip_deserializing)]
+    pub files_environment: Environment<String>,
+
     #[serde(default)]
     pub variables: RawVariables,
 
-    #[allow(dead_code)]
     #[serde(default)]
     #[serde(rename(deserialize = "include"))]
-    include: IncludeFilesWrapper,
+    pub include: Vec<Include>,
 
     // #[serde(default)]
     #[serde(rename(deserialize = "env_file"))]
-    pub envs_files: Option<EnvFile>,
+    pub envs_files: Option<EnvFilesInclude>,
 
     #[serde(default, deserialize_with = "deserialize_some")]
     pub after_script: Option<Option<Task>>,
@@ -66,35 +79,20 @@ pub struct RawDevrcfile {
     #[serde(flatten)]
     pub tasks: Tasks,
 
-    pub path: Option<PathBuf>,
+    #[serde(skip_deserializing)]
+    pub location: Location,
+
+    #[serde(skip_deserializing)]
+    pub kind: Kind,
 }
 
 impl RawDevrcfile {
-    // TODO: split to separate functions
-    pub fn from_file(file: &PathBuf) -> DevrcResult<Self> {
-        if !file.exists() {
-            return Err(DevrcError::NotExists);
-        }
-
-        let contents = match fs::read_to_string(&file) {
-            Ok(value) => value,
-            Err(error) => return Err(DevrcError::IoError(error)),
-        };
-
-        Self::from_str(&contents)
+    pub fn with_location(self, location: Location) -> Self {
+        Self { location, ..self }
     }
 
     pub fn get_tasks(&self) -> &Tasks {
         &self.tasks
-    }
-
-    pub fn setup_path(&mut self, path: PathBuf) -> DevrcResult<()> {
-        match fs::canonicalize(path) {
-            Ok(value) => self.path = Some(value),
-            Err(error) => return Err(DevrcError::IoError(error)),
-        };
-
-        Ok(())
     }
 
     pub fn is_global_enabled(&self) -> bool {
@@ -103,16 +101,65 @@ impl RawDevrcfile {
         }
         false
     }
+
+    pub fn prepared_from_str(
+        content: &str,
+        location: Location,
+        kind: Kind,
+        loading_config: LoadingConfig,
+    ) -> DevrcResult<Self> {
+        match Self::from_str(content) {
+            Ok(value) => value
+                .with_location(location)
+                .with_kind(kind)
+                .prepared(loading_config),
+            Err(error) => Err(error),
+        }
+    }
+
+    pub fn load_env_files(&mut self, loading_config: LoadingConfig) -> DevrcResult<()> {
+        if let Some(files) = &self.envs_files {
+            let env_vars = files.load(self.location.clone(), loading_config)?;
+
+            for (key, value) in env_vars {
+                self.files_environment.insert(key, value);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn prepare(&mut self, loading_config: LoadingConfig) -> DevrcResult<()> {
+        self.load_env_files(loading_config)
+    }
+
+    pub fn with_kind(self, kind: Kind) -> Self {
+        Self { kind, ..self }
+    }
+
+    pub fn setup_kind(&mut self, kind: Kind) {
+        self.kind = kind
+    }
+
+    pub fn prepared(mut self, loading_config: LoadingConfig) -> DevrcResult<RawDevrcfile> {
+        self.prepare(loading_config)?;
+        Ok(self)
+    }
 }
+
 impl FromStr for RawDevrcfile {
     type Err = DevrcError;
 
     fn from_str(content: &str) -> Result<Self, Self::Err> {
-        let config: Self = match serde_yaml::from_str(content) {
-            Ok(value) => value,
-            Err(error) => return Err(DevrcError::YamlParseError(error)),
-        };
-        Ok(config)
+        serde_yaml::from_str::<RawDevrcfile>(content).map_err(DevrcError::YamlParseError)
+
+        // let config: Self = match serde_yaml::from_str::<RawDevrcfile>(content) {
+        //     Ok(mut value) => {
+        //         value.setup_location(Location::LocalFile(PathBuf::from("/dev/stdin")));
+        //         value
+        //     },
+        //     Err(error) => return Err(DevrcError::YamlParseError(error)),
+        // };
+        // Ok(config)
     }
 }
 

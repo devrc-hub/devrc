@@ -1,33 +1,36 @@
+use crate::de::deserialize_some;
 use serde::Deserialize;
+use std::path::PathBuf;
+
+use crate::resolver::PathResolve;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct StringFileInclude(pub String);
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct FileInclude {
-    pub file: String,
+    pub file: PathBuf,
+
+    #[serde(default)]
+    pub path_resolve: PathResolve,
+
+    #[serde(default, deserialize_with = "deserialize_some")]
+    pub checksum: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
-pub struct RemoteInclude {
-    pub remote: String,
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct UrlInclude {
+    pub url: String,
+
+    pub checksum: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 #[serde(untagged)]
-pub enum IncludeFiles {
+pub enum Include {
+    #[default]
     Empty,
-    Simple(StringFileInclude),
+    // Simple(StringFileInclude),
     File(FileInclude),
-    Remote(RemoteInclude),
-    List(Vec<IncludeFiles>),
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct IncludeFilesWrapper(pub IncludeFiles);
-
-impl Default for IncludeFilesWrapper {
-    fn default() -> Self {
-        Self(IncludeFiles::Empty)
-    }
+    Url(UrlInclude),
 }

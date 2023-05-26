@@ -1,4 +1,4 @@
-use devrc::include::IncludeFilesWrapper;
+use devrc::include::Include;
 use std::fmt::Debug;
 
 use serde::Deserialize;
@@ -9,7 +9,7 @@ fn test_empty_include() {
     pub struct Container {
         #[serde(default)]
         #[serde(rename(deserialize = "include"))]
-        pub include_files: IncludeFilesWrapper,
+        pub include_files: Include,
     }
 
     let content: &str = r#"
@@ -21,7 +21,7 @@ some: value
 
     // dbg!(container);
 
-    dbg!(container.include_files.0);
+    dbg!(container.include_files);
 
     // assert_eq!(container.include_files.0, IncludeFiles::Empty);
 }

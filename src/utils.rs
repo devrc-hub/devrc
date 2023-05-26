@@ -1,4 +1,4 @@
-use std::{env, fs};
+use std::{env, fs, io};
 
 use std::path::{Path, PathBuf};
 
@@ -41,9 +41,14 @@ pub fn get_absolute_path(file: &PathBuf, base: Option<&PathBuf>) -> DevrcResult<
         file.clone()
     };
 
-    match fs::canonicalize(file) {
+    match fs::canonicalize(file.clone()) {
         Ok(value) => Ok(value),
-        Err(error) => Err(DevrcError::IoError(error)),
+        Err(error) => Err({
+            match error.kind() {
+                io::ErrorKind::NotFound => DevrcError::FileNotExists(file),
+                _ => DevrcError::IoError(error),
+            }
+        }),
     }
 }
 

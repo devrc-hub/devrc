@@ -1,0 +1,32 @@
+variables:
+  var_2: "Global defined var2 value from remote.yml"
+
+env_file:
+  - file: ./.env_1
+  - url: https://raw.githubusercontent.com/devrc-hub/devrc/master/examples/remote/.env_2
+    checksum: 4e288f10b477700bc72591c6d479ba4012d17fdea9dc57c9be236b94bfc8e9b1
+    ignore_errors: true
+
+  - file: ./examples/remote/.env_3
+    path_resolve: pwd
+    # ignore_errors: true
+
+remote:task-3:
+  desc: "Print environment variables"
+  exec: |
+    echo "ENV_VARIABLE_1 => $ENV_VARIABLE_1"
+    echo "ENV_VARIABLE_2 => $ENV_VARIABLE_2"
+    echo "ENV_VARIABLE_3 => $ENV_VARIABLE_3"
+    echo "ENV_VARIABLE_4 => $ENV_VARIABLE_4"
+
+remote:task-4:
+  desc: "Print variables"
+  exec: |
+    echo "{{ var_1 }}"
+    echo "{{ var_2 }}"
+
+
+task-3:
+  desc: "Print message"
+  exec: |
+    echo "task-3 from examples/remote/remote.yml"

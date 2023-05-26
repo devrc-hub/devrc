@@ -1,14 +1,18 @@
+use reqwest::StatusCode;
 use serde_yaml::Error as SerdeYamlError;
 use std::{
     error::Error as StdError,
     fmt,
     fmt::{Display, Formatter},
     io::Error as IoError,
+    path::PathBuf,
 };
 
 use tera::Error as TeraError;
 
-use dotenv::{self, Error as DotenvError};
+use dotenvy::{self, Error as DotenvError};
+
+use crate::resolver::Location;
 
 pub type DevrcResult<T> = Result<T, DevrcError>;
 
@@ -16,6 +20,7 @@ pub type DevrcResult<T> = Result<T, DevrcError>;
 pub enum DevrcError {
     Dotenv(DotenvError),
     NotExists,
+    FileNotExists(PathBuf),
     GlobalNotExists,
     LocalNotExists,
     RenderError(TeraError),
@@ -28,20 +33,51 @@ pub enum DevrcError {
     TaskNotFound,
     NotImplemented,
     Signal,
-    Code { code: i32 },
-    RuntimeError,
+    Code {
+        code: i32,
+    },
     CircularDependencies,
     InvalidArgument,
     InvalidName,
     InvalidParams,
     InvalidVariableName,
     InvalidVariableModifier,
+    InvalidIncludeUrl(String),
     TaskArgumentsParsingError,
     OverlappingParameters,
     NotEnouthArguments,
     DenoRuntimeError(anyhow::Error),
     InvalidInterpreter,
     DenoFeatureRequired,
+    NestingLevelExceed,
+    RuntimeError,
+
+    EnvfileImportError {
+        location: Location,
+    },
+    EnvfileUrlImportStatusError {
+        url: String,
+        status: StatusCode,
+    },
+    EnvfileUrlImportError {
+        url: String,
+        inner: reqwest::Error,
+    },
+    FileImportError,
+    UrlImportStatusError {
+        url: String,
+        status: StatusCode,
+    },
+    UrlImportError {
+        url: String,
+        inner: reqwest::Error,
+    },
+
+    UrlImportChecksumError {
+        url: String,
+        control_checksum: String,
+        content_checksum: String,
+    },
 }
 
 impl Display for DevrcError {
@@ -66,6 +102,12 @@ impl Display for DevrcError {
             }
             DevrcError::DenoRuntimeError(error) => {
                 write!(f, "Deno runtime failed with error {:}", error)?;
+            }
+            DevrcError::FileNotExists(location) => {
+                write!(f, "File {:} not found", location.display())?;
+            }
+            DevrcError::InvalidIncludeUrl(url) => {
+                write!(f, "Invalid include url {:}", &url)?;
             }
             _ => {}
         }

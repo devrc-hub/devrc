@@ -1,0 +1,39 @@
+devrc_config:
+  shell: bash -c
+
+
+include:
+  - file: ./remote.yml
+    path_resolve: relative
+
+  - url: "https://raw.githubusercontent.com/devrc-hub/devrc/master/examples/remote/remote.yml"
+    checksum: "39ed309f03e8efcef1608e9d5cb6a81543a650dab9c0b6e7b74acf0e94fb2b89"
+
+
+variables:
+  var_1: "Global defined var1 value from local.yml"
+  var_2: "Global defined var2 value from local.yml"
+
+task-1:
+  desc: "Print variables"
+  exec: |
+    echo "{{ var_1 }}"
+    echo "{{ var_2 }}"
+
+
+task-2:
+  desc: "Call subtasks and print message"
+  subtasks:
+    - name: remote:task-1
+    - name: remote:task-2
+      variables:
+        var_2: "var_2 redefined at task-2"
+  exec: |
+    echo "local task-2 called"
+
+
+task-3:
+  desc: "Rewrited task-3 from remote file"
+
+  exec: |
+    echo "local task-3 called"

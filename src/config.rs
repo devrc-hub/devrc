@@ -3,18 +3,13 @@ use std::{env, fmt::Debug, path::PathBuf};
 
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 #[serde(untagged)]
 pub enum DefaultOption {
+    #[default]
     Empty,
     String(String),
     List(Vec<String>),
-}
-
-impl Default for DefaultOption {
-    fn default() -> Self {
-        DefaultOption::Empty
-    }
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]

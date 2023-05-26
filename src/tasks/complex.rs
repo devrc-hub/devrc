@@ -1,6 +1,11 @@
 use crate::{
-    config::Config, environment::RawEnvironment, errors::DevrcResult, interpreter::InterpreterKind,
-    scope::Scope, variables::RawVariables, workshop::Designer,
+    config::Config,
+    environment::RawEnvironment,
+    errors::DevrcResult,
+    interpreter::InterpreterKind,
+    scope::{child_scope, Scope},
+    variables::RawVariables,
+    workshop::Designer,
 };
 use std::cell::RefCell;
 
@@ -11,6 +16,7 @@ use super::{
     exec::ExecKind,
     params::{ParamValue, Params},
     result::TaskResult,
+    subtask_call::SubtaskCall,
 };
 use std::rc::Rc;
 
@@ -42,6 +48,9 @@ pub struct ComplexCommand {
     // #[serde(deserialize_with = "deserialize_interpreter")]
     #[serde(alias = "shell")]
     interpreter: Option<InterpreterKind>,
+
+    #[serde(default)]
+    pub subtasks: Vec<SubtaskCall>,
 }
 
 impl ComplexCommand {
@@ -83,8 +92,7 @@ impl ComplexCommand {
         config: &Config,
         designer: &Designer,
     ) -> DevrcResult<TaskResult> {
-        let mut local_scope = self.process_variables(parent_scope, args)?;
-
+        let mut local_scope = self.compute_execution_scope(parent_scope, args)?;
         let interpreter = self.get_interpreter(config);
 
         // TODO: register output as variable
@@ -94,16 +102,21 @@ impl ComplexCommand {
         Ok(TaskResult::new())
     }
 
-    /// Prepare template scope
-    pub fn process_variables(
+    pub fn compute_execution_scope(
+        &self,
+        scope_ref: Rc<RefCell<Scope>>,
+        _args: &TaskArguments,
+    ) -> DevrcResult<Scope> {
+        let binding = (*scope_ref).borrow();
+        binding.compute_execution_scope()
+    }
+
+    pub fn get_scope(
         &self,
         parent_scope: Rc<RefCell<Scope>>,
         args: &TaskArguments,
     ) -> DevrcResult<Scope> {
-        let mut scope = Scope {
-            parent: Some(Rc::clone(&parent_scope)),
-            ..Default::default()
-        };
+        let mut scope = child_scope(parent_scope, self.name.clone().unwrap_or_default().as_ref());
 
         // TODO: here devrc can ask user input
         for (key, (value, _)) in args {
@@ -143,6 +156,7 @@ where
             params: Params::default(),
             deps: Vec::new(),
             interpreter: None,
+            subtasks: Vec::new(),
         }
     }
 }
@@ -159,6 +173,7 @@ impl From<ExecKind> for ComplexCommand {
             params: Params::default(),
             deps: Vec::new(),
             interpreter: None,
+            subtasks: Vec::new(),
         }
     }
 }
@@ -175,6 +190,7 @@ impl Default for ComplexCommand {
             params: Params::default(),
             deps: Vec::new(),
             interpreter: None,
+            subtasks: Vec::new(),
         }
     }
 }

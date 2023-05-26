@@ -21,10 +21,13 @@ pub mod exec;
 pub mod params;
 pub mod params_parser;
 pub mod result;
+pub mod subtask_call;
 
 pub use crate::tasks::{examples::Examples, exec::ExecKind, params::Params};
 
-use self::{complex::ComplexCommand, params::ParamValue, result::TaskResult};
+use self::{
+    complex::ComplexCommand, params::ParamValue, result::TaskResult, subtask_call::SubtaskCall,
+};
 use crate::tasks::arguments::TaskArguments;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -54,20 +57,15 @@ pub struct Include {
 }
 
 // TODO: put `ComplexCommand` into `Box`
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 #[serde(untagged)]
 pub enum TaskKind {
+    #[default]
     Empty,
     Command(String),
     ComplexCommand(ComplexCommand),
     Commands(ExecKind),
     Include(Include),
-}
-
-impl Default for TaskKind {
-    fn default() -> Self {
-        TaskKind::Empty
-    }
 }
 
 impl TaskKind {
@@ -121,14 +119,13 @@ impl TaskKind {
             &format!("\n==> Running task: `{:}` ...", &name),
             &designer.banner(),
         );
-
         let result = match self {
             TaskKind::Empty => return Err(DevrcError::NotImplemented),
-            TaskKind::Command(value) => {
-                ComplexCommand::from(value).perform(name, parent_scope, args, config, designer)?
+            TaskKind::Command(command) => {
+                ComplexCommand::from(command).perform(name, parent_scope, args, config, designer)?
             }
-            TaskKind::ComplexCommand(value) => {
-                value.perform(name, parent_scope, args, config, designer)?
+            TaskKind::ComplexCommand(complex_command) => {
+                complex_command.perform(name, parent_scope, args, config, designer)?
             }
             TaskKind::Commands(_value) => return Err(DevrcError::NotImplemented),
             TaskKind::Include(_value) => {
@@ -148,9 +145,9 @@ impl TaskKind {
         let result = match self {
             TaskKind::Empty => return Err(DevrcError::NotImplemented),
             TaskKind::Command(value) => {
-                ComplexCommand::from(value).process_variables(parent_scope, args)?
+                ComplexCommand::from(value).get_scope(parent_scope, args)?
             }
-            TaskKind::ComplexCommand(value) => value.process_variables(parent_scope, args)?,
+            TaskKind::ComplexCommand(value) => value.get_scope(parent_scope, args)?,
             TaskKind::Commands(_value) => return Err(DevrcError::NotImplemented),
             TaskKind::Include(_value) => {
                 return Err(DevrcError::NotImplemented);
@@ -168,6 +165,16 @@ impl TaskKind {
             }
         };
 
+        None
+    }
+
+    // Get list of command subtasks
+    pub fn get_subtasks(&self) -> Option<&Vec<SubtaskCall>> {
+        if let TaskKind::ComplexCommand(command) = self {
+            if !&command.subtasks.is_empty() {
+                return Some(&command.subtasks);
+            }
+        }
         None
     }
 
