@@ -1,0 +1,32 @@
+[package]
+name = "devrc-plugins"
+version = "0.4.0"
+authors = ["Alex <hey.turbo.driver@gmail.com>"]
+description = "devrc-plugins"
+edition = "2018"
+keywords = ["tasks", "automation", "makefile", "command-line"]
+categories = ["command-line-utilities",  "development-tools", "config"]
+license-file = "LICENSE"
+readme = "README.md"
+homepage = "https://github.com/devrc-hub/devrc"
+repository = "https://github.com/devrc-hub/devrc"
+
+include = ["**/*", "Cargo.toml", "LICENSE", "README.md", "CHANGELOG.md", "../build.rs"]
+
+build = "../build.rs"
+
+[dependencies]
+
+
+[build-dependencies]
+datetime = { version = "0.5.2", default_features = false }
+
+
+[lib]
+name = "devrc_plugins"
+path = "src/lib.rs"
+doc = false
+
+
+[badges]
+maintenance = { status = "actively-developed" }
