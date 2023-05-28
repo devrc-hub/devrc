@@ -1,3 +1,4 @@
+use devrc_plugins::errors::DevrcPluginError;
 use reqwest::StatusCode;
 use serde_yaml::Error as SerdeYamlError;
 use std::{
@@ -21,6 +22,8 @@ pub enum DevrcError {
     Dotenv(DotenvError),
     NotExists,
     FileNotExists(PathBuf),
+    PluginFileNotExists(PathBuf),
+    PluginError(DevrcPluginError),
     GlobalNotExists,
     LocalNotExists,
     RenderError(TeraError),
@@ -46,9 +49,7 @@ pub enum DevrcError {
     TaskArgumentsParsingError,
     OverlappingParameters,
     NotEnouthArguments,
-    DenoRuntimeError(anyhow::Error),
     InvalidInterpreter,
-    DenoFeatureRequired,
     NestingLevelExceed,
     RuntimeError,
 
@@ -78,6 +79,7 @@ pub enum DevrcError {
         control_checksum: String,
         content_checksum: String,
     },
+    AnyhowError(anyhow::Error),
 }
 
 impl Display for DevrcError {
@@ -99,9 +101,6 @@ impl Display for DevrcError {
             }
             DevrcError::Code { code } => {
                 write!(f, "Recipe failed with code {:}", code)?;
-            }
-            DevrcError::DenoRuntimeError(error) => {
-                write!(f, "Deno runtime failed with error {:}", error)?;
             }
             DevrcError::FileNotExists(location) => {
                 write!(f, "File {:} not found", location.display())?;
@@ -137,6 +136,12 @@ impl StdError for DevrcError {}
 
 impl From<anyhow::Error> for DevrcError {
     fn from(error: anyhow::Error) -> Self {
-        DevrcError::DenoRuntimeError(error)
+        DevrcError::AnyhowError(error)
+    }
+}
+
+impl From<DevrcPluginError> for DevrcError {
+    fn from(value: DevrcPluginError) -> Self {
+        DevrcError::PluginError(value)
     }
 }

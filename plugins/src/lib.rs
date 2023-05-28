@@ -1,14 +1,19 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+#![deny(clippy::all)]
+// List of ignored linters
+#![allow(clippy::large_enum_variant)]
+#![allow(clippy::upper_case_acronyms)]
+#![allow(clippy::from_over_into)]
+#![allow(clippy::ptr_arg)]
+#![allow(clippy::borrowed_box)]
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+extern crate libloading;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub mod config;
+pub mod errors;
+pub mod execution;
+pub mod options;
+pub mod plugin;
+
+pub use errors::{DevrcPluginError, DevrcPluginResult};
+pub use execution::{ExecutionPlugin, ExecutionPluginManager};
+pub use plugin::Plugin;

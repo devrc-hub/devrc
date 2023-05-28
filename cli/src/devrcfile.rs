@@ -2,7 +2,6 @@ use std::{cell::RefCell, cmp, rc::Rc};
 
 use crate::{
     config::{Config, DefaultOption, RawConfig},
-    devrc_log::LogLevel,
     environment::{Environment, RawEnvironment},
     errors::{DevrcError, DevrcResult},
     raw_devrcfile::{Kind, RawDevrcfile},
@@ -12,10 +11,12 @@ use crate::{
         Task, TaskKind, Tasks,
     },
     variables::RawVariables,
-    workshop::Designer,
 };
 
+use devrc_core::{logging::LogLevel, workshop::Designer};
 use unicode_width::UnicodeWidthStr;
+
+use devrc_plugins::execution::ExecutionPluginManager;
 
 #[derive(Debug, Clone, Default)]
 pub struct Devrcfile {
@@ -33,6 +34,8 @@ pub struct Devrcfile {
     pub designer: Designer,
 
     pub scope: Rc<RefCell<Scope>>,
+
+    pub execution_plugin_registry: Rc<RefCell<ExecutionPluginManager>>,
 }
 
 impl Devrcfile {
@@ -40,6 +43,15 @@ impl Devrcfile {
         Devrcfile {
             scope: Rc::clone(&scope),
             ..Default::default()
+        }
+    }
+    pub fn with_execution_plugin_manager(
+        self,
+        manager: Rc<RefCell<ExecutionPluginManager>>,
+    ) -> Self {
+        Devrcfile {
+            execution_plugin_registry: manager,
+            ..self
         }
     }
 
@@ -95,6 +107,12 @@ impl Devrcfile {
                     None => {
                         self.config.dry_run = false;
                     }
+                }
+            }
+
+            if let Some(plugins_paths) = config.plugins {
+                for (name, path) in plugins_paths {
+                    self.config.plugins.insert(name, path);
                 }
             }
         }
@@ -235,6 +253,7 @@ impl Devrcfile {
 
             task.perform(
                 &hook_display_name,
+                Rc::clone(&self.execution_plugin_registry),
                 Rc::clone(&self.scope),
                 &TaskArguments::new(),
                 &self.config,
@@ -306,7 +325,14 @@ impl Devrcfile {
 
         self.run_hook("before_task", Some(name))?;
 
-        let _ = task.perform(name, Rc::clone(&scope), &args, &self.config, &self.designer)?;
+        let _ = task.perform(
+            name,
+            Rc::clone(&self.execution_plugin_registry),
+            Rc::clone(&scope),
+            &args,
+            &self.config,
+            &self.designer,
+        )?;
 
         self.run_hook("after_task", Some(name))?;
         Ok(())

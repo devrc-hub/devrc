@@ -2,13 +2,14 @@ use crate::{
     config::Config,
     environment::RawEnvironment,
     errors::DevrcResult,
-    interpreter::InterpreterKind,
+    evaluate::Evaluatable,
+    interpreter::{shebang::ShebangDetector, InterpreterKind},
     scope::{child_scope, Scope},
     variables::RawVariables,
-    workshop::Designer,
 };
-use std::cell::RefCell;
+use std::{cell::RefCell, rc::Rc};
 
+use devrc_core::workshop::Designer;
 use serde::Deserialize;
 
 use super::{
@@ -18,13 +19,14 @@ use super::{
     result::TaskResult,
     subtask_call::SubtaskCall,
 };
-use std::rc::Rc;
+
+use devrc_plugins::execution::ExecutionPluginManager;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ComplexCommand {
     name: Option<String>,
 
-    #[serde(default)]
+    #[serde(default, alias = "run")]
     pub exec: ExecKind,
 
     //shell: ShellVariants,
@@ -84,20 +86,70 @@ impl ComplexCommand {
         }
     }
 
+    pub fn perform_code(
+        &self,
+        interpreter: &InterpreterKind,
+        code: &str,
+        local_scope: &Scope,
+        execution_plugins_registry: Rc<RefCell<ExecutionPluginManager>>,
+        config: &Config,
+        designer: &Designer,
+    ) -> DevrcResult<()> {
+        config.log_level.info(code, &designer.command());
+
+        if !config.dry_run {
+            if let Some(interpreter) = code.get_interpreter_from_shebang() {
+                // Execute script using given shebang
+                interpreter.execute_script(code, local_scope, config)?;
+            } else {
+                // Execute command or complex script
+                interpreter.execute(code, local_scope, config, execution_plugins_registry)?;
+            }
+        }
+        Ok(())
+    }
+
     pub fn perform(
         &self,
         _name: &str,
+        execution_plugins_registry: Rc<RefCell<ExecutionPluginManager>>,
         parent_scope: Rc<RefCell<Scope>>,
         args: &TaskArguments,
         config: &Config,
         designer: &Designer,
     ) -> DevrcResult<TaskResult> {
-        let mut local_scope = self.compute_execution_scope(parent_scope, args)?;
+        let local_scope = self.compute_execution_scope(parent_scope, args)?;
         let interpreter = self.get_interpreter(config);
 
-        // TODO: register output as variable
-        self.exec
-            .execute(&mut local_scope, config, &interpreter, designer)?;
+        match &self.exec {
+            ExecKind::Empty => {}
+            ExecKind::String(value) => {
+                let code = value.evaluate("exec", &local_scope)?;
+
+                self.perform_code(
+                    &interpreter,
+                    &code,
+                    &local_scope,
+                    execution_plugins_registry,
+                    config,
+                    designer,
+                )?;
+            }
+            ExecKind::List(value) => {
+                for (i, item) in value.iter().enumerate() {
+                    let code = item.evaluate(&format!("multi_exec_{:}", i), &local_scope)?;
+
+                    self.perform_code(
+                        &interpreter,
+                        &code,
+                        &local_scope,
+                        Rc::clone(&execution_plugins_registry),
+                        config,
+                        designer,
+                    )?;
+                }
+            }
+        }
 
         Ok(TaskResult::new())
     }

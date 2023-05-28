@@ -62,9 +62,10 @@ Lets start with an overview of features that exist in devrc:
   * [ ] Remote command execution
   * [x] Read `Devrcfile` contents from stdin
   * [x] Global and local defined variables and environment variables
-  * [x] Embedded [deno runtime](#embedded-deno-runtime)
+  * [x] [deno runtime](#embedded-deno-runtime)
   * [x] Include devrcfile from local and remote files
   * [x] Load environment variables from local and remote files
+  * [x] Plugins for task execution
 
 
 ### Why YAML is used?
@@ -106,6 +107,7 @@ What are the benefits of using YAML for this purpose and why it's choosen:
     * [Read `Devrcfile` from sdtin](#read-devrcfile-from-stdin)
     * [Embedded deno execution runtime](#embedded-deno-runtime)
     * [Relative path resolving](#relative-path-resolving)
+    * [Plugins for task execution](#plugins-for-task-execution)
 
 
 * [Contributing, feedback and suggestions](#contributing)
@@ -495,9 +497,33 @@ or
 devrc --stdin task_name < ./Devrcfile
 ```
 
+### Plugins for task execution
+
+Tasks can be executed by plugin that is loaded through the `devrc_config.plugins` option.
+
+
+```yaml
+
+devrc_config:
+
+  plugins:
+    local-plugin-alias: ../path/to/dynamic/library.dylib
+
+    interpreter:
+      runtime: local-plugin-alias
+      options:
+        plugin-option-1: plugin-option-1-value
+
+```
+
+
+More examples can be found [here](https://github.com/devrc-hub/devrc/blob/master/examples/example_plugins.yml).
+
+
+
 ### Embedded deno runtime
 
-Devrc has embedded [deno runtime](https://github.com/denoland/deno). Deno is a simple, modern and secure runtime for JavaScript and TypeScript that uses V8. This runtime can be enabled on a global level or task level. By default all permissions disabled. No file, network, or environment access, unless explicitly enabled.
+Devrc has embedded [deno runtime](https://github.com/denoland/deno) via [plugin](https://github.com/devrc-hub/devrc-plugin-deno). Deno is a simple, modern and secure runtime for JavaScript and TypeScript that uses V8. This runtime can be enabled on a global level or task level. By default all permissions disabled. No file, network, or environment access, unless explicitly enabled.
 
 
 ```yaml
@@ -505,20 +531,24 @@ Devrc has embedded [deno runtime](https://github.com/denoland/deno). Deno is a s
 devrc_config:
   interpreter:
     runtime: deno-runtime
-    permissions:
-      - allow-env
-      - allow-net: [google.com, httpbin.org]
+    options:
+      permissions:
+        - allow-env
+        - allow-net: [google.com, httpbin.org]
 
-      # - disable-all
-      # - allow-all
-      # - allow-env
-      # - allow-hrtime
-      # - allow-net: [google.com, httpbin.org]
-      # - allow-plugin
-      # - allow-read: ["/tmp"]
-      # - allow-run
-      # - allow-write-all
-      # - allow-write: ["/tmp"]
+        # - disable-all
+        # - allow-all
+        # - allow-env
+        # - allow-hrtime
+        # - allow-net: [google.com, httpbin.org]
+        # - allow-plugin
+        # - allow-read: ["/tmp"]
+        # - allow-run
+        # - allow-write-all
+        # - allow-write: ["/tmp"]
+
+  plugins:
+      deno-runtime: ../path/to/dynamic/library.dylib
 
 colors: |
   import { bgBlue, bold, italic, red } from "https://deno.land/std/fmt/colors.ts";

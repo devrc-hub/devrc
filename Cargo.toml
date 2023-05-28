@@ -1,11 +1,23 @@
 [workspace]
-
+resolver="2"
 members = [
     "cli",
-    "plugins"
+    "plugins",
+    "core"
 ]
 
-resolver="2"
+default-members = ["cli", "core", "plugins"]
+
+# [workspace.package]
+# version = "0.4.0"
+# authors = ["Alex <hey.turbo.driver@gmail.com>"]
+# description = "devrc is an easy to use task runner tool on steroids for developers"
+# repository = "https://github.com/devrc-hub/devrc"
+# homepage = "https://github.com/devrc-hub/devrc"
+# license-file = "README.md"
+
+# [workspace.dependencies]
+
 
 [profile.dev]
 opt-level = 0

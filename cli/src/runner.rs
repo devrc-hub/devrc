@@ -1,9 +1,9 @@
 use std::{cell::RefCell, env, fs, io::Read, path::PathBuf};
 
+use devrc_core::{logging::LogLevel, workshop::Designer};
 use url::Url;
 
 use crate::{
-    devrc_log::LogLevel,
     devrcfile::Devrcfile,
     docs::DocHelper,
     errors::{DevrcError, DevrcResult},
@@ -21,7 +21,6 @@ use crate::{
         get_local_user_defined_devrc_file,
     },
     variables::RawVariables,
-    workshop::Designer,
 };
 
 use sha256::digest;
@@ -32,7 +31,9 @@ use std::io;
 
 const DEFAULT_MAX_NESTING_LEVEL: u32 = 10;
 
-#[derive(Debug, Clone)]
+use devrc_plugins::execution::ExecutionPluginManager;
+
+#[derive(Debug)]
 pub struct Runner {
     pub files: Vec<PathBuf>,
     use_global: bool,
@@ -54,6 +55,8 @@ pub struct Runner {
     pub registry: Registry,
 
     pub max_nesting_level: u32,
+
+    pub execution_plugin_registry: Rc<RefCell<ExecutionPluginManager>>,
 }
 
 impl Runner {
@@ -63,12 +66,16 @@ impl Runner {
             name: "devrcfile".to_string(),
             ..Default::default()
         }));
+        let plugin_manager = Rc::new(RefCell::new(ExecutionPluginManager::new()));
+        let devrcfile = Devrcfile::with_scope(Rc::clone(&scope))
+            .with_execution_plugin_manager(Rc::clone(&plugin_manager));
+
         Runner {
             files,
             use_global: false,
             dry_run: false,
             rest: vec![],
-            devrc: Devrcfile::with_scope(Rc::clone(&scope)),
+            devrc: devrcfile,
             global_loaded: false,
             loaded_locations: vec![],
             log_level: Some(LogLevel::Info),
@@ -76,6 +83,7 @@ impl Runner {
             global_scope: scope,
             registry: Registry::default(),
             max_nesting_level: DEFAULT_MAX_NESTING_LEVEL,
+            execution_plugin_registry: plugin_manager,
         }
     }
 
@@ -142,6 +150,29 @@ impl Runner {
 
         if let Some(level) = &self.log_level {
             self.devrc.setup_log_level(level.clone())?;
+        }
+
+        // Init plugins
+        self.load_plugins()?;
+
+        Ok(())
+    }
+
+    pub fn load_plugins(&mut self) -> DevrcResult<()> {
+        let mut plugins_registry = (*self.execution_plugin_registry)
+            .try_borrow_mut()
+            .map_err(|_| DevrcError::RuntimeError)?;
+
+        plugins_registry.setup_logger(self.get_logger());
+
+        for (name, path) in self.devrc.config.plugins.clone().into_iter() {
+            let abs_path = utils::get_absolute_path(&path, None)?;
+            unsafe {
+                if !abs_path.exists() {
+                    return Err(DevrcError::PluginFileNotExists(abs_path));
+                }
+                plugins_registry.load_plugin(&name, abs_path.as_os_str(), self.get_logger())?;
+            }
         }
         Ok(())
     }

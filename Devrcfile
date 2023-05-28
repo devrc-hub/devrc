@@ -64,4 +64,10 @@ check:
 
 install:
   desc: "Install development version"
-  exec: cargo install --all-features --path ./
+  exec: cargo install --bins devrc --all-features --path ./cli
+
+
+format:
+  desc: "Apply code formatter"
+  exec: |
+    cargo +nightly fmt --all --
