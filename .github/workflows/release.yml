@@ -20,12 +20,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - target: x86_64-unknown-linux-musl
-          #   cross: false
-          - target: x86_64-unknown-linux-gnu
-            cross: false
-            feature: --all-features
-            name: with-deno
           - target: x86_64-unknown-linux-gnu
             cross: false
             feature: ""
@@ -36,9 +30,11 @@ jobs:
             name: base
 
     env:
+      PKG_CONFIG_PATH: /usr/lib/x86_64-linux-gnu/pkgconfig
       OPENSSL_STATIC: 1
       OPENSSL_DIR: /musl
       PKG_CONFIG_ALLOW_CROSS: 1
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -65,6 +61,25 @@ jobs:
           make -j$(nproc)
           make install
 
+      - name: Prepare openssl for musl target
+        run: |
+          sudo ln -s /usr/include/x86_64-linux-gnu/asm /usr/include/x86_64-linux-musl/asm
+          sudo ln -s /usr/include/asm-generic /usr/include/x86_64-linux-musl/asm-generic
+          sudo ln -s /usr/include/linux /usr/include/x86_64-linux-musl/linux
+
+          sudo mkdir /musl
+
+          wget https://github.com/openssl/openssl/archive/OpenSSL_1_1_1f.tar.gz
+          tar zxvf OpenSSL_1_1_1f.tar.gz
+          cd openssl-OpenSSL_1_1_1f/
+          sudo chmod -R 777 /musl
+
+          CC="musl-gcc -fPIE -pie" ./Configure no-shared no-async --prefix=/musl --openssldir=/musl/ssl linux-x86_64
+          make depend
+          make -j$(nproc)
+          make install
+
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -88,7 +103,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: cargo-deb cargo-rpm
+          args: cargo-deb cargo-generate-rpm
 
       - name: Build binary for target ${{ matrix.target }}
         uses: actions-rs/cargo@v1
@@ -109,19 +124,23 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: deb
+          args: -p devrc
 
       - name: Create deb package
         uses: actions-rs/cargo@v1
         if: ${{ matrix.target != 'x86_64-unknown-linux-musl' }}
         with:
           command: deb
-          args: --variant deno
+          args: -p devrc
+
+      - name: Strip symbols
+          strip -s target/release/devrc
 
       - name: Create rpm package
         uses: actions-rs/cargo@v1
         with:
-          command: rpm
-          args: build
+          command: generate-rpm
+          args: -p cli
 
       - name: Generate Changelog ${{ matrix.target }}
         run: echo "# Good things have arrived 1" > ${{ github.workflow }}-CHANGELOG.txt
@@ -152,10 +171,6 @@ jobs:
             cross: false
             feature: ""
             name: base
-          - target: x86_64-apple-darwin
-            cross: false
-            feature: "--all-features"
-            name: with-deno
 
     steps:
       - name: Checkout repository
@@ -222,10 +237,14 @@ jobs:
       - name: Build package and publish with --dry-run argument
         if: startsWith(github.ref, 'refs/tags/test-release-')
         run: |
-          cargo publish --dry-run --verbose
+          cargo publish --dry-run --verbose -p devrc-core
+          cargo publish --dry-run --verbose -p devrc-plugins
+          cargo publish --dry-run --verbose -p devrc
 
 
       - name: Build package and publish the crate to crates.io
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          cargo publish --token=${{ secrets.CRATES_TOKEN }}
+          cargo publish --token=${{ secrets.CRATES_TOKEN }} -p devrc-core
+          cargo publish --token=${{ secrets.CRATES_TOKEN }} -p devrc-plugins
+          cargo publish --token=${{ secrets.CRATES_TOKEN }} -p devrc

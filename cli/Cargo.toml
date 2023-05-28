@@ -3,6 +3,8 @@ name = "devrc"
 edition = "2018"
 version = "0.4.0"
 
+license = "MIT"
+
 description = "devrc is an easy to use task runner tool on steroids for developers"
 keywords = ["tasks", "automation", "makefile", "command-line"]
 categories = ["command-line-utilities",  "development-tools", "config"]
@@ -83,11 +85,17 @@ assets = [
 changelog = "../CHANGELOG.md"
 default-features = false
 
-[package.metadata.rpm]
+[package.metadata.generate-rpm]
 package = "devrc"
 
-[package.metadata.rpm.cargo]
+assets = [
+    { source = "../target/release/devrc", dest = "/usr/bin/devrc", mode = "0755" },
+    { source = "../LICENSE", dest = "/usr/share/doc/devrc/LICENSE", doc = true, mode = "0644" },
+    { source = "../README.md", dest = "/usr/share/doc/devrc/README.md", doc = true, mode = "0644" }
+]
+
+[package.metadata.generate-rpm.cargo]
 buildflags = ["--release"]
 
-[package.metadata.rpm.targets]
+[package.metadata.generate-rpm.targets]
 devrc = { path = "/usr/bin/devrc" }

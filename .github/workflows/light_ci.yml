@@ -219,7 +219,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: --debug --all-features --path ./
+          args: --debug --all-features --path ./cli
 
       - name: Run xtests
         run: |

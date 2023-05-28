@@ -137,7 +137,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: --all-features --path ./
+          args: --all-features --path ./cli
 
       - name: Run xtests
         run: |
@@ -244,7 +244,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: --all-features --path ./
+          args: --all-features --path ./cli
 
       - name: Run xtests
         run: |
