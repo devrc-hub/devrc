@@ -134,7 +134,8 @@ jobs:
           args: -p devrc
 
       - name: Strip symbols
-          strip -s target/release/devrc
+        run: |
+            strip -s target/release/devrc
 
       - name: Create rpm package
         uses: actions-rs/cargo@v1
