@@ -2,17 +2,18 @@
 devrc_config:
   interpreter:
     runtime: deno-runtime
-    permissions:
-      # - disable-all
-      # - allow-all
-      - allow-env: []
-      - allow-hrtime
-      - allow-net: [google.com, httpbin.org]
-      - allow-ffi: []
-      - allow-read: ["/tmp"]
-      - allow-run: []
-      - allow-write-all
-      - allow-write: ["/tmp"]
+    options:
+      permissions:
+        # - disable-all
+        # - allow-all
+        - allow-env: []
+        - allow-hrtime
+        - allow-net: [google.com, httpbin.org]
+        - allow-ffi: []
+        - allow-read: ["/tmp"]
+        - allow-run: []
+        - allow-write-all
+        - allow-write: ["/tmp"]
     # permissions:
     #   # - disable-all
     #   # - allow-all
@@ -24,6 +25,9 @@ devrc_config:
     #   - allow-run
     #   - allow-write-all
     #   - allow-write: ["/tmp"]
+
+  plugins:
+    deno-runtime: ../devrc-plugin-deno/target/debug/libdevrc_plugin_deno.dylib
 
 # Variant 2
 # devrc_config:
@@ -57,8 +61,9 @@ demo_3 name="Alex":
   desc: "Deno runtime example"
   shell:
     runtime: deno-runtime
-    permissions:
-      - allow-all
+    options:
+      permissions:
+        - allow-all
 
   exec: |
     let name = "{{ name }}";

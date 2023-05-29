@@ -34,6 +34,7 @@ jobs:
       - run: cargo fmt --all -- --check
 
   clippy:
+    name: "Lint code with clippy on OS=${{ matrix.os }} rust=${{ matrix.rust }}"
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -136,7 +137,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: --all-features --path ./
+          args: --all-features --path ./cli
 
       - name: Run xtests
         run: |
@@ -200,7 +201,7 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
         env:
           LINK: https://github.com/mozilla/sccache/releases/download
-          SCCACHE_VERSION: 0.2.15
+          SCCACHE_VERSION: 0.5.0
         run: |
           SCCACHE_FILE=sccache-v$SCCACHE_VERSION-x86_64-unknown-linux-musl
           mkdir -p $HOME/.local/bin
@@ -243,7 +244,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: --all-features --path ./
+          args: --all-features --path ./cli
 
       - name: Run xtests
         run: |

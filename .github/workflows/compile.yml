@@ -41,10 +41,7 @@ jobs:
     env:
       SCCACHE_DIR: /home/runner/.cache/sccache
       PKG_CONFIG_PATH: /usr/lib/x86_64-linux-gnu/pkgconfig
-
       OPENSSL_STATIC: 1
-      # OPENSSL_LIB_DIR: /usr/lib/x86_64-linux-gnu
-      # OPENSSL_INCLUDE_DIR: /usr/include/openssl
       OPENSSL_DIR: /musl
       PKG_CONFIG_ALLOW_CROSS: 1
     steps:
@@ -92,7 +89,7 @@ jobs:
       - name: Install sccache via precompiled build
         env:
           LINK: https://github.com/mozilla/sccache/releases/download
-          SCCACHE_VERSION: 0.2.15
+          SCCACHE_VERSION: 0.5.0
         run: |
           SCCACHE_FILE=sccache-v$SCCACHE_VERSION-x86_64-unknown-linux-musl
           mkdir -p $HOME/.local/bin
@@ -122,7 +119,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: cargo-deb cargo-rpm
+          args: cargo-deb cargo-generate-rpm
 
       - name: Build devrc
         uses: actions-rs/cargo@v1
@@ -134,18 +131,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: deb
-
-      - name: Create deb package
-        uses: actions-rs/cargo@v1
-        with:
-          command: deb
-          args: --variant deno
+          args: -p devrc
 
       - name: Create rpm package
         uses: actions-rs/cargo@v1
         with:
-          command: rpm
-          args: build
+          command: generate-rpm
+          args: -p cli
 
       - name: Show sccache stats
         run: |

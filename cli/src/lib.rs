@@ -20,10 +20,6 @@ pub mod cli;
 pub mod common;
 pub mod config;
 pub mod de;
-
-#[cfg(feature = "deno")]
-pub mod denoland;
-pub mod devrc_log;
 pub mod devrcfile;
 pub mod docs;
 pub mod env_file;
@@ -47,4 +43,3 @@ pub mod utils;
 pub mod variables;
 pub mod variables_parser;
 pub mod version;
-pub mod workshop;

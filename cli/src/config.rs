@@ -1,6 +1,7 @@
-use crate::{de::deserialize_some, devrc_log::LogLevel, interpreter::InterpreterKind};
+use crate::{de::deserialize_some, interpreter::InterpreterKind};
 use std::{env, fmt::Debug, path::PathBuf};
 
+use devrc_core::logging::LogLevel;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone, Default)]
@@ -29,6 +30,9 @@ pub struct RawConfig {
 
     #[serde(default, deserialize_with = "deserialize_some")]
     pub dry_run: Option<Option<bool>>,
+
+    #[serde(default, deserialize_with = "deserialize_some")]
+    pub plugins: Option<indexmap::IndexMap<String, PathBuf>>,
 }
 
 #[derive(Debug, Clone)]
@@ -38,6 +42,7 @@ pub struct Config {
     pub log_level: LogLevel,
     pub dry_run: bool,
     pub default: Vec<String>,
+    pub plugins: indexmap::IndexMap<String, PathBuf>,
 }
 
 impl Default for Config {
@@ -48,6 +53,7 @@ impl Default for Config {
             interpreter: InterpreterKind::default(),
             log_level: LogLevel::Info,
             default: vec![],
+            plugins: indexmap::IndexMap::new(),
         }
     }
 }

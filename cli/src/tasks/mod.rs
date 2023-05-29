@@ -1,5 +1,6 @@
 use std::{cell::RefCell, convert::TryFrom, fmt, marker::PhantomData};
 
+use devrc_core::workshop::Designer;
 use indexmap::IndexMap;
 
 use serde::{Deserialize, Deserializer};
@@ -10,7 +11,6 @@ use crate::{
     config::Config,
     errors::{DevrcError, DevrcResult},
     scope::Scope,
-    workshop::Designer,
 };
 use std::rc::Rc;
 
@@ -29,6 +29,8 @@ use self::{
     complex::ComplexCommand, params::ParamValue, result::TaskResult, subtask_call::SubtaskCall,
 };
 use crate::tasks::arguments::TaskArguments;
+
+use devrc_plugins::execution::ExecutionPluginManager;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct FileInclude {
@@ -110,6 +112,7 @@ impl TaskKind {
     pub fn perform(
         &self,
         name: &str,
+        execution_plugins_registry: Rc<RefCell<ExecutionPluginManager>>,
         parent_scope: Rc<RefCell<Scope>>,
         args: &TaskArguments,
         config: &Config,
@@ -121,12 +124,22 @@ impl TaskKind {
         );
         let result = match self {
             TaskKind::Empty => return Err(DevrcError::NotImplemented),
-            TaskKind::Command(command) => {
-                ComplexCommand::from(command).perform(name, parent_scope, args, config, designer)?
-            }
-            TaskKind::ComplexCommand(complex_command) => {
-                complex_command.perform(name, parent_scope, args, config, designer)?
-            }
+            TaskKind::Command(command) => ComplexCommand::from(command).perform(
+                name,
+                execution_plugins_registry,
+                parent_scope,
+                args,
+                config,
+                designer,
+            )?,
+            TaskKind::ComplexCommand(complex_command) => complex_command.perform(
+                name,
+                execution_plugins_registry,
+                parent_scope,
+                args,
+                config,
+                designer,
+            )?,
             TaskKind::Commands(_value) => return Err(DevrcError::NotImplemented),
             TaskKind::Include(_value) => {
                 return Err(DevrcError::NotImplemented);

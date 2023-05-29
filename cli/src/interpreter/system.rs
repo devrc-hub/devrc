@@ -1,9 +1,5 @@
-use std::{convert::TryFrom, fmt, fmt::Display, marker::PhantomData};
-
 use crate::{config::Config, errors::DevrcResult, execute::CommandExt, scope::Scope};
-
-#[cfg(feature = "deno")]
-use crate::denoland::execute_deno_code;
+use std::{convert::TryFrom, fmt, fmt::Display, marker::PhantomData};
 
 use std::os::unix::{fs::PermissionsExt, process::ExitStatusExt};
 
@@ -28,132 +24,6 @@ pub const DEFAULT_SHELL_ARG: &str = "-c";
 
 pub fn get_default_shell() -> String {
     DEFAULT_SHELL.to_string()
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(untagged)]
-pub enum DenoPermissionParamValue {
-    All,
-    String(String),
-    List(Vec<String>),
-}
-
-impl Default for DenoPermissionParamValue {
-    fn default() -> Self {
-        Self::All
-    }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-// #[serde(untagged)]
-pub enum DenoPermission {
-    #[serde(rename = "disable-all")]
-    DisableAll,
-    #[serde(rename = "allow-all")]
-    AllowAll,
-    #[serde(rename = "allow-env")]
-    AllowEnv(Vec<String>),
-    #[serde(rename = "allow-hrtime")]
-    AllowHrtime,
-    #[serde(rename = "allow-ffi")]
-    AllowFFI(Vec<String>),
-    #[serde(rename = "allow-run")]
-    AllowRun(Vec<String>),
-
-    #[serde(rename = "allow-write-all")]
-    AllowWriteAll,
-    #[serde(rename = "allow-read-all")]
-    AllowReadAll,
-    #[serde(rename = "allow-net-all")]
-    AllowNetAll,
-
-    #[serde(rename = "allow-run-all")]
-    AllowRunAll,
-    #[serde(rename = "allow-ffi-all")]
-    AllowFFIAll,
-
-    #[serde(rename = "allow-net")]
-    AllowNet(Vec<String>),
-    #[serde(rename = "allow-read")]
-    AllowRead(Vec<String>),
-    #[serde(rename = "allow-write")]
-    AllowWrite(Vec<String>),
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub enum RuntimeName {
-    #[serde(rename = "deno-runtime")]
-    Deno,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct DenoRuntime {
-    pub permissions: Option<Vec<DenoPermission>>,
-    pub runtime: RuntimeName,
-    pub args: Option<Vec<String>>,
-}
-
-#[cfg(not(feature = "deno"))]
-pub fn execute_deno_code(
-    _code: &str,
-    _permissions: &Option<Vec<DenoPermission>>,
-) -> DevrcResult<i32> {
-    Err(DevrcError::DenoFeatureRequired)
-}
-
-impl DenoRuntime {
-    pub fn execute(&self, code: &str, _scope: &Scope, _config: &Config) -> DevrcResult<i32> {
-        match execute_deno_code(code, &self.permissions) {
-            Ok(exit_status) => {
-                if exit_status != 0 {
-                    // Raise runtime error
-                    Err(DevrcError::Code { code: exit_status })
-                } else {
-                    Ok(0)
-                }
-            }
-            Err(error) => Err(error),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(untagged)]
-pub enum InterpreterKind {
-    DenoRuntime(DenoRuntime),
-    Internal(SystemShell),
-}
-
-impl InterpreterKind {
-    pub fn execute(&self, code: &str, scope: &Scope, config: &Config) -> DevrcResult<i32> {
-        match self {
-            InterpreterKind::DenoRuntime(deno_interpreter) => {
-                deno_interpreter.execute(code, scope, config)
-            }
-            InterpreterKind::Internal(internal_shell) => {
-                internal_shell.execute(code, scope, config)
-            }
-        }
-    }
-}
-
-impl Default for InterpreterKind {
-    fn default() -> Self {
-        InterpreterKind::Internal(SystemShell::default())
-    }
-}
-
-impl Display for InterpreterKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            InterpreterKind::DenoRuntime(interpreter) => {
-                write!(f, "{:?}", interpreter)
-            }
-            InterpreterKind::Internal(interpreter) => {
-                write!(f, "{}", interpreter)
-            }
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -195,7 +65,7 @@ impl SystemShell {
 
     pub fn execute(&self, code: &str, scope: &Scope, config: &Config) -> DevrcResult<i32> {
         let mut command = Command::new(&self.interpreter);
-        command.export_scope(scope)?;
+        command.export_environment(&scope.environment)?;
 
         if let Some(value) = &config.current_dir {
             command.current_dir(value);
@@ -237,7 +107,7 @@ impl SystemShell {
 
         let mut command = Command::new(&script_path);
 
-        command.export_scope(scope)?;
+        command.export_environment(&scope.environment)?;
 
         if let Some(value) = &config.current_dir {
             command.current_dir(value);
@@ -282,37 +152,6 @@ impl Default for SystemShell {
 impl Display for SystemShell {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} {}", &self.interpreter, &self.args.join(" "))
-    }
-}
-
-pub trait ShebangDetector {
-    fn get_interpreter_from_shebang(&self) -> Option<SystemShell>;
-}
-
-impl ShebangDetector for String {
-    fn get_interpreter_from_shebang(&self) -> Option<SystemShell> {
-        let first_line = self.lines().next().unwrap_or("");
-
-        if !first_line.starts_with("#!") {
-            return None;
-        }
-
-        let mut parts = first_line[2..].splitn(2, |c| c == ' ' || c == '\t');
-
-        if let Some(value) = parts.next() {
-            let mut args = Vec::new();
-
-            if let Some(value) = parts.next().map(|arg| arg.to_owned()) {
-                args.push(value)
-            };
-
-            Some(SystemShell {
-                interpreter: value.to_owned(),
-                args,
-            })
-        } else {
-            None
-        }
     }
 }
 
@@ -403,11 +242,4 @@ fn set_execute_permission(path: &Path) -> DevrcResult<()> {
 #[allow(dead_code)]
 fn signal_from_exit_status(exit_status: process::ExitStatus) -> Option<i32> {
     exit_status.signal()
-}
-
-#[cfg(test)]
-mod tests {
-
-    #[test]
-    fn test_name() {}
 }

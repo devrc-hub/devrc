@@ -1,4 +1,4 @@
-use crate::{devrc_log::LogLevel, workshop::Designer};
+use devrc_core::{logging::LogLevel, workshop::Designer};
 
 #[derive(Debug, Clone)]
 pub struct LoadingConfig {

@@ -1,0 +1,66 @@
+devrc_config:
+  interpreter:
+    runtime: system-shell
+    args: ["-c"]
+    options:
+      shell: bash
+      args: ["-c"]
+      option-0:
+      option-1: option-1-value
+      option-2:
+        key-1: value-1
+        key-2:
+           - item1
+           - item2
+
+  plugins:
+    deno: ../devrc-plugin-deno/target/debug/libdevrc_plugin_deno.dylib
+    system-shell: ../devrc-plugin-shell/target/debug/libdevrc_plugin_system_shell.dylib
+
+task-1:
+  desc: "example-1 task-2 description"
+  run: |
+    echo "hello world"
+
+task-2:
+  desc: "Run command in system shell plugin"
+  run: |
+    echo "Hello world"
+
+  interpreter:
+    runtime: system-shell
+    args: ["-c"]
+    options:
+      shell: "sh"
+
+task-3:
+  desc: "example-plugins task-3 description"
+  run:
+    - |
+      echo "Hello world"
+    - |
+      echo "Hello world 2"
+
+  interpreter: bash -c
+
+task-4:
+  desc: "execute by deno plugin"
+  run: |
+      console.log("Hello from deno!");
+
+      alert("Attention!");
+
+  interpreter:
+    runtime: deno
+    options:
+      permissions:
+        # - disable-all
+        # - allow-all
+        - allow-env: []
+        - allow-hrtime
+        - allow-net: [google.com, httpbin.org]
+        - allow-ffi: []
+        - allow-read: ["/tmp"]
+        - allow-run: []
+        - allow-write-all
+        - allow-write: ["/tmp"]

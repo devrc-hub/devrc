@@ -1,0 +1,40 @@
+[package]
+name = "devrc-core"
+edition = "2018"
+version = "0.4.0"
+description = "Core devrc components"
+
+keywords = ["tasks", "automation", "makefile", "command-line"]
+categories = ["command-line-utilities",  "development-tools", "config"]
+readme = "README.md"
+
+authors = ["Alex <hey.turbo.driver@gmail.com>"]
+repository = "https://github.com/devrc-hub/devrc"
+homepage = "https://github.com/devrc-hub/devrc"
+license-file = "../LICENSE"
+
+include = ["**/*", "Cargo.toml", "LICENSE", "README.md", "../CHANGELOG.md", "./build.rs"]
+
+build = "./build.rs"
+
+[dependencies]
+env_logger = "0.9.0"
+log = "0.4.17"
+libloading = "0.8.0"
+anyhow = "1.0.62"
+indexmap = { version="1.9.1", features = ["serde-1"] }
+serde = { version = "1.0.141", features = ["derive"] }
+ansi_term = "0.12.1"
+
+[build-dependencies]
+datetime = { version = "0.5.2", default_features = false }
+
+
+[lib]
+name = "devrc_core"
+path = "src/lib.rs"
+doc = false
+
+
+[badges]
+maintenance = { status = "actively-developed" }

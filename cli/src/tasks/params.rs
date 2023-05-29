@@ -1,11 +1,9 @@
 use std::{cmp::Ordering, convert::TryFrom};
 
+use devrc_core::workshop::Designer;
 use serde::Deserialize;
 
-use crate::{
-    errors::{DevrcError, DevrcResult},
-    workshop::Designer,
-};
+use crate::errors::{DevrcError, DevrcResult};
 
 use super::params_parser::parse_params_string;
 
