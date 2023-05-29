@@ -1,7 +1,7 @@
 [package]
 name = "devrc"
 edition = "2018"
-version = "0.4.0"
+version = "0.5.0"
 
 license = "MIT"
 
@@ -13,7 +13,6 @@ readme = "README.md"
 authors = ["Alex <hey.turbo.driver@gmail.com>"]
 repository = "https://github.com/devrc-hub/devrc"
 homepage = "https://github.com/devrc-hub/devrc"
-license-file = "../LICENSE"
 
 
 include = ["src/**/*", "Cargo.toml", "../LICENSE", "README.md", "../CHANGELOG.md", "./build.rs"]
@@ -21,13 +20,12 @@ include = ["src/**/*", "Cargo.toml", "../LICENSE", "README.md", "../CHANGELOG.md
 build = "build.rs"
 
 [dependencies]
-env_logger = "0.9.0"
-log = "0.4.17"
-serde = { version = "1.0.141", features = ["derive"] }
+env_logger = "0.10.0"
+log = "0.4.18"
+serde = { version = "1.0.163", features = ["derive"] }
 serde_yaml = "0.9.9"
 structopt = "0.3.26"
 lazy_static = "1.4.0"
-chrono = "0.4.19"
 
 # yaml-merge-keys = "0.4.1"
 
@@ -40,11 +38,11 @@ reqwest = { version = "0.11.17", features = ["blocking", "json"] }
 indexmap = { version="1.9.1", features = ["serde-1"] }
 ansi_term = "0.12.1"
 dotenvy = "0.15.7"
-tera = "1.17.0"
+tera = "1.18.1"
 unicode-width = "0.1.9"
 atty = "0.2.14"
-tempfile = "3.3.0"
-ctrlc = "3.2.3"
+tempfile = "3.5.0"
+ctrlc = "3.3.1"
 # For remote command execution
 # ssh2 = "0.9.1"
 
@@ -53,11 +51,8 @@ url = "2.3.1"
 
 anyhow = "1.0.62"
 
-tokio = { version = "1.19.2", features = ["full"]}
-tokio-rustls = {version = "0.23.4"}
-
-devrc-plugins = { path = "../plugins", version = "0.4.0"}
-devrc-core = { path = "../core", version = "0.4.0"}
+devrc-plugins = { path = "../plugins", version = "0.5.0"}
+devrc-core = { path = "../core", version = "0.5.0"}
 
 [build-dependencies]
 datetime = { version = "0.5.2", default_features = false }
