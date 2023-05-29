@@ -518,7 +518,7 @@ devrc_config:
 
 
 More examples can be found [here](https://github.com/devrc-hub/devrc/blob/master/examples/example_plugins.yml).
-
+An example plugin can be found in the [repository](https://github.com/devrc-hub/devrc-plugin-system-shell).
 
 
 ### Embedded deno runtime
