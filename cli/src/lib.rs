@@ -31,6 +31,7 @@ pub mod include;
 pub mod interpreter;
 pub mod interrupt;
 pub mod loader;
+pub mod raw;
 pub mod raw_devrcfile;
 pub mod registry;
 pub mod resolver;

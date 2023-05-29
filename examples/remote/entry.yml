@@ -24,8 +24,8 @@ task-1:
 task-2:
   desc: "Call subtasks and print message"
   subtasks:
-    - name: remote:task-1
-    - name: remote:task-2
+    - name: remote:task-3
+    - name: remote:task-4
       variables:
         var_2: "var_2 redefined at task-2"
   exec: |

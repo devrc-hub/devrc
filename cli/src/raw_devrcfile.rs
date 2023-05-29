@@ -1,9 +1,9 @@
 use crate::{
-    config::RawConfig,
     environment::Environment,
     errors::{DevrcError, DevrcResult},
     include::Include,
     loader::LoadingConfig,
+    raw::config::RawConfig,
     resolver::Location,
     tasks::Task,
 };

@@ -1,9 +1,10 @@
 use std::{cell::RefCell, cmp, rc::Rc};
 
 use crate::{
-    config::{Config, DefaultOption, RawConfig},
+    config::Config,
     environment::{Environment, RawEnvironment},
     errors::{DevrcError, DevrcResult},
+    raw::config::{DefaultOption, RawConfig},
     raw_devrcfile::{Kind, RawDevrcfile},
     scope::{child_scope, Scope},
     tasks::{
@@ -13,7 +14,7 @@ use crate::{
     variables::RawVariables,
 };
 
-use devrc_core::{logging::LogLevel, workshop::Designer};
+use devrc_core::workshop::Designer;
 use unicode_width::UnicodeWidthStr;
 
 use devrc_plugins::execution::ExecutionPluginManager;
@@ -90,8 +91,8 @@ impl Devrcfile {
 
             if let Some(log_level) = config.log_level {
                 self.config.log_level = match log_level {
-                    Some(log_level) => log_level,
-                    None => LogLevel::Info,
+                    Some(log_level) => log_level.into(),
+                    None => devrc_core::logging::LogLevel::Info,
                 };
             }
 
@@ -125,7 +126,7 @@ impl Devrcfile {
         Ok(())
     }
 
-    pub fn setup_log_level(&mut self, level: LogLevel) -> DevrcResult<()> {
+    pub fn setup_log_level(&mut self, level: devrc_core::logging::LogLevel) -> DevrcResult<()> {
         self.config.log_level = level;
         Ok(())
     }
