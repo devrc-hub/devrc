@@ -1,39 +1,7 @@
-use crate::{de::deserialize_some, interpreter::InterpreterKind};
+use crate::interpreter::InterpreterKind;
 use std::{env, fmt::Debug, path::PathBuf};
 
 use devrc_core::logging::LogLevel;
-use serde::Deserialize;
-
-#[derive(Debug, Deserialize, Clone, Default)]
-#[serde(untagged)]
-pub enum DefaultOption {
-    #[default]
-    Empty,
-    String(String),
-    List(Vec<String>),
-}
-
-#[derive(Debug, Deserialize, Clone, Default)]
-pub struct RawConfig {
-    #[serde(default, deserialize_with = "deserialize_some")]
-    pub default: Option<DefaultOption>,
-
-    // #[serde(default = "default_shell")]
-    #[serde(default, deserialize_with = "deserialize_some", alias = "shell")]
-    pub interpreter: Option<Option<InterpreterKind>>,
-
-    #[serde(default, deserialize_with = "deserialize_some")]
-    pub log_level: Option<Option<LogLevel>>,
-
-    // #[serde(default = "default_global")]
-    pub global: Option<bool>,
-
-    #[serde(default, deserialize_with = "deserialize_some")]
-    pub dry_run: Option<Option<bool>>,
-
-    #[serde(default, deserialize_with = "deserialize_some")]
-    pub plugins: Option<indexmap::IndexMap<String, PathBuf>>,
-}
 
 #[derive(Debug, Clone)]
 pub struct Config {

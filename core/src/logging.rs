@@ -1,20 +1,11 @@
-use serde::Deserialize;
-
 use crate::workshop::Designer;
 
-#[derive(Debug, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum LogLevel {
     #[default]
-    #[serde(rename = "off")]
     Off = 0, // Quiet mode
-
-    #[serde(rename = "error")]
     Error = 1,
-
-    #[serde(rename = "info")]
-    Info = 2, // Show tasks commands
-
-    #[serde(rename = "debug")]
+    Info = 2,  // Show tasks commands
     Debug = 3, // Show info messages such `==> Running task`
 }
 
