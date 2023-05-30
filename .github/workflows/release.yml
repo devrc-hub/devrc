@@ -228,6 +228,6 @@ jobs:
       - name: Build package and publish the crate to crates.io
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          cargo publish --token=${{ secrets.CRATES_TOKEN }} -p devrc-core
-          cargo publish --token=${{ secrets.CRATES_TOKEN }} -p devrc-plugins
+          cargo publish --token=${{ secrets.CRATES_TOKEN }} -p devrc-core ||  true
+          cargo publish --token=${{ secrets.CRATES_TOKEN }} -p devrc-plugins || true
           cargo publish --token=${{ secrets.CRATES_TOKEN }} -p devrc
