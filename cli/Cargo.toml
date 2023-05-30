@@ -8,14 +8,14 @@ license = "MIT"
 description = "devrc is an easy to use task runner tool on steroids for developers"
 keywords = ["tasks", "automation", "makefile", "command-line"]
 categories = ["command-line-utilities",  "development-tools", "config"]
-readme = "README.md"
+readme = "../README.md"
 
 authors = ["Alex <hey.turbo.driver@gmail.com>"]
 repository = "https://github.com/devrc-hub/devrc"
 homepage = "https://github.com/devrc-hub/devrc"
 
 
-include = ["src/**/*", "Cargo.toml", "../LICENSE", "README.md", "../CHANGELOG.md", "./build.rs"]
+include = ["src/**/*", "Cargo.toml", "../LICENSE", "../README.md", "../CHANGELOG.md", "./build.rs"]
 
 [dependencies]
 env_logger = "0.10.0"
