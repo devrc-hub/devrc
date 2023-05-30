@@ -263,7 +263,7 @@ dependencies = [
 
 [[package]]
 name = "devrc-core"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "ansi_term",
  "anyhow",
@@ -274,7 +274,7 @@ dependencies = [
 
 [[package]]
 name = "devrc-plugins"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "anyhow",
  "datetime",
