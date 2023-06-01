@@ -1,5 +1,7 @@
 use std::io::Error as IoError;
 
+use crate::options::PluginOption;
+
 pub type DevrcPluginResult<T> = Result<T, DevrcPluginError>;
 
 #[derive(Debug)]
@@ -10,6 +12,7 @@ pub enum DevrcPluginError {
     Signal,
     IoError(IoError),
     AnyhowError(anyhow::Error),
+    InvalidOption(String, PluginOption),
 }
 
 impl From<libloading::Error> for DevrcPluginError {
