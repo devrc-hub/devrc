@@ -1,7 +1,7 @@
 [package]
 name = "devrc"
 edition = "2018"
-version = "0.5.3"
+version = "0.5.4"
 
 license = "MIT"
 
@@ -49,8 +49,8 @@ url = "2.3.1"
 
 anyhow = "1.0.62"
 
-devrc-plugins = { path = "../plugins", version = "0.5.3"}
-devrc-core = { path = "../core", version = "0.5.3"}
+devrc-plugins = { path = "../plugins", version = "0.5.4"}
+devrc-core = { path = "../core", version = "0.5.4"}
 
 [build-dependencies]
 datetime = { version = "0.5.2", default_features = false }
