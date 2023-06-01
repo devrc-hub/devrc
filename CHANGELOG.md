@@ -26,6 +26,12 @@ _Other cases_
 
 ---
 
+## [v0.5.3](https://github.com/devrc-hub/devrc/releases/tag/v0.5.0) - 2023-06-01
+
+### Bugfixes
+Added substitution of ~/ with the home directory.
+
+
 ## [v0.5.0](https://github.com/devrc-hub/devrc/releases/tag/v0.5.0) - 2023-05-29
 
 ### Changes
