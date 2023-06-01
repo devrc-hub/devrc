@@ -6,7 +6,7 @@ use std::{
     fmt,
     fmt::{Display, Formatter},
     io::Error as IoError,
-    path::PathBuf,
+    path::{PathBuf, StripPrefixError},
 };
 
 use tera::Error as TeraError;
@@ -80,6 +80,7 @@ pub enum DevrcError {
         content_checksum: String,
     },
     AnyhowError(anyhow::Error),
+    HomeDirNotFound,
 }
 
 impl Display for DevrcError {
@@ -143,5 +144,11 @@ impl From<anyhow::Error> for DevrcError {
 impl From<DevrcPluginError> for DevrcError {
     fn from(value: DevrcPluginError) -> Self {
         DevrcError::PluginError(value)
+    }
+}
+
+impl From<StripPrefixError> for DevrcError {
+    fn from(_: StripPrefixError) -> Self {
+        DevrcError::RuntimeError
     }
 }

@@ -28,6 +28,16 @@ pub fn get_absolute_path(file: &PathBuf, base: Option<&PathBuf>) -> DevrcResult<
         return Ok(file.to_path_buf());
     }
 
+    if file.starts_with("~/") {
+        return match dirs_next::home_dir() {
+            Some(home) => {
+                let right_part = file.strip_prefix("~/")?;
+                Ok(Path::new(&home).join(right_part))
+            }
+            None => Err(DevrcError::HomeDirNotFound),
+        };
+    }
+
     let file = if let Some(value) = base {
         let mut new_path = value.clone();
         if new_path.is_file() {
