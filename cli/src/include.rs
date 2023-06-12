@@ -1,8 +1,12 @@
-use crate::de::deserialize_some;
+use crate::{de::deserialize_some, raw::auth::Auth};
 use serde::Deserialize;
 use std::path::PathBuf;
 
 use crate::resolver::PathResolve;
+
+pub(crate) fn get_default_skip_on_error() -> bool {
+    false
+}
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct StringFileInclude(pub String);
@@ -23,6 +27,15 @@ pub struct UrlInclude {
     pub url: String,
 
     pub checksum: String,
+
+    #[serde(default)]
+    pub headers: indexmap::IndexMap<String, String>,
+
+    #[serde(default = "get_default_skip_on_error")]
+    pub ignore_errors: bool,
+
+    #[serde(default)]
+    pub auth: Auth,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]

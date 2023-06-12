@@ -1,16 +1,19 @@
-use std::{cell::RefCell, env, fs, io::Read, path::PathBuf};
+use std::{cell::RefCell, convert::TryFrom, env, fs, io::Read, path::PathBuf};
 
 use devrc_core::{logging::LogLevel, workshop::Designer};
+use indexmap::IndexMap;
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use url::Url;
 
 use crate::{
+    auth::Auth,
     devrcfile::Devrcfile,
     docs::DocHelper,
     errors::{DevrcError, DevrcResult},
     include::{FileInclude, Include, UrlInclude},
     interrupt::setup_interrupt_handler,
     loader::LoadingConfig,
-    raw_devrcfile::{Kind, RawDevrcfile},
+    raw::devrcfile::{Kind, RawDevrcfile},
     registry::Registry,
     resolver::{Location, PathResolve},
     scope::Scope,
@@ -272,13 +275,55 @@ impl Runner {
         url: Url,
         loading_config: LoadingConfig,
         checksum: Option<&str>,
+        headers: indexmap::IndexMap<String, String>,
+        auth: Auth,
     ) -> DevrcResult<()> {
         self.devrc.config.log_level.debug(
             &format!("\n==> Loading URL: `{}` ...", &url),
             &self.designer.banner(),
         );
-        let location = Location::Url(url.clone());
-        match reqwest::blocking::get(url.as_str()) {
+        let location = Location::Remote {
+            url: url.clone(),
+            auth: auth.clone(),
+        };
+        let client = reqwest::blocking::Client::new();
+        let mut headers_map: HeaderMap = HeaderMap::new();
+
+        for (key, value) in headers {
+            headers_map.insert(
+                HeaderName::try_from(key.clone()).map_err(|_| {
+                    DevrcError::UrlImportHeadersError {
+                        name: key.clone(),
+                        value: value.clone(),
+                    }
+                })?,
+                HeaderValue::try_from(value.clone()).map_err(|_| {
+                    DevrcError::UrlImportHeadersError {
+                        name: key.clone(),
+                        value: value.clone(),
+                    }
+                })?,
+            );
+        }
+
+        if let Some((key, value)) = auth.get_header() {
+            headers_map.insert(
+                HeaderName::try_from(key.clone()).map_err(|_| {
+                    DevrcError::UrlImportHeadersError {
+                        name: key.clone(),
+                        value: value.clone(),
+                    }
+                })?,
+                HeaderValue::try_from(value.clone()).map_err(|_| {
+                    DevrcError::UrlImportHeadersError {
+                        name: key.clone(),
+                        value: value.clone(),
+                    }
+                })?,
+            );
+        }
+
+        match client.get(url.as_str()).headers(headers_map).send() {
             Ok(response) if response.status() == 200 => {
                 let content = response.text().map_err(|_| DevrcError::RuntimeError)?;
                 if let Some(control_checksum) = checksum {
@@ -308,7 +353,7 @@ impl Runner {
                 })
             }
             Err(error) => {
-                return Err(DevrcError::UrlImportError {
+                return Err(DevrcError::UrlImportRequestError {
                     url: url.as_str().to_string(),
                     inner: error,
                 })
@@ -323,87 +368,111 @@ impl Runner {
         config: LoadingConfig,
     ) -> DevrcResult<()> {
         for include in raw_devrcfile.include {
-            match include {
-                Include::Empty => {}
-                Include::File(FileInclude {
-                    file,
-                    path_resolve,
-                    checksum,
-                }) => {
-                    match source.clone() {
-                        Location::None => {
-                            let path = utils::get_absolute_path(&file.clone(), None)?;
-                            self.load_file(
-                                path.to_path_buf(),
-                                config.clone().child(),
-                                Kind::Include,
-                            )?;
-                        }
-                        Location::LocalFile(ref base) => {
-                            let path =
-                                utils::get_absolute_path(&file.clone(), Some(&base.clone()))?;
-                            self.load_file(
-                                path.to_path_buf(),
-                                config.clone().child(),
-                                Kind::Include,
-                            )?;
-                        }
-                        Location::Url(ref url) => {
-                            if file.is_absolute() {
-                                let loading_config =
-                                    config.clone().with_log_level(self.get_logger());
-                                self.load_file(file.to_path_buf(), loading_config, Kind::Include)?;
-                            } else {
-                                match path_resolve {
-                                    PathResolve::Relative => {
-                                        let path = file
-                                            .clone()
-                                            .into_os_string()
-                                            .into_string()
-                                            .map_err(|_| DevrcError::RuntimeError)?;
-                                        let include_url = url
-                                            .clone()
-                                            .join(&path)
-                                            .map_err(|_| DevrcError::RuntimeError)?;
+            match (include, source.clone()) {
+                (Include::Empty, _) => {}
+                (
+                    Include::File(FileInclude {
+                        file,
+                        path_resolve: _,
+                        checksum: _,
+                    }),
+                    Location::None | Location::StdIn,
+                ) => {
+                    let path = utils::get_absolute_path(&file.clone(), None)?;
+                    self.load_file(path.to_path_buf(), config.clone().child(), Kind::Include)?;
+                }
 
-                                        let loading_config = config
-                                            .clone()
-                                            .child()
-                                            .with_log_level(self.get_logger());
-                                        self.load_url(
-                                            include_url,
-                                            loading_config,
-                                            checksum.as_deref(),
-                                        )?;
-                                    }
-                                    PathResolve::Pwd => {
-                                        let path = utils::get_absolute_path(
-                                            &file.clone(),
-                                            env::current_dir().ok().as_ref(),
-                                        )?;
-                                        self.load_file(
-                                            path.to_path_buf(),
-                                            config.clone().child(),
-                                            Kind::Include,
-                                        )?;
-                                    }
-                                }
+                (
+                    Include::File(FileInclude {
+                        file,
+                        path_resolve: _,
+                        checksum: _,
+                    }),
+                    Location::LocalFile(ref base),
+                ) => {
+                    let path = utils::get_absolute_path(&file.clone(), Some(&base.clone()))?;
+                    self.load_file(path.to_path_buf(), config.clone().child(), Kind::Include)?;
+                }
+                (
+                    Include::File(FileInclude {
+                        file,
+                        path_resolve,
+                        checksum,
+                    }),
+                    Location::Remote { url, auth },
+                ) => {
+                    if file.is_absolute() {
+                        let loading_config = config.clone().with_log_level(self.get_logger());
+                        self.load_file(file.to_path_buf(), loading_config, Kind::Include)?;
+                    } else {
+                        match path_resolve {
+                            PathResolve::Relative => {
+                                let path = file
+                                    .clone()
+                                    .into_os_string()
+                                    .into_string()
+                                    .map_err(|_| DevrcError::RuntimeError)?;
+                                let include_url = url
+                                    .clone()
+                                    .join(&path)
+                                    .map_err(|_| DevrcError::RuntimeError)?;
+
+                                let loading_config =
+                                    config.clone().child().with_log_level(self.get_logger());
+                                self.load_url(
+                                    include_url,
+                                    loading_config,
+                                    checksum.as_deref(),
+                                    IndexMap::new(),
+                                    auth.clone(),
+                                )?;
+                            }
+                            PathResolve::Pwd => {
+                                let path = utils::get_absolute_path(
+                                    &file.clone(),
+                                    env::current_dir().ok().as_ref(),
+                                )?;
+                                self.load_file(
+                                    path.to_path_buf(),
+                                    config.clone().child(),
+                                    Kind::Include,
+                                )?;
                             }
                         }
-                        Location::StdIn => {
-                            let path = utils::get_absolute_path(&file.clone(), None)?;
-                            self.load_file(
-                                path.to_path_buf(),
-                                config.clone().child(),
-                                Kind::Include,
-                            )?;
-                        }
-                    };
+                    }
                 }
-                Include::Url(UrlInclude { url, checksum }) => {
+                (
+                    Include::Url(UrlInclude {
+                        url,
+                        checksum,
+                        headers,
+                        ignore_errors,
+                        auth: raw_auth,
+                    }),
+                    _,
+                ) => {
                     let parsed_url =
                         Url::parse(&url).map_err(|_| DevrcError::InvalidIncludeUrl(url))?;
-                    self.load_url(parsed_url, config.clone().child(), Some(&checksum))?;
+                    let auth = Auth::try_from(raw_auth)?;
+
+                    if ignore_errors {
+                        self.load_url(
+                            parsed_url,
+                            config.clone().child(),
+                            Some(&checksum),
+                            headers,
+                            auth,
+                        )
+                        .ok();
+                    } else {
+                        self.load_url(
+                            parsed_url,
+                            config.clone().child(),
+                            Some(&checksum),
+                            headers,
+                            auth,
+                        )?;
+                    }
                 }
             }
         }

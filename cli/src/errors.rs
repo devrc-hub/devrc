@@ -52,7 +52,6 @@ pub enum DevrcError {
     InvalidInterpreter,
     NestingLevelExceed,
     RuntimeError,
-
     EnvfileImportError {
         location: Location,
     },
@@ -69,11 +68,15 @@ pub enum DevrcError {
         url: String,
         status: StatusCode,
     },
-    UrlImportError {
+    UrlImportRequestError {
         url: String,
         inner: reqwest::Error,
     },
-
+    UrlImportError,
+    UrlImportHeadersError {
+        name: String,
+        value: String,
+    },
     UrlImportChecksumError {
         url: String,
         control_checksum: String,
@@ -81,6 +84,8 @@ pub enum DevrcError {
     },
     AnyhowError(anyhow::Error),
     HomeDirNotFound,
+    NetrcNotFound,
+    NetrcParsingError(netrc_rs::Error),
 }
 
 impl Display for DevrcError {
