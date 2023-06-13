@@ -12,7 +12,6 @@ const HOME_DEVRC_FILE_NAME: &str = ".devrc";
 
 /// User defined local devrcfile
 /// It overwrite project defined tasks and variables
-#[allow(dead_code)]
 const LOCAL_DEVRC_FILE_NAME: &str = "Devrcfile.local";
 
 pub fn get_env_dict() {
