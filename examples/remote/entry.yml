@@ -1,6 +1,8 @@
 devrc_config:
   shell: bash -c
 
+  cache_ttl: 5m
+
 
 include:
   - file: ./remote.yml
@@ -13,8 +15,8 @@ include:
     #   login: api-token
     #   type: basic
 
-  - url: "https://raw.githubusercontent.com/devrc-hub/devrc/master/examples/remote/remote.yml"
-    checksum: "f62e32efd445ae283a043e9822799d987787cdcfe9d66be75dd3ff6f09870ffe"
+  # - url: "https://raw.githubusercontent.com/devrc-hub/devrc/master/examples/remote/remote.yml"
+  #   checksum: "f62e32efd445ae283a043e9822799d987787cdcfe9d66be75dd3ff6f09870ffe"
     # auth:
     #   machine: api.gitlab.com
     #   login: PRIVATE-TOKEN

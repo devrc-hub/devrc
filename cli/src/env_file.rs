@@ -40,6 +40,9 @@ pub struct UrlImport {
     pub ignore_errors: bool,
 
     pub checksum: String,
+
+    #[serde(default)]
+    pub headers: indexmap::IndexMap<String, String>,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
@@ -129,6 +132,16 @@ impl LocalFileImport {
         match loading_location {
             Location::LocalFile(path) => fs::read_to_string(path).map_err(DevrcError::IoError),
             Location::Remote { url, auth } => {
+                if let Some(cache_ttl) = config.cache_ttl {
+                    if let Some(content) = crate::cache::load(&url, &config, None, &cache_ttl) {
+                        config.log_level.debug(
+                            &format!("\n==> Loading ENV URL CACHE: `{}` ...", &url),
+                            &config.designer.banner(),
+                        );
+                        return Ok(content);
+                    }
+                }
+
                 let client = reqwest::blocking::Client::new();
                 let mut headers_map: HeaderMap = HeaderMap::new();
 
@@ -261,6 +274,18 @@ impl UrlImport {
         let parsed_url =
             Url::parse(&self.url).map_err(|_| DevrcError::InvalidIncludeUrl(self.url.clone()))?;
 
+        if let Some(cache_ttl) = config.cache_ttl {
+            if let Some(content) =
+                crate::cache::load(&parsed_url, &config, Some(&self.checksum), &cache_ttl)
+            {
+                config.log_level.debug(
+                    &format!("\n==> Loading ENV URL CACHE: `{}` ...", &parsed_url),
+                    &config.designer.banner(),
+                );
+                return Ok(content);
+            }
+        }
+
         config.log_level.debug(
             &format!("\n==> Loading ENV FILE: `{:}` ...", &parsed_url),
             &config.designer.banner(),
@@ -278,6 +303,10 @@ impl UrlImport {
                         control_checksum: self.checksum.to_string(),
                         content_checksum,
                     });
+                }
+
+                if config.cache_ttl.is_some() {
+                    crate::cache::save(&parsed_url, &content)?;
                 }
 
                 Ok(content)

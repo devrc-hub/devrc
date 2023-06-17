@@ -18,6 +18,7 @@
 extern crate log;
 
 pub mod auth;
+pub mod cache;
 pub mod cli;
 pub mod common;
 pub mod config;

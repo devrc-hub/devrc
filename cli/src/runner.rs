@@ -1,4 +1,4 @@
-use std::{cell::RefCell, convert::TryFrom, env, fs, io::Read, path::PathBuf};
+use std::{cell::RefCell, convert::TryFrom, env, fs, io::Read, path::PathBuf, time::Duration};
 
 use devrc_core::{logging::LogLevel, workshop::Designer};
 use indexmap::IndexMap;
@@ -7,6 +7,7 @@ use url::Url;
 
 use crate::{
     auth::Auth,
+    cache::Cache,
     devrcfile::Devrcfile,
     docs::DocHelper,
     errors::{DevrcError, DevrcResult},
@@ -60,6 +61,8 @@ pub struct Runner {
     pub max_nesting_level: u32,
 
     pub execution_plugin_registry: Rc<RefCell<ExecutionPluginManager>>,
+
+    pub cache: Cache,
 }
 
 impl Runner {
@@ -87,6 +90,7 @@ impl Runner {
             registry: Registry::default(),
             max_nesting_level: DEFAULT_MAX_NESTING_LEVEL,
             execution_plugin_registry: plugin_manager,
+            cache: Cache::default(),
         }
     }
 
@@ -114,6 +118,10 @@ impl Runner {
         self.devrc.config.log_level.clone()
     }
 
+    pub fn get_cache_ttl(&self) -> Option<Duration> {
+        self.devrc.config.cache_ttl
+    }
+
     pub fn load(&mut self) -> DevrcResult<()> {
         if let Some(level) = &self.log_level {
             self.devrc.setup_log_level(level.clone())?;
@@ -124,7 +132,9 @@ impl Runner {
             self.load_global()?;
         }
 
-        let loading_config = LoadingConfig::default().with_log_level(self.get_logger());
+        let loading_config = LoadingConfig::default()
+            .with_log_level(self.get_logger())
+            .with_cache_ttl(self.get_cache_ttl());
 
         // Load files only if option specified
         if !self.files.is_empty() {
@@ -182,7 +192,7 @@ impl Runner {
 
     pub fn load_global(&mut self) -> DevrcResult<()> {
         if let Some(file) = get_global_devrc_file() {
-            self.devrc.config.log_level.debug(
+            self.get_logger().debug(
                 &format!("\n==> Loading GLOBAL: `{}` ...", &file.display()),
                 &self.designer.banner(),
             );
@@ -207,7 +217,7 @@ impl Runner {
         loading_config: LoadingConfig,
         kind: Kind,
     ) -> DevrcResult<()> {
-        self.devrc.config.log_level.debug(
+        self.get_logger().debug(
             &format!("\n==> Loading FILE: `{}` ...", &file.display()),
             &self.designer.banner(),
         );
@@ -230,7 +240,9 @@ impl Runner {
     pub fn load_stdin(&mut self) -> DevrcResult<()> {
         let mut buffer = String::new();
         io::stdin().read_to_string(&mut buffer)?;
-        let loading_config = LoadingConfig::default().with_log_level(self.get_logger());
+        let loading_config = LoadingConfig::default()
+            .with_log_level(self.get_logger())
+            .with_cache_ttl(self.get_cache_ttl());
         self.load_from_str(&buffer, Location::StdIn, Kind::StdIn, loading_config)
     }
 
@@ -255,7 +267,13 @@ impl Runner {
                     self.load_global()?
                 }
 
-                self.load_include(raw_devrcfile.clone(), location, loading_config)?;
+                self.devrc.add_config(raw_devrcfile.config.clone(), &kind)?;
+
+                self.load_include(
+                    raw_devrcfile.clone(),
+                    location,
+                    loading_config.with_cache_ttl(self.get_cache_ttl()),
+                )?;
 
                 self.devrc.add_raw_devrcfile(raw_devrcfile.clone(), &kind)?;
                 self.registry.add(raw_devrcfile)?;
@@ -278,14 +296,26 @@ impl Runner {
         headers: indexmap::IndexMap<String, String>,
         auth: Auth,
     ) -> DevrcResult<()> {
-        self.devrc.config.log_level.debug(
-            &format!("\n==> Loading URL: `{}` ...", &url),
-            &self.designer.banner(),
-        );
         let location = Location::Remote {
             url: url.clone(),
             auth: auth.clone(),
         };
+
+        if let Some(cache_ttl) = self.get_cache_ttl() {
+            if let Some(content) = crate::cache::load(&url, &loading_config, checksum, &cache_ttl) {
+                self.get_logger().debug(
+                    &format!("\n==> Loading URL CACHE: `{}` ...", &url),
+                    &self.designer.banner(),
+                );
+                return self.load_from_str(&content, location, Kind::Include, loading_config);
+            }
+        }
+
+        self.get_logger().debug(
+            &format!("\n==> Loading URL: `{}` ...", &url),
+            &self.designer.banner(),
+        );
+
         let client = reqwest::blocking::Client::new();
         let mut headers_map: HeaderMap = HeaderMap::new();
 
@@ -337,7 +367,16 @@ impl Runner {
                         });
                     }
                 }
-                self.load_from_str(&content, location, Kind::Include, loading_config)
+
+                match self.load_from_str(&content, location, Kind::Include, loading_config) {
+                    Ok(_) => {
+                        if self.get_cache_ttl().is_some() {
+                            crate::cache::save(&url, &content)?;
+                        }
+                        Ok(())
+                    }
+                    Err(error) => Err(error),
+                }
             }
             Ok(response) => {
                 loading_config.log_level.debug(
@@ -379,7 +418,11 @@ impl Runner {
                     Location::None | Location::StdIn,
                 ) => {
                     let path = utils::get_absolute_path(&file.clone(), None)?;
-                    self.load_file(path.to_path_buf(), config.clone().child(), Kind::Include)?;
+                    self.load_file(
+                        path.to_path_buf(),
+                        config.clone().child().with_cache_ttl(self.get_cache_ttl()),
+                        Kind::Include,
+                    )?;
                 }
 
                 (
@@ -391,7 +434,11 @@ impl Runner {
                     Location::LocalFile(ref base),
                 ) => {
                     let path = utils::get_absolute_path(&file.clone(), Some(&base.clone()))?;
-                    self.load_file(path.to_path_buf(), config.clone().child(), Kind::Include)?;
+                    self.load_file(
+                        path.to_path_buf(),
+                        config.clone().child().with_cache_ttl(self.get_cache_ttl()),
+                        Kind::Include,
+                    )?;
                 }
                 (
                     Include::File(FileInclude {
@@ -402,7 +449,10 @@ impl Runner {
                     Location::Remote { url, auth },
                 ) => {
                     if file.is_absolute() {
-                        let loading_config = config.clone().with_log_level(self.get_logger());
+                        let loading_config = config
+                            .clone()
+                            .with_log_level(self.get_logger())
+                            .with_cache_ttl(self.get_cache_ttl());
                         self.load_file(file.to_path_buf(), loading_config, Kind::Include)?;
                     } else {
                         match path_resolve {
@@ -417,8 +467,11 @@ impl Runner {
                                     .join(&path)
                                     .map_err(|_| DevrcError::RuntimeError)?;
 
-                                let loading_config =
-                                    config.clone().child().with_log_level(self.get_logger());
+                                let loading_config = config
+                                    .clone()
+                                    .child()
+                                    .with_log_level(self.get_logger())
+                                    .with_cache_ttl(self.get_cache_ttl());
                                 self.load_url(
                                     include_url,
                                     loading_config,
@@ -458,7 +511,7 @@ impl Runner {
                     if ignore_errors {
                         self.load_url(
                             parsed_url,
-                            config.clone().child(),
+                            config.clone().child().with_cache_ttl(self.get_cache_ttl()),
                             Some(&checksum),
                             headers,
                             auth,
@@ -467,7 +520,7 @@ impl Runner {
                     } else {
                         self.load_url(
                             parsed_url,
-                            config.clone().child(),
+                            config.clone().child().with_cache_ttl(self.get_cache_ttl()),
                             Some(&checksum),
                             headers,
                             auth,

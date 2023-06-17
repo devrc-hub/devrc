@@ -1,5 +1,5 @@
 use crate::interpreter::InterpreterKind;
-use std::{env, fmt::Debug, path::PathBuf};
+use std::{env, fmt::Debug, path::PathBuf, time::Duration};
 
 use devrc_core::logging::LogLevel;
 
@@ -11,6 +11,7 @@ pub struct Config {
     pub dry_run: bool,
     pub default: Vec<String>,
     pub plugins: indexmap::IndexMap<String, PathBuf>,
+    pub cache_ttl: Option<Duration>,
 }
 
 impl Default for Config {
@@ -22,6 +23,7 @@ impl Default for Config {
             log_level: LogLevel::Info,
             default: vec![],
             plugins: indexmap::IndexMap::new(),
+            cache_ttl: None,
         }
     }
 }

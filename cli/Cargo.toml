@@ -53,6 +53,7 @@ devrc-plugins = { path = "../plugins", version = "0.5.4"}
 devrc-core = { path = "../core", version = "0.5.4"}
 netrc-rs = "0.1.2"
 base64 = "0.21.2"
+duration-str = "0.5.1"
 
 [build-dependencies]
 datetime = { version = "0.5.2", default_features = false }
