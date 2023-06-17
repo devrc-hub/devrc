@@ -118,6 +118,10 @@ impl Devrcfile {
                     self.config.plugins.insert(name, path);
                 }
             }
+
+            if let Some(duration) = config.cache_ttl {
+                self.config.cache_ttl = Some(duration)
+            }
         }
 
         Ok(())
