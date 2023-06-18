@@ -72,10 +72,14 @@ format:
   exec: |
     cargo +nightly fmt --all --
 
+update-release-version level="patch":
+  desc: "Update release version"
+  run: |
+    cargo release version --execute {{ level }}
 
-prepare-release level="patch":
+
+update-xtests:
   desc: "Prepare next release"
   run: |
-    cargo release version {{ level }}
     cargo build
-    devrc --help > xtests/outputs/test_help_test_1_1_stdout.ansitxt
+    target/debug/devrc --help > xtests/outputs/test_help_test_1_1_stdout.ansitxt
