@@ -1,5 +1,6 @@
-use std::{env, fs, path::PathBuf};
+use std::{convert::TryFrom, env, fs, path::PathBuf};
 
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
 use sha256::digest;
 use url::Url;
@@ -39,6 +40,9 @@ pub struct UrlImport {
     pub ignore_errors: bool,
 
     pub checksum: String,
+
+    #[serde(default)]
+    pub headers: indexmap::IndexMap<String, String>,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
@@ -127,45 +131,77 @@ impl LocalFileImport {
 
         match loading_location {
             Location::LocalFile(path) => fs::read_to_string(path).map_err(DevrcError::IoError),
-            Location::Url(url) => match reqwest::blocking::get(url.as_str()) {
-                Ok(response) if response.status() == 200 => {
-                    let content = response.text().map_err(|_| DevrcError::RuntimeError)?;
-
-                    if let Some(control_checksum) = self.checksum.clone() {
-                        let content_checksum = digest(content.as_str());
-
-                        if control_checksum != content_checksum {
-                            return Err(DevrcError::UrlImportChecksumError {
-                                url: url.as_str().to_string(),
-                                control_checksum,
-                                content_checksum,
-                            });
-                        }
+            Location::Remote { url, auth } => {
+                if let Some(cache_ttl) = config.cache_ttl {
+                    if let Some(content) = crate::cache::load(&url, &config, None, &cache_ttl) {
+                        config.log_level.debug(
+                            &format!("\n==> Loading ENV URL CACHE: `{}` ...", &url),
+                            &config.designer.banner(),
+                        );
+                        return Ok(content);
                     }
+                }
 
-                    Ok(content)
-                }
-                Ok(response) => {
-                    config.log_level.debug(
-                        &format!(
-                            "Loadin ENV FILE error: invalid status code `{:}` ...",
-                            response.status()
-                        ),
-                        &config.designer.banner(),
+                let client = reqwest::blocking::Client::new();
+                let mut headers_map: HeaderMap = HeaderMap::new();
+
+                if let Some((key, value)) = auth.get_header() {
+                    headers_map.insert(
+                        HeaderName::try_from(key.clone()).map_err(|_| {
+                            DevrcError::UrlImportHeadersError {
+                                name: key.clone(),
+                                value: value.clone(),
+                            }
+                        })?,
+                        HeaderValue::try_from(value.clone()).map_err(|_| {
+                            DevrcError::UrlImportHeadersError {
+                                name: key.clone(),
+                                value: value.clone(),
+                            }
+                        })?,
                     );
-                    Err(DevrcError::EnvfileUrlImportStatusError {
-                        url: url.as_str().to_string(),
-                        status: response.status(),
-                    })
                 }
-                Err(error) => {
-                    config.log_level.debug(
-                        &format!("Error: `{:}` ...", &error),
-                        &config.designer.banner(),
-                    );
-                    Err(DevrcError::RuntimeError)
+
+                match client.get(url.as_str()).headers(headers_map).send() {
+                    Ok(response) if response.status() == 200 => {
+                        let content = response.text().map_err(|_| DevrcError::RuntimeError)?;
+
+                        if let Some(control_checksum) = self.checksum.clone() {
+                            let content_checksum = digest(content.as_str());
+
+                            if control_checksum != content_checksum {
+                                return Err(DevrcError::UrlImportChecksumError {
+                                    url: url.as_str().to_string(),
+                                    control_checksum,
+                                    content_checksum,
+                                });
+                            }
+                        }
+
+                        Ok(content)
+                    }
+                    Ok(response) => {
+                        config.log_level.debug(
+                            &format!(
+                                "Loadin ENV FILE error: invalid status code `{:}` ...",
+                                response.status()
+                            ),
+                            &config.designer.banner(),
+                        );
+                        Err(DevrcError::EnvfileUrlImportStatusError {
+                            url: url.as_str().to_string(),
+                            status: response.status(),
+                        })
+                    }
+                    Err(error) => {
+                        config.log_level.debug(
+                            &format!("Error: `{:}` ...", &error),
+                            &config.designer.banner(),
+                        );
+                        Err(DevrcError::RuntimeError)
+                    }
                 }
-            },
+            }
             _ => Ok("".to_string()),
         }
     }
@@ -195,7 +231,7 @@ impl LocalFileImport {
                     Ok(Location::LocalFile(path))
                 }
             },
-            Location::Url(url) => match self.path_resolve {
+            Location::Remote { url, auth } => match self.path_resolve {
                 PathResolve::Relative => {
                     let path = self
                         .file
@@ -204,7 +240,10 @@ impl LocalFileImport {
                         .into_string()
                         .map_err(|_| DevrcError::RuntimeError)?;
                     let include_url = url.join(&path).map_err(|_| DevrcError::RuntimeError)?;
-                    Ok(Location::Url(include_url))
+                    Ok(Location::Remote {
+                        url: include_url,
+                        auth,
+                    })
                 }
                 PathResolve::Pwd => {
                     let path =
@@ -235,6 +274,18 @@ impl UrlImport {
         let parsed_url =
             Url::parse(&self.url).map_err(|_| DevrcError::InvalidIncludeUrl(self.url.clone()))?;
 
+        if let Some(cache_ttl) = config.cache_ttl {
+            if let Some(content) =
+                crate::cache::load(&parsed_url, &config, Some(&self.checksum), &cache_ttl)
+            {
+                config.log_level.debug(
+                    &format!("\n==> Loading ENV URL CACHE: `{}` ...", &parsed_url),
+                    &config.designer.banner(),
+                );
+                return Ok(content);
+            }
+        }
+
         config.log_level.debug(
             &format!("\n==> Loading ENV FILE: `{:}` ...", &parsed_url),
             &config.designer.banner(),
@@ -252,6 +303,10 @@ impl UrlImport {
                         control_checksum: self.checksum.to_string(),
                         content_checksum,
                     });
+                }
+
+                if config.cache_ttl.is_some() {
+                    crate::cache::save(&parsed_url, &content)?;
                 }
 
                 Ok(content)

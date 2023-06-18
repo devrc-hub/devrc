@@ -1,5 +1,6 @@
 use crate::{de::deserialize_some, interpreter::InterpreterKind};
-use std::{fmt::Debug, path::PathBuf};
+use duration_str::deserialize_option_duration;
+use std::{fmt::Debug, path::PathBuf, time::Duration};
 
 use devrc_core::logging;
 use serde::Deserialize;
@@ -34,6 +35,9 @@ pub struct RawConfig {
 
     #[serde(default, deserialize_with = "deserialize_some")]
     pub plugins: Option<indexmap::IndexMap<String, PathBuf>>,
+
+    #[serde(default, deserialize_with = "deserialize_option_duration")]
+    pub cache_ttl: Option<Duration>,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]

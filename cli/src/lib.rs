@@ -9,6 +9,7 @@
 #![allow(clippy::upper_case_acronyms)]
 #![allow(clippy::from_over_into)]
 #![allow(clippy::ptr_arg)]
+#![allow(clippy::result_large_err)]
 
 // #![feature(custom_inner_attributes)]
 // #![clippy::msrv = "1.48.0"]
@@ -16,6 +17,8 @@
 #[macro_use]
 extern crate log;
 
+pub mod auth;
+pub mod cache;
 pub mod cli;
 pub mod common;
 pub mod config;
@@ -31,8 +34,8 @@ pub mod include;
 pub mod interpreter;
 pub mod interrupt;
 pub mod loader;
+pub mod netrc;
 pub mod raw;
-pub mod raw_devrcfile;
 pub mod registry;
 pub mod resolver;
 pub mod runner;

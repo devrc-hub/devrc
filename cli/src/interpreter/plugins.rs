@@ -17,9 +17,11 @@ pub enum InterpreterOption {
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct PluginInterpreter {
     pub runtime: String,
+
+    #[serde(default)]
     pub args: Option<Vec<String>>,
 
-    // #[serde(flatten)]
+    #[serde(default)]
     pub options: indexmap::IndexMap<String, InterpreterOption>,
 }
 

@@ -1,4 +1,4 @@
-use crate::{errors::DevrcResult, raw_devrcfile::RawDevrcfile};
+use crate::{errors::DevrcResult, raw::devrcfile::RawDevrcfile};
 
 #[derive(Debug, Clone, Default)]
 pub struct Registry {

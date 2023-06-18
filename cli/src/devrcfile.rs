@@ -4,8 +4,10 @@ use crate::{
     config::Config,
     environment::{Environment, RawEnvironment},
     errors::{DevrcError, DevrcResult},
-    raw::config::{DefaultOption, RawConfig},
-    raw_devrcfile::{Kind, RawDevrcfile},
+    raw::{
+        config::{DefaultOption, RawConfig},
+        devrcfile::{Kind, RawDevrcfile},
+    },
     scope::{child_scope, Scope},
     tasks::{
         arguments::{extract_task_args, TaskArguments},
@@ -115,6 +117,10 @@ impl Devrcfile {
                 for (name, path) in plugins_paths {
                     self.config.plugins.insert(name, path);
                 }
+            }
+
+            if let Some(duration) = config.cache_ttl {
+                self.config.cache_ttl = Some(duration)
             }
         }
 

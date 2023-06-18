@@ -2,13 +2,18 @@ use serde::Deserialize;
 use std::{fmt::Display, path::PathBuf};
 use url::Url;
 
+use crate::auth::Auth;
+
 #[derive(Debug, Clone, Default)]
 pub enum Location {
     #[default]
     None,
     StdIn,
     LocalFile(PathBuf),
-    Url(Url),
+    Remote {
+        url: Url,
+        auth: Auth,
+    },
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
@@ -29,8 +34,8 @@ impl Display for Location {
             Location::LocalFile(value) => {
                 write!(f, "{:}", value.display())
             }
-            Location::Url(value) => {
-                write!(f, "{:}", value.as_str())
+            Location::Remote { url, .. } => {
+                write!(f, "{:}", url.as_str())
             }
         }
     }
