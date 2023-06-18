@@ -280,6 +280,7 @@ devrc_config:
   global: true
   interpreter: /bin/bash -c
   default: [task_1, task_2]
+  cache_ttl: 5m
 
 ```
 
@@ -566,7 +567,7 @@ colors: |
 More examples can be found [here](https://github.com/devrc-hub/devrc/blob/master/examples/deno_usage.yml).
 
 
-### Relative path resolving
+### Files include and relative path resolving
 
 devrc allows you to load tasks, variables, and environment variables using the import mechanism. Files can be included by specifying an absolute path, URL address, or relative path. In turn, imported devrc files can include other files using relative paths. There are several strategies for resolving relative paths. By default, the strategy is to use the directory of the loaded file as the base path. The connection strategy for a specific file can be specified using the `path_resolve` option.
 
@@ -608,8 +609,59 @@ include:
 5. Then, the `local_2.yml` file will be loaded from the local source `/projects/awesome_project/devrcfiles/local_2.yml`;
 6. Finally, the `local_3.yml` file will be loaded from the local source `/projects/awesome_project/local_3.yml`.
 
+#### Authentication
+
+devrc supports using authorization data from the .netrc file to download devrc files that are protected by authorization. For example, from a private repository on GitLab or GitHub.
+
+There are several ways to use authorization:
+
+1. Using bearer token authorization:
+
+    ```
+    include:
+        - url: "https://raw.githubusercontent.com/devrc-hub/devrc/master/examples/remote/entry.yml"
+          checksum: 1234
+          auth:
+              machine: api.github.com
+              login: api-token
+              type: bearer
+    ```
+
+    When downloading the devrc file, it will send the header `Authorization: Bearer TOKEN-FROM-NET-RC`.
+
+2. Using basic authorization:
+
+    ```
+    include:
+        - url: "https://raw.githubusercontent.com/devrc-hub/devrc/master/examples/remote/entry.yml"
+          checksum: 1234
+          auth:
+              machine: api.github.com
+              login: username
+              type: basic
+    ```
+
+    When downloading the devrc file, it will send the header `Authorization: Basic base64(username:password)`.
+
+3. Using a header:
+
+   ```
+   include:
+       - url: "https://raw.githubusercontent.com/devrc-hub/devrc/master/examples/remote/entry.yml"
+         checksum: 1234
+         auth:
+            machine: api.github.com
+            login: api-token
+            header: "PRIVATE-TOKEN"
+
+    ```
+
+    When downloading the devrc file, it will send the header `PRIVATE-TOKEN: password`.
 
 
+#### Cache
+
+devrc files from remote sources are cached in the file system. If the cached file lifetime exceeds the time specified in the `devrc_config.cache_ttl` option, the file is downloaded from the remote source.
 
 ## Alternatives
 
